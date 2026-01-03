@@ -1,21 +1,32 @@
 """
 v-flask Auth
 
-Decorators für Zugriffskontrolle.
+Decorators for access control.
 
-Verwendung:
-    from v_flask.auth import admin_required, mitarbeiter_required
+Usage:
+    from v_flask.auth import permission_required, admin_required
+
+    @app.route('/projekt/<int:id>/delete', methods=['POST'])
+    @permission_required('projekt.delete')
+    def delete_projekt(id):
+        ...
 
     @app.route('/admin')
     @admin_required
-    def admin_only():
-        return 'Admin!'
+    def admin_dashboard():
+        ...
 """
 
-# TODO: Decorators importieren nach Implementierung
-# from .decorators import admin_required, mitarbeiter_required
+from v_flask.auth.decorators import (
+    admin_required,
+    login_required_with_message,
+    mitarbeiter_required,
+    permission_required,
+)
 
-# __all__ = [
-#     'admin_required',
-#     'mitarbeiter_required',
-# ]
+__all__ = [
+    'permission_required',
+    'admin_required',
+    'mitarbeiter_required',
+    'login_required_with_message',
+]

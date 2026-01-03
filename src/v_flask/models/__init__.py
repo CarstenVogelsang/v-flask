@@ -1,26 +1,48 @@
 """
 v-flask Models
 
-Alle SQLAlchemy Models für das Core-System.
+All SQLAlchemy models for the core system.
 
-Verwendung:
-    from v_flask.models import User, Rolle, Config, LookupWert, Modul, AuditLog
+Usage:
+    from v_flask.models import User, Rolle, Permission, Config, Betreiber, AuditLog
+
+    # Create a role with permissions
+    admin = Rolle(name='admin', beschreibung='Administrator')
+    perm = Permission(code='admin.*', beschreibung='Vollzugriff')
+    admin.permissions.append(perm)
+
+    # Create a user
+    user = User(
+        email='admin@example.com',
+        vorname='Admin',
+        nachname='User',
+        rolle_id=admin.id
+    )
+    user.set_password('secret')
+
+    # Check permissions
+    if user.has_permission('user.delete'):
+        print('User can delete users')
 """
 
-# TODO: Models importieren nach Implementierung
-# from .user import User
-# from .rolle import Rolle
-# from .config import Config
-# from .lookup_wert import LookupWert
-# from .modul import Modul, ModulZugriff
-# from .audit_log import AuditLog
+# Import order matters due to dependencies
+from v_flask.models.permission import Permission, rolle_permission
+from v_flask.models.rolle import Rolle
+from v_flask.models.user import User, UserTyp
+from v_flask.models.config import Config
+from v_flask.models.betreiber import Betreiber
+from v_flask.models.audit_log import AuditLog
 
-# __all__ = [
-#     'User',
-#     'Rolle',
-#     'Config',
-#     'LookupWert',
-#     'Modul',
-#     'ModulZugriff',
-#     'AuditLog',
-# ]
+__all__ = [
+    # Core user system
+    'User',
+    'UserTyp',
+    'Rolle',
+    'Permission',
+    'rolle_permission',
+    # Configuration
+    'Config',
+    'Betreiber',
+    # Logging
+    'AuditLog',
+]

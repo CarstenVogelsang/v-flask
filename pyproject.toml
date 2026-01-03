@@ -34,8 +34,8 @@ packages = ["src/v_flask"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.0",
     "pytest-flask>=1.3",
 ]
