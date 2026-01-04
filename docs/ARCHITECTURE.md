@@ -193,6 +193,129 @@ class AuditLog(db.Model):
     user = db.relationship('User')
 ```
 
+### LookupWert Model
+
+Dynamische Lookup-Werte für Kategorien wie Status, Priorität, etc.
+Unterstützt hybrides Multi-Tenancy:
+- **Global**: `betreiber_id = NULL` (geteilt über alle Betreiber)
+- **Betreiber-spezifisch**: `betreiber_id = X` (nur für diesen Betreiber)
+
+Betreiber können nur **zusätzliche** Werte anlegen, globale nicht überschreiben.
+
+```python
+class LookupWert(db.Model):
+    __tablename__ = 'lookup_wert'
+
+    id = db.Column(db.Integer, primary_key=True)
+    kategorie = db.Column(db.String(50), nullable=False, index=True)
+    code = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    farbe = db.Column(db.String(7))        # HEX color, z.B. '#3b82f6'
+    icon = db.Column(db.String(50))        # Tabler icon name
+    sort_order = db.Column(db.Integer, default=0)
+    aktiv = db.Column(db.Boolean, default=True)
+    betreiber_id = db.Column(db.Integer, db.ForeignKey('betreiber.id'), nullable=True)
+
+    # Unique constraint: (kategorie, code, betreiber_id)
+    __table_args__ = (
+        db.UniqueConstraint('kategorie', 'code', 'betreiber_id'),
+    )
+
+    @classmethod
+    def get_for_kategorie(cls, kategorie, betreiber_id=None):
+        """Get all values for a category (global + betreiber)."""
+        query = cls.query.filter_by(kategorie=kategorie, aktiv=True)
+        if betreiber_id:
+            query = query.filter(
+                db.or_(cls.betreiber_id.is_(None), cls.betreiber_id == betreiber_id)
+            )
+        else:
+            query = query.filter(cls.betreiber_id.is_(None))
+        return query.order_by(cls.sort_order).all()
+```
+
+**Verwendung:**
+```python
+from v_flask.models import LookupWert
+
+# Globalen Status erstellen
+status_open = LookupWert(
+    kategorie='status',
+    code='open',
+    name='Offen',
+    farbe='#3b82f6',
+    icon='circle'
+)
+
+# Betreiber-spezifischen Status erstellen
+status_custom = LookupWert(
+    kategorie='status',
+    code='in_review',
+    name='In Prüfung',
+    farbe='#f59e0b',
+    betreiber_id=1
+)
+
+# Alle Werte für eine Kategorie abfragen
+statuses = LookupWert.get_for_kategorie('status', betreiber_id=1)
+# Ergebnis: Globale + betreiberspezifische Werte
+```
+
+### Modul Model
+
+Dashboard-Registry für Navigation und Modul-Tiles.
+Sichtbarkeit wird über `min_permission` gesteuert.
+
+```python
+class Modul(db.Model):
+    __tablename__ = 'modul'
+
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    beschreibung = db.Column(db.String(200))
+    icon = db.Column(db.String(50))           # Tabler icon name
+    endpoint = db.Column(db.String(100))      # Flask endpoint name
+    min_permission = db.Column(db.String(100), nullable=False)  # Mindest-Berechtigung
+    sort_order = db.Column(db.Integer, default=0)
+    aktiv = db.Column(db.Boolean, default=True)
+
+    @classmethod
+    def get_for_user(cls, user):
+        """Get modules visible to user based on permissions."""
+        if not user.is_authenticated:
+            return []
+        modules = cls.query.filter_by(aktiv=True).order_by(cls.sort_order).all()
+        return [m for m in modules if user.has_permission(m.min_permission)]
+```
+
+**Verwendung:**
+```python
+from v_flask.models import Modul
+
+# Modul registrieren
+projekt_modul = Modul(
+    code='projektverwaltung',
+    name='Projektverwaltung',
+    beschreibung='Projekte und Tasks verwalten',
+    icon='folder',
+    endpoint='admin.projekte',
+    min_permission='projekt.read',
+    sort_order=1
+)
+
+# Module für User abrufen
+visible_modules = Modul.get_for_user(current_user)
+
+# In Template
+{% for modul in get_modules() %}
+    <a href="{{ url_for(modul.endpoint) }}">
+        <i class="ti ti-{{ modul.icon }}"></i>
+        {{ modul.name }}
+    </a>
+{% endfor %}
+```
+
 ---
 
 ## Rollen-Beispiele

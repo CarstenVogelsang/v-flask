@@ -5,6 +5,7 @@ All SQLAlchemy models for the core system.
 
 Usage:
     from v_flask.models import User, Rolle, Permission, Config, Betreiber, AuditLog
+    from v_flask.models import LookupWert, Modul
 
     # Create a role with permissions
     admin = Rolle(name='admin', beschreibung='Administrator')
@@ -23,6 +24,12 @@ Usage:
     # Check permissions
     if user.has_permission('user.delete'):
         print('User can delete users')
+
+    # Get lookup values for a category
+    statuses = LookupWert.get_for_kategorie('status', betreiber_id=1)
+
+    # Get modules visible to user
+    visible_modules = Modul.get_for_user(current_user)
 """
 
 # Import order matters due to dependencies
@@ -32,6 +39,8 @@ from v_flask.models.user import User, UserTyp
 from v_flask.models.config import Config
 from v_flask.models.betreiber import Betreiber
 from v_flask.models.audit_log import AuditLog
+from v_flask.models.lookup_wert import LookupWert
+from v_flask.models.modul import Modul
 
 __all__ = [
     # Core user system
@@ -45,4 +54,7 @@ __all__ = [
     'Betreiber',
     # Logging
     'AuditLog',
+    # Dynamic values and modules
+    'LookupWert',
+    'Modul',
 ]
