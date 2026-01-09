@@ -1,5 +1,7 @@
 """Betreiber model for multi-tenancy and theming."""
 
+from sqlalchemy.orm.attributes import flag_modified
+
 from v_flask.extensions import db
 
 
@@ -106,3 +108,4 @@ class Betreiber(db.Model):
         if self.custom_settings is None:
             self.custom_settings = {}
         self.custom_settings[key] = value
+        flag_modified(self, 'custom_settings')
