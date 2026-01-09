@@ -41,6 +41,8 @@ from v_flask.models.betreiber import Betreiber
 from v_flask.models.audit_log import AuditLog
 from v_flask.models.lookup_wert import LookupWert
 from v_flask.models.modul import Modul
+from v_flask.models.plugin_activation import PluginActivation
+from v_flask.models.system_status import SystemStatus
 
 __all__ = [
     # Core user system
@@ -57,4 +59,7 @@ __all__ = [
     # Dynamic values and modules
     'LookupWert',
     'Modul',
+    # Plugin management
+    'PluginActivation',
+    'SystemStatus',
 ]

@@ -1,0 +1,108 @@
+{% extends "v_flask/base.html" %}
+
+{% block title %}Kontaktanfragen{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">
+                <i class="ti ti-mail me-2"></i>Kontaktanfragen
+            </h2>
+            {% if unread_count > 0 %}
+            <small class="text-muted">
+                {{ unread_count }} ungelesene Nachricht{% if unread_count != 1 %}en{% endif %}
+            </small>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if anfragen %}
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Name</th>
+                        <th>E-Mail</th>
+                        <th>Nachricht</th>
+                        <th>Datum</th>
+                        <th style="width: 150px;">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for anfrage in anfragen %}
+                    <tr class="{% if not anfrage.gelesen %}table-warning{% endif %}">
+                        <td class="text-center">
+                            {% if not anfrage.gelesen %}
+                            <span class="badge bg-primary" title="Ungelesen">
+                                <i class="ti ti-mail"></i>
+                            </span>
+                            {% else %}
+                            <span class="text-muted" title="Gelesen">
+                                <i class="ti ti-mail-opened"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('kontakt_admin.detail', anfrage_id=anfrage.id) }}"
+                               class="{% if not anfrage.gelesen %}fw-bold{% endif %}">
+                                {{ anfrage.name }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="mailto:{{ anfrage.email }}">{{ anfrage.email }}</a>
+                        </td>
+                        <td>
+                            <span class="text-truncate d-inline-block" style="max-width: 300px;">
+                                {{ anfrage.nachricht[:100] }}{% if anfrage.nachricht|length > 100 %}...{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {{ anfrage.created_at.strftime('%d.%m.%Y %H:%M') }}
+                            </small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('kontakt_admin.detail', anfrage_id=anfrage.id) }}"
+                                   class="btn btn-outline-primary"
+                                   title="Anzeigen">
+                                    <i class="ti ti-eye"></i>
+                                </a>
+                                <form action="{{ url_for('kontakt_admin.toggle_read', anfrage_id=anfrage.id) }}"
+                                      method="POST"
+                                      class="d-inline">
+                                    <button type="submit"
+                                            class="btn btn-outline-secondary"
+                                            title="{% if anfrage.gelesen %}Als ungelesen markieren{% else %}Als gelesen markieren{% endif %}">
+                                        <i class="ti ti-{% if anfrage.gelesen %}mail{% else %}mail-opened{% endif %}"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('kontakt_admin.delete', anfrage_id=anfrage.id) }}"
+                                      method="POST"
+                                      class="d-inline"
+                                      onsubmit="return confirm('Anfrage wirklich löschen?');">
+                                    <button type="submit"
+                                            class="btn btn-outline-danger"
+                                            title="Löschen">
+                                        <i class="ti ti-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="ti ti-info-circle me-2"></i>
+        Noch keine Kontaktanfragen eingegangen.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

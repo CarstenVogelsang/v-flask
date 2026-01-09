@@ -11,6 +11,7 @@ def permission_required(permission_code: str) -> Callable:
     """Decorator for granular permission checking.
 
     Checks if the current user has the specified permission via their role.
+    Admin users (is_admin=True) automatically bypass all permission checks.
     Supports wildcards in role permissions (e.g., 'projekt.*' allows 'projekt.delete').
 
     Args:
@@ -32,9 +33,18 @@ def permission_required(permission_code: str) -> Callable:
             if not current_user.is_authenticated:
                 flash('Bitte melde dich an.', 'warning')
                 return redirect(url_for('auth.login'))
+            # Admin users bypass all permission checks
+            if current_user.is_admin:
+                return f(*args, **kwargs)
             if not current_user.has_permission(permission_code):
                 flash('Keine Berechtigung für diese Aktion.', 'danger')
-                return redirect(url_for('main.index'))
+                # Try common index routes
+                for endpoint in ['public.index', 'main.index']:
+                    try:
+                        return redirect(url_for(endpoint))
+                    except Exception:
+                        continue
+                return redirect('/')
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -58,7 +68,13 @@ def admin_required(f: Callable) -> Callable:
             return redirect(url_for('auth.login'))
         if not current_user.is_admin:
             flash('Zugriff verweigert. Admin-Rechte erforderlich.', 'danger')
-            return redirect(url_for('main.index'))
+            # Try common index routes
+            for endpoint in ['public.index', 'main.index']:
+                try:
+                    return redirect(url_for(endpoint))
+                except Exception:
+                    continue
+            return redirect('/')
         return f(*args, **kwargs)
     return decorated_function
 
@@ -79,7 +95,13 @@ def mitarbeiter_required(f: Callable) -> Callable:
             return redirect(url_for('auth.login'))
         if not current_user.is_mitarbeiter:
             flash('Zugriff verweigert. Mitarbeiter-Rechte erforderlich.', 'danger')
-            return redirect(url_for('main.index'))
+            # Try common index routes
+            for endpoint in ['public.index', 'main.index']:
+                try:
+                    return redirect(url_for(endpoint))
+                except Exception:
+                    continue
+            return redirect('/')
         return f(*args, **kwargs)
     return decorated_function
 

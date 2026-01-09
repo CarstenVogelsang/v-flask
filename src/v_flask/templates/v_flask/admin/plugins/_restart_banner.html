@@ -1,0 +1,23 @@
+{# Restart Banner Partial (Bootstrap 5) - Include in admin templates #}
+{# Usage: {% include "v_flask/admin/plugins/_restart_banner.html" %} #}
+
+{% if restart_required() %}
+<div class="alert alert-warning d-flex align-items-center justify-content-between mb-4" role="alert">
+    <div class="d-flex align-items-center">
+        <i class="ti ti-alert-triangle me-3 fs-4"></i>
+        <div>
+            <strong>Server-Neustart erforderlich</strong>
+            <p class="mb-0 small">
+                Plugin-Änderungen werden erst nach einem Neustart wirksam.
+                {% set scheduled = scheduled_restart() %}
+                {% if scheduled %}
+                <br>Geplanter Neustart: <strong>{{ scheduled.strftime('%d.%m.%Y %H:%M') }} Uhr</strong>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    <a href="{{ url_for('plugins_admin.list_plugins') }}" class="btn btn-sm btn-warning">
+        <i class="ti ti-puzzle me-1"></i> Plugin-Verwaltung
+    </a>
+</div>
+{% endif %}

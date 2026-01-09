@@ -1,0 +1,39 @@
+{#
+    Breadcrumb Navigation Macro
+
+    Usage:
+        from "v_flask/macros/breadcrumb.html" import breadcrumb
+
+        breadcrumb([
+            {'label': 'Dashboard', 'url': url_for('main.dashboard'), 'icon': 'ti-home'},
+            {'label': 'Kunden', 'url': url_for('kunden.liste'), 'icon': 'ti-users'},
+            {'label': kunde.name}
+        ])
+
+    Parameters for items[]:
+        - label: Display text (required)
+        - url: Link target (optional - omit for last/active item)
+        - icon: Tabler Icon class with ti- prefix (optional)
+#}
+
+{% macro breadcrumb(items) %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+        {% for item in items %}
+        {% if loop.last %}
+        <li class="breadcrumb-item active" aria-current="page">
+            {% if item.icon %}<i class="ti {{ item.icon }} me-1"></i>{% endif %}
+            {{ item.label }}
+        </li>
+        {% else %}
+        <li class="breadcrumb-item">
+            <a href="{{ item.url }}" class="text-decoration-none">
+                {% if item.icon %}<i class="ti {{ item.icon }} me-1"></i>{% endif %}
+                {{ item.label }}
+            </a>
+        </li>
+        {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+{% endmacro %}

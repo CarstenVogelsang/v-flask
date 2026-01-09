@@ -22,13 +22,24 @@ dev = [
     "pytest-flask>=1.3",
     "pytest-cov>=4.1",
 ]
+markdown = [
+    "markdown>=3.5",
+]
+all = [
+    "markdown>=3.5",
+]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/v_flask"]
+packages = ["src/v_flask", "src/v_flask_plugins"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/v_flask/templates" = "v_flask/templates"
+"src/v_flask/static" = "v_flask/static"
+"src/v_flask_plugins/kontakt/templates" = "v_flask_plugins/kontakt/templates"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

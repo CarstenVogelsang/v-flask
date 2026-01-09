@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% block meta %}{% endblock %}
+
+    <title>{% block title %}{{ get_betreiber().name if get_betreiber() else 'v-flask App' }}{% endblock %}</title>
+
+    {# Favicon #}
+    {% block favicon %}
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    {% endblock %}
+
+    {# CSS: Bootstrap 5, Tabler Icons, v-flask.css #}
+    {% block head_css %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    {% set betreiber = get_betreiber() %}
+    {% if betreiber and betreiber.google_fonts_url %}
+    <link href="{{ betreiber.google_fonts_url }}" rel="stylesheet">
+    {% endif %}
+    <link rel="stylesheet" href="{{ url_for('v_flask_static.static', filename='tabler-icons/tabler-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('v_flask_static.static', filename='css/v-flask.css') }}">
+    {% endblock %}
+
+    {# Dynamic Branding CSS Variables from Betreiber #}
+    {% block branding_css %}
+    {% set betreiber = get_betreiber() %}
+    {% if betreiber %}
+    <style>{{ betreiber.get_css_variables()|safe }}</style>
+    {% endif %}
+    {% endblock %}
+
+    {# Additional CSS from child templates #}
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% block body_start %}{% endblock %}
+
+    {# Navbar #}
+    {% block navbar %}
+    <nav class="navbar navbar-expand-lg navbar-dark v-navbar mb-4">
+        <div class="container">
+            {% block navbar_brand %}
+            {% set betreiber = get_betreiber() %}
+            <a class="navbar-brand" href="{{ url_for('main.dashboard') if 'main.dashboard' in self._TemplateReference__context.keys()|list else '/' }}">
+                {% if betreiber and betreiber.logo_url %}
+                <img src="{{ betreiber.logo_url }}" alt="{{ betreiber.name }}" height="36">
+                {% endif %}
+                {{ betreiber.name if betreiber else 'v-flask' }}
+            </a>
+            {% endblock %}
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Navigation umschalten">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% block navbar_left %}
+                <ul class="navbar-nav me-auto">
+                    {# Host-App can add navigation items here using {{ super() }} #}
+                    {# Plugin Navbar Items (from ui_slots) #}
+                    {% for item in get_plugin_slots('navbar_items') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for(item.url) }}">
+                            {% if item.icon %}<i class="{{ item.icon }} me-1"></i>{% endif %}{{ item.label }}
+                            {% if item.badge %}<span class="badge bg-danger ms-1">{{ item.badge }}</span>{% endif %}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endblock %}
+
+                {% block navbar_right %}
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="ti ti-user"></i> {{ current_user.vorname or current_user.email }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            {% block user_dropdown %}
+                            <li><span class="dropdown-item-text text-muted small">{{ current_user.email }}</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                    <i class="ti ti-logout"></i> Abmelden
+                                </a>
+                            </li>
+                            {% endblock %}
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.login') }}">
+                            <i class="ti ti-login"></i> Anmelden
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                {% endblock %}
+            </div>
+        </div>
+    </nav>
+    {% endblock %}
+
+    {# Toast Container for Flash Messages #}
+    {% block toast_container %}
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="toast align-items-center text-bg-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} border-0"
+             role="alert" aria-live="assertive" aria-atomic="true"
+             data-bs-autohide="true" data-bs-delay="5000">
+            <div class="d-flex">
+                <div class="toast-body">
+                    {% if category == 'success' %}<i class="ti ti-check me-2"></i>{% endif %}
+                    {% if category == 'danger' %}<i class="ti ti-alert-circle me-2"></i>{% endif %}
+                    {% if category == 'warning' %}<i class="ti ti-alert-triangle me-2"></i>{% endif %}
+                    {% if category == 'info' %}<i class="ti ti-info-circle me-2"></i>{% endif %}
+                    {{ message }}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Schließen"></button>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+    </div>
+    {% endblock %}
+
+    {# Main Content #}
+    {% block main %}
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    {% endblock %}
+
+    {# Footer #}
+    {% block footer %}
+    <footer class="v-footer py-3 mt-auto">
+        <div class="container">
+            <div class="row align-items-center">
+                {# Plugin Footer Links (from ui_slots) #}
+                {% set footer_links = get_plugin_slots('footer_links') %}
+                {% if footer_links %}
+                <div class="col-md-6 mb-2 mb-md-0 text-center text-md-start">
+                    <nav class="d-flex gap-3 justify-content-center justify-content-md-start flex-wrap">
+                        {% for item in footer_links %}
+                        <a href="{{ url_for(item.url) }}" class="text-muted small text-decoration-none">
+                            {% if item.icon %}<i class="{{ item.icon }} me-1"></i>{% endif %}{{ item.label }}
+                        </a>
+                        {% endfor %}
+                    </nav>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                {% else %}
+                <div class="col-12 text-center">
+                {% endif %}
+                    {% block footer_content %}
+                    {% set betreiber = get_betreiber() %}
+                    <span class="text-muted small">
+                        {{ betreiber.name if betreiber else 'v-flask' }}
+                        | Powered by <a href="https://github.com/CarstenVogelsang/v-flask" target="_blank">v-flask</a> {{ v_flask_version }}
+                    </span>
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+    </footer>
+    {% endblock %}
+
+    {# Modals - Icon Picker, Help, etc. go here #}
+    {% block modals %}{% endblock %}
+
+    {% block body_end %}{% endblock %}
+
+    {# JavaScript: Bootstrap Bundle #}
+    {% block scripts_base %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('v_flask_static.static', filename='js/toast-init.js') }}"></script>
+    {% endblock %}
+
+    {# Additional JavaScript from child templates #}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

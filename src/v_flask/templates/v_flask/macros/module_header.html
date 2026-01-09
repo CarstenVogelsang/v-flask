@@ -1,0 +1,77 @@
+{#
+    Module Header Macro with Gradient Background
+
+    Usage:
+        from "v_flask/macros/module_header.html" import module_header
+
+        call module_header(
+            title="Kundenverwaltung",
+            icon="ti-users",
+            color_hex="#3b82f6",
+            description="Kunden anlegen und verwalten",
+            back_url=url_for('main.dashboard'),
+            back_label="Dashboard"
+        ):
+            <a href="url_for('kunden.neu')" class="btn btn-primary">
+                <i class="ti ti-plus"></i> Neuer Kunde
+            </a>
+
+    Parameters:
+        - title: Module title
+        - icon: Tabler Icon (with ti- prefix)
+        - color_hex: Module accent color
+        - description: Optional description text
+        - back_url: Optional back link URL
+        - back_label: Optional back link label (default: "Zurück")
+#}
+
+{% macro module_header(title, icon, color_hex, description=None, back_url=None, back_label="Zurück") %}
+<div class="module-header mb-4 p-3 rounded"
+     style="background: linear-gradient(135deg, {{ color_hex }}20 0%, transparent 70%);">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex align-items-center">
+            {% if back_url %}
+            <a href="{{ back_url }}" class="text-muted text-decoration-none me-3" title="{{ back_label }}">
+                <i class="ti ti-arrow-left fs-4"></i>
+            </a>
+            {% endif %}
+            <div class="rounded-circle p-3 me-3" style="background-color: {{ color_hex }}30;">
+                <i class="ti {{ icon }} fs-2" style="color: {{ color_hex }};"></i>
+            </div>
+            <div>
+                <h2 class="mb-0 fs-4">{{ title }}</h2>
+                {% if description %}
+                <p class="text-muted mb-0 small">{{ description }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            {{ caller() if caller else '' }}
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+
+{#
+    Simple Page Header (without gradient)
+
+    Usage:
+        from "v_flask/macros/module_header.html" import page_header
+
+        page_header("Einstellungen", "ti-settings")
+#}
+
+{% macro page_header(title, icon=None, description=None) %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">
+            {% if icon %}<i class="ti {{ icon }} me-2"></i>{% endif %}
+            {{ title }}
+        </h2>
+        {% if description %}
+        <p class="text-muted mb-0">{{ description }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}

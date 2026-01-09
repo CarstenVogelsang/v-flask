@@ -7,7 +7,7 @@ class Betreiber(db.Model):
     """Betreiber (operator) model for CI/theming settings.
 
     Each application has one Betreiber that defines:
-        - Branding (name, logo)
+        - Branding (name, logo, website)
         - Legal texts (impressum, datenschutz)
         - CI colors and fonts
 
@@ -16,6 +16,7 @@ class Betreiber(db.Model):
 
         betreiber = Betreiber(
             name='My Company',
+            website='https://example.com',
             primary_color='#3b82f6',
             font_family='Inter'
         )
@@ -24,7 +25,7 @@ class Betreiber(db.Model):
 
     In templates:
         {% set b = get_betreiber() %}
-        <img src="{{ b.logo_url }}" alt="{{ b.name }}">
+        <a href="{{ b.website }}">{{ b.name }}</a>
     """
 
     __tablename__ = 'betreiber'
@@ -32,6 +33,8 @@ class Betreiber(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     logo_url = db.Column(db.String(500))
+    website = db.Column(db.String(500))  # Betreiber-Website URL
+    email = db.Column(db.String(200))  # Contact email for notifications
     impressum = db.Column(db.Text)
     datenschutz = db.Column(db.Text)
 
@@ -49,6 +52,8 @@ class Betreiber(db.Model):
             'id': self.id,
             'name': self.name,
             'logo_url': self.logo_url,
+            'website': self.website,
+            'email': self.email,
             'primary_color': self.primary_color,
             'secondary_color': self.secondary_color,
             'font_family': self.font_family,

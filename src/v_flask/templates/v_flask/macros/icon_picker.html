@@ -1,0 +1,117 @@
+{#
+    Icon Picker Macros
+
+    Usage:
+        from "v_flask/macros/icon_picker.html" import icon_input, icon_picker_offcanvas
+
+        In form:
+        icon_input('icon', modul.icon, label='Icon', strip_prefix=true)
+
+        Once per page in modals block:
+        block modals:
+            icon_picker_offcanvas()
+
+        Include JavaScript:
+        block extra_js:
+            script src=url_for('v_flask_static.static', filename='js/icon-picker.js')
+
+    Parameters icon_input():
+        - name: Field name
+        - value: Current value
+        - id: HTML ID (default: name)
+        - placeholder: Placeholder icon
+        - label: Optional label
+        - strip_prefix: If true, ti- prefix is stripped from value
+        - required: If true, field is required
+#}
+
+{% macro icon_input(name, value='', id=none, placeholder='ti-icons', label=none, strip_prefix=false, required=false) %}
+{% set field_id = id or name %}
+{% set display_value = value %}
+{% set preview_icon = value if value and value.startswith('ti-') else ('ti-' ~ value if value else placeholder) %}
+
+{% if label %}
+<label class="form-label" for="{{ field_id }}">{{ label }}</label>
+{% endif %}
+
+<div class="input-group icon-input-group">
+    <span class="input-group-text icon-preview" id="preview-{{ field_id }}">
+        <i class="ti {{ preview_icon }}"></i>
+    </span>
+    <input type="text"
+           class="form-control icon-input"
+           name="{{ name }}"
+           id="{{ field_id }}"
+           value="{{ display_value }}"
+           placeholder="{{ placeholder|replace('ti-', '') if strip_prefix else placeholder }}"
+           {% if strip_prefix %}data-strip-prefix="true"{% endif %}
+           {% if required %}required{% endif %}
+           onchange="updateIconPreviewFor('{{ field_id }}')">
+    <button type="button"
+            class="btn btn-outline-secondary"
+            onclick="openIconPicker('{{ field_id }}')"
+            title="Icon auswählen">
+        <i class="ti ti-search"></i>
+    </button>
+</div>
+{% endmacro %}
+
+
+{#
+    Icon Picker Offcanvas
+
+    Include this once per page (e.g., in modals block).
+#}
+
+{% macro icon_picker_offcanvas() %}
+<div class="offcanvas offcanvas-end" tabindex="-1" id="iconPickerOffcanvas" style="width: 450px;">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title">
+            <i class="ti ti-icons me-2"></i>Icon auswählen
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Schließen"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <div class="p-3 border-bottom bg-light sticky-top">
+            <div class="input-group">
+                <span class="input-group-text"><i class="ti ti-search"></i></span>
+                <input type="text"
+                       class="form-control"
+                       id="iconSearchInput"
+                       placeholder="Icon suchen..."
+                       oninput="filterIcons(this.value)">
+                <button type="button" class="btn btn-outline-secondary" onclick="clearIconSearch()">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <div class="mt-2 d-flex justify-content-between align-items-center">
+                <small class="text-muted"><span id="iconCount">0</span> Icons</small>
+                <small class="text-muted" id="iconLoadingStatus"></small>
+            </div>
+        </div>
+        <div id="iconGrid" class="p-3">
+            <div class="text-center text-muted py-5">
+                <i class="ti ti-loader ti-spin fs-1"></i>
+                <p class="mt-2">Icons werden geladen...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+
+{#
+    Icon Preview (standalone)
+
+    Shows an icon with optional label.
+
+    Usage:
+        {{ icon_preview('ti-users', 'Benutzer') }}
+#}
+
+{% macro icon_preview(icon, label=none, size='fs-4') %}
+<span class="d-inline-flex align-items-center gap-2">
+    <i class="ti {{ icon }} {{ size }}"></i>
+    {% if label %}<span>{{ label }}</span>{% endif %}
+</span>
+{% endmacro %}

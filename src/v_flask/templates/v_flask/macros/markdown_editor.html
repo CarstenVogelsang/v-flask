@@ -1,0 +1,74 @@
+{#
+    Markdown Editor with Image Upload Support
+
+    Usage:
+        from "v_flask/macros/markdown_editor.html" import markdown_editor, markdown_editor_assets
+
+        In form:
+        markdown_editor('beschreibung', task.beschreibung, rows=8,
+                        placeholder='Markdown wird unterstützt...')
+
+        Include assets once at page end:
+        block extra_js:
+            markdown_editor_assets()
+
+    Prerequisites:
+        - Upload endpoint at /api/upload/image (configurable via data-upload-url)
+        - CSRF token in meta tag or hidden input
+
+    Parameters:
+        - name: Field name
+        - value: Current content
+        - rows: Textarea height (default: 8)
+        - placeholder: Placeholder text
+        - id: HTML ID (default: name)
+        - required: Required field
+        - upload_url: Custom upload URL (optional)
+#}
+
+{% macro markdown_editor(name, value='', rows=8, placeholder='', id=None, required=False, upload_url=None) %}
+{% set field_id = id or name %}
+{% set upload_endpoint = upload_url or '/api/upload/image' %}
+
+<div class="markdown-editor" data-upload-url="{{ upload_endpoint }}">
+    <textarea
+        name="{{ name }}"
+        id="{{ field_id }}"
+        class="form-control font-monospace"
+        rows="{{ rows }}"
+        placeholder="{{ placeholder }}"
+        {% if required %}required{% endif %}
+        style="min-height: 120px; resize: vertical;">{{ value }}</textarea>
+</div>
+{% endmacro %}
+
+
+{#
+    Markdown Editor Assets
+
+    Include this once per page that uses markdown editors.
+    Includes marked.js for rendering and the editor JavaScript.
+#}
+
+{% macro markdown_editor_assets() %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="{{ url_for('v_flask_static.static', filename='js/markdown-editor.js') }}"></script>
+{% endmacro %}
+
+
+{#
+    Simple Markdown Display
+
+    Renders markdown content as HTML.
+
+    Usage:
+        {{ markdown_display(task.beschreibung) }}
+#}
+
+{% macro markdown_display(content, class='') %}
+{% if content %}
+<div class="markdown-content {{ class }}">
+    {{ content|markdown|safe }}
+</div>
+{% endif %}
+{% endmacro %}

@@ -1,0 +1,60 @@
+{#
+    Admin Group Header Macro for Sections
+
+    Usage:
+        from "v_flask/macros/admin_group.html" import admin_group_header
+
+        admin_group_header('Stammdaten', 'database', '#3b82f6')
+        ... Tiles/Content ...
+
+        admin_group_header('System', 'settings', '#6b7280')
+        ... Tiles/Content ...
+
+    Parameters:
+        - title: Group title
+        - icon: Icon name without ti- prefix
+        - color_hex: Background color
+        - description: Optional subtitle
+#}
+
+{% macro admin_group_header(title, icon, color_hex, description=None) %}
+<div class="d-flex justify-content-between align-items-center mb-3 mt-5 px-3 py-2 rounded"
+     style="background-color: {{ color_hex }};">
+    <div>
+        <h5 class="mb-0 text-white">
+            <i class="ti ti-{{ icon }} me-2"></i>{{ title }}
+        </h5>
+        {% if description %}
+        <small class="text-white-50">{{ description }}</small>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+
+{#
+    Admin Group Container - Alternative with card styling
+
+    Usage:
+        from "v_flask/macros/admin_group.html" import admin_group
+
+        call admin_group('Stammdaten', 'database', '#3b82f6'):
+            admin_tile(...)
+#}
+
+{% macro admin_group(title, icon, color_hex, description=None) %}
+<div class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3 px-3 py-2 rounded"
+         style="background-color: {{ color_hex }};">
+        <div>
+            <h5 class="mb-0 text-white">
+                <i class="ti ti-{{ icon }} me-2"></i>{{ title }}
+            </h5>
+            {% if description %}
+            <small class="text-white-50">{{ description }}</small>
+            {% endif %}
+        </div>
+    </div>
+    {{ caller() }}
+</div>
+{% endmacro %}

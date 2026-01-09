@@ -1,0 +1,17 @@
+[
+  {
+    "name": "kontakt",
+    "version": "1.0.0",
+    "description": "Kontaktformular mit Admin-Bereich für Anfragen-Verwaltung",
+    "long_description": "Ein vollständiges Kontaktformular-Plugin für v-flask Anwendungen.\n\n**Features:**\n- Öffentliches Kontaktformular mit Server-seitiger Validierung\n- Admin-Bereich zum Verwalten von Anfragen\n- Lese-Status-Tracking (gelesen/ungelesen)\n- Responsive Templates basierend auf DaisyUI\n\nDas Plugin funktioniert standalone ohne externe Abhängigkeiten.",
+    "author": "v-flask",
+    "license": "MIT",
+    "categories": ["forms", "communication"],
+    "tags": ["kontakt", "formular", "contact", "admin", "anfrage", "email"],
+    "package": "v_flask_plugins.kontakt",
+    "class": "KontaktPlugin",
+    "min_v_flask_version": "0.1.0",
+    "homepage": "",
+    "repository": ""
+  }
+]

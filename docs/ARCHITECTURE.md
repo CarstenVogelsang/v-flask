@@ -353,3 +353,34 @@ Zugriff:
 user = User.query.get(1)
 print(user.profile.abteilung)
 ```
+
+---
+
+## Templates & Static Assets
+
+v-flask stellt wiederverwendbare Templates und Static Assets bereit:
+
+```
+src/v_flask/
+├── templates/
+│   └── v_flask/
+│       ├── base.html              # Haupt-Basistemplate
+│       ├── base_minimal.html      # Minimales Layout
+│       └── macros/                # Wiederverwendbare Macros
+└── static/
+    ├── css/v-flask.css           # Core Styles
+    ├── js/                        # JavaScript
+    └── tabler-icons/              # Icon Font
+```
+
+**Verwendung:**
+```jinja2
+{% extends "v_flask/base.html" %}
+
+{% block content %}
+    {% from "v_flask/macros/breadcrumb.html" import breadcrumb %}
+    {{ breadcrumb([...]) }}
+{% endblock %}
+```
+
+Siehe [TEMPLATES.md](TEMPLATES.md) für die vollständige Dokumentation.

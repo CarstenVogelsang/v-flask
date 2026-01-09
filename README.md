@@ -10,6 +10,9 @@ Flask Core Extension - Wiederverwendbares Basis-Paket für Flask-Anwendungen.
 - **Modul Model** - Dashboard Registry für modulare Apps
 - **AuditLog** - Zentrales Logging für Benutzeraktionen
 - **Auth-Decorators** - @admin_required, @mitarbeiter_required
+- **Templates** - Wiederverwendbare Jinja2-Templates und Macros
+- **Theming** - CSS Custom Properties für dynamisches Branding
+- **CLI-Befehle** - flask init-db, flask seed, flask create-admin
 
 ## Installation
 
@@ -49,12 +52,54 @@ def admin_dashboard():
     return 'Admin only!'
 ```
 
+### Templates
+
+Templates erweitern das v-flask Basistemplate:
+
+```jinja2
+{% extends "v_flask/base.html" %}
+
+{% block content %}
+    {% from "v_flask/macros/breadcrumb.html" import breadcrumb %}
+    {{ breadcrumb([
+        {'label': 'Dashboard', 'url': '/', 'icon': 'ti-home'},
+        {'label': 'Kunden'}
+    ]) }}
+
+    <h1>Kundenliste</h1>
+{% endblock %}
+```
+
+Siehe [docs/TEMPLATES.md](docs/TEMPLATES.md) für die vollständige Dokumentation.
+
+### CLI-Befehle
+
+```bash
+# Datenbank initialisieren
+flask init-db
+
+# Core-Daten seeden (Rollen, Permissions)
+flask seed
+
+# Admin-Benutzer erstellen
+flask create-admin
+```
+
+Siehe [docs/CLI.md](docs/CLI.md) für die vollständige Dokumentation.
+
 ## Abhängigkeiten
 
 - Flask >= 3.0
 - Flask-SQLAlchemy >= 3.1
 - Flask-Login >= 0.6
 - Flask-Migrate >= 4.0
+
+### Optionale Abhängigkeiten
+
+```bash
+# Für Markdown-Rendering in Templates
+uv add v-flask[markdown]
+```
 
 ## Entwicklung
 
