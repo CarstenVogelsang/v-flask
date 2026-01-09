@@ -43,6 +43,9 @@ class Betreiber(db.Model):
     secondary_color = db.Column(db.String(7), default='#64748b')
     font_family = db.Column(db.String(100), default='Inter')
 
+    # Custom settings (JSON for project-specific configuration)
+    custom_settings = db.Column(db.JSON, default=dict)
+
     def __repr__(self) -> str:
         return f'<Betreiber {self.name}>'
 
@@ -57,6 +60,7 @@ class Betreiber(db.Model):
             'primary_color': self.primary_color,
             'secondary_color': self.secondary_color,
             'font_family': self.font_family,
+            'custom_settings': self.custom_settings or {},
         }
 
     def get_css_variables(self) -> str:
@@ -70,3 +74,35 @@ class Betreiber(db.Model):
     --v-secondary: {self.secondary_color};
     --v-font-family: '{self.font_family}', sans-serif;
 }}"""
+
+    def get_setting(self, key: str, default=None):
+        """Get a custom setting value.
+
+        Args:
+            key: Setting key to retrieve
+            default: Default value if key not found
+
+        Returns:
+            Setting value or default
+
+        Usage:
+            style = betreiber.get_setting('article_card_style', 'wide')
+        """
+        if self.custom_settings is None:
+            return default
+        return self.custom_settings.get(key, default)
+
+    def set_setting(self, key: str, value) -> None:
+        """Set a custom setting value.
+
+        Args:
+            key: Setting key to set
+            value: Value to store
+
+        Usage:
+            betreiber.set_setting('article_card_style', 'compact')
+            db.session.commit()
+        """
+        if self.custom_settings is None:
+            self.custom_settings = {}
+        self.custom_settings[key] = value
