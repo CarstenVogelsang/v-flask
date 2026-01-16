@@ -1,0 +1,202 @@
+{# Admin Base Layout
+
+Base template for admin pages with sidebar navigation.
+Plugin admin templates should extend this template:
+
+    {% extends "v_flask/admin/base.html" %}
+
+    {% block title %}My Admin Page{% endblock %}
+
+    {% block breadcrumbs %}
+    <div class="breadcrumbs text-sm">
+        <ul>
+            <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+            <li>My Page</li>
+        </ul>
+    </div>
+    {% endblock %}
+
+    {% block content %}
+    <div class="card bg-base-100 shadow-xl">
+        ...
+    </div>
+    {% endblock %}
+
+Satellite projects can override sidebar parts:
+
+    {% extends "v_flask/admin/base.html" %}
+
+    {% block sidebar_header %}
+    <div class="p-4 border-b border-base-300">
+        <a href="{{ url_for('admin.dashboard') }}" class="text-xl font-bold">
+            My App Admin
+        </a>
+    </div>
+    {% endblock %}
+
+    {% block sidebar_nav_before %}
+    <div class="mb-4">
+        <div class="px-3 py-2 text-xs uppercase">My App</div>
+        <ul class="menu menu-sm">
+            <li><a href="/my-page">My Page</a></li>
+        </ul>
+    </div>
+    <div class="divider my-2"></div>
+    {% endblock %}
+
+Blocks available:
+    - title: Page title
+    - head: Additional head content (styles, scripts)
+    - sidebar: Complete sidebar (use for full replacement)
+    - sidebar_header: Sidebar header (logo/site name)
+    - sidebar_nav_before: Navigation before plugins (app-specific)
+    - sidebar_nav_plugins: Plugin navigation
+    - sidebar_nav_after: Navigation after plugins
+    - sidebar_footer: Sidebar footer
+    - breadcrumbs: Breadcrumb navigation
+    - content: Main page content
+    - scripts: Additional scripts before </body>
+#}
+<!DOCTYPE html>
+<html lang="de" data-theme="{{ theme|default('light') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin{% endblock %} - {{ site_name|default('Admin') }}</title>
+
+    {# Tailwind CSS via CDN (production apps should use compiled CSS) #}
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    {# Tabler Icons #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css" />
+
+    {# CSRF Token für AJAX requests #}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen flex bg-base-100">
+
+    {# Admin Sidebar #}
+    {% block sidebar %}
+    <aside class="w-64 bg-base-200 min-h-screen flex flex-col" id="admin-sidebar">
+        {# Sidebar Header #}
+        {% block sidebar_header %}
+        <div class="p-4 border-b border-base-300">
+            <a href="{{ url_for(admin_dashboard_url|default('admin.dashboard')) }}"
+               class="text-xl font-bold flex items-center gap-2 hover:text-primary transition-colors">
+                <i class="ti ti-layout-dashboard"></i>
+                {{ site_name|default('Admin') }}
+            </a>
+        </div>
+        {% endblock %}
+
+        {# Navigation #}
+        <nav class="flex-1 overflow-y-auto p-2">
+            {# App-specific navigation (empty by default) #}
+            {% block sidebar_nav_before %}{% endblock %}
+
+            {# Plugin navigation (from UI slots) #}
+            {% block sidebar_nav_plugins %}
+                {% include 'v_flask/admin/_sidebar_plugins.html' %}
+            {% endblock %}
+
+            {# Additional navigation after plugins #}
+            {% block sidebar_nav_after %}{% endblock %}
+        </nav>
+
+        {# Sidebar Footer #}
+        {% block sidebar_footer %}
+        <div class="p-4 border-t border-base-300">
+            <button class="btn btn-ghost btn-sm w-full justify-start gap-2"
+                    onclick="toggleAdminSidebar()"
+                    title="Sidebar minimieren">
+                <i class="ti ti-chevron-left"></i>
+                <span class="sidebar-text">Minimieren</span>
+            </button>
+        </div>
+        {% endblock %}
+    </aside>
+
+    {# Sidebar styles and scripts #}
+    <style>
+        .sidebar-collapsed #admin-sidebar { width: 4rem; }
+        .sidebar-collapsed #admin-sidebar .sidebar-text,
+        .sidebar-collapsed #admin-sidebar .menu-title,
+        .sidebar-collapsed #admin-sidebar .badge { display: none; }
+        .sidebar-collapsed #admin-sidebar .ti-chevron-left { transform: rotate(180deg); }
+        .sidebar-collapsed #admin-sidebar .menu a { justify-content: center; padding-left: 0; padding-right: 0; }
+        #admin-sidebar { transition: width 0.2s ease-in-out; }
+    </style>
+    <script>
+        function toggleAdminSidebar() {
+            document.body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebar-collapsed', document.body.classList.contains('sidebar-collapsed'));
+        }
+        if (localStorage.getItem('sidebar-collapsed') === 'true') {
+            document.body.classList.add('sidebar-collapsed');
+        }
+    </script>
+    {% endblock %}
+
+    {# Main Content Area #}
+    <main class="flex-1 flex flex-col min-h-screen">
+        {# Top Bar (optional - for user menu, notifications, etc.) #}
+        <header class="bg-base-100 border-b border-base-200 px-6 py-3 flex justify-between items-center">
+            <div>
+                {% block breadcrumbs %}{% endblock %}
+            </div>
+            <div class="flex items-center gap-4">
+                {# User menu #}
+                {% if current_user.is_authenticated %}
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-2">
+                        <i class="ti ti-user-circle text-lg"></i>
+                        <span>{{ current_user.name|default(current_user.email) }}</span>
+                        <i class="ti ti-chevron-down text-xs"></i>
+                    </div>
+                    <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border border-base-200">
+                        <li>
+                            <a href="{{ url_for('auth.logout') }}">
+                                <i class="ti ti-logout"></i>
+                                Abmelden
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </header>
+
+        {# Flash Messages #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="px-6 pt-4 space-y-2">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category if category in ['success', 'warning', 'error', 'info'] else 'info' }} shadow-sm">
+                    <i class="ti ti-{% if category == 'success' %}check{% elif category == 'error' %}x{% elif category == 'warning' %}alert-triangle{% else %}info-circle{% endif %}"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        {# Page Content #}
+        <div class="flex-1 p-6">
+            {% block content %}{% endblock %}
+        </div>
+
+        {# Footer #}
+        <footer class="px-6 py-4 border-t border-base-200 text-sm text-base-content/50">
+            <div class="flex justify-between items-center">
+                <span>Powered by v-flask {{ v_flask_version }}</span>
+                <span>&copy; {{ now().year if now is defined else '2025' }}</span>
+            </div>
+        </footer>
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

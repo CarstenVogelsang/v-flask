@@ -31,7 +31,8 @@ if TYPE_CHECKING:
 VALID_SLOTS = [
     'footer_links',              # Links in the footer
     'navbar_items',              # Items in the navigation bar
-    'admin_sidebar',             # Admin sidebar navigation
+    'admin_sidebar',             # Admin sidebar navigation (deprecated, use admin_menu)
+    'admin_menu',                # Admin menu items (grouped by category)
     'admin_dashboard_widgets',   # Dashboard widget tiles
 ]
 
@@ -240,6 +241,108 @@ class PluginSlotManager:
             'settings_url': item.settings_url,
             **item.extra,
         }
+
+    def get_admin_menu(
+        self,
+        user: Any = None,
+        app: Flask | None = None,
+    ) -> dict[str, list[dict]]:
+        """Get admin menu items grouped by category.
+
+        Plugins define their category via `admin_category` attribute.
+        Menu items come from the `admin_menu` slot (or legacy `admin_sidebar`).
+
+        Args:
+            user: Current user for permission filtering (optional)
+            app: Flask app for endpoint validation (optional)
+
+        Returns:
+            Dictionary mapping category IDs to lists of menu items.
+            Example: {'legal': [{'label': 'Impressum', ...}, ...]}
+        """
+        from v_flask.plugins.categories import ADMIN_CATEGORIES
+
+        grouped: dict[str, list[SlotItem]] = {}
+
+        for plugin in self._plugins:
+            # Get plugin's category (defaults to 'system')
+            category = getattr(plugin, 'admin_category', 'system')
+
+            # Validate category exists
+            if category not in ADMIN_CATEGORIES:
+                category = 'system'
+
+            # Get menu items (support both new 'admin_menu' and legacy 'admin_sidebar')
+            ui_slots = getattr(plugin, 'ui_slots', None)
+            if not ui_slots:
+                continue
+
+            menu_items = ui_slots.get('admin_menu', []) or ui_slots.get('admin_sidebar', [])
+
+            for item_def in menu_items:
+                item = self._create_slot_item(plugin, item_def)
+
+                # Permission check
+                if item.permission and user:
+                    if not self._check_permission(user, item.permission):
+                        continue
+
+                # Endpoint validation
+                if app and not self._validate_endpoint(app, item.url):
+                    continue
+
+                # Resolve badge function
+                if item.badge_func:
+                    item.badge = self._resolve_badge(plugin, item.badge_func)
+
+                # Add to category group
+                if category not in grouped:
+                    grouped[category] = []
+                grouped[category].append(item)
+
+        # Sort items within each category by order
+        result: dict[str, list[dict]] = {}
+        for cat_id, items in grouped.items():
+            items.sort(key=lambda x: x.order)
+            result[cat_id] = [self._to_dict(item) for item in items]
+
+        # Add core v-flask admin menu items (Plugin Management)
+        # These are framework features, not plugins, so they're added here
+        if self._should_show_plugins_menu(user, app):
+            system_items = result.get('system', [])
+            system_items.append({
+                'label': 'Plugins',
+                'url': 'plugins_admin.list_plugins',
+                'icon': 'ti ti-puzzle',
+                'order': 100,
+            })
+            result['system'] = system_items
+
+        return result
+
+    def _should_show_plugins_menu(self, user: Any, app: Flask | None) -> bool:
+        """Check if the Plugins menu should be shown.
+
+        Args:
+            user: Current user for permission check
+            app: Flask app for endpoint validation
+
+        Returns:
+            True if the Plugins menu should be displayed.
+        """
+        # Check if endpoint exists
+        if app and not self._validate_endpoint(app, 'plugins_admin.list_plugins'):
+            return False
+
+        # Check user permission (admins always have access)
+        if user:
+            if hasattr(user, 'is_admin') and user.is_admin:
+                return True
+            if hasattr(user, 'has_permission'):
+                return user.has_permission('plugins.manage')
+
+        # If no user check needed, show the menu
+        return True
 
     @property
     def registered_plugins(self) -> list[str]:
