@@ -196,9 +196,71 @@ class VFlask:
                 user = current_user if current_user.is_authenticated else None
                 return self.slot_manager.get_items(slot_name, user=user, app=app)
 
+            def get_admin_menu() -> dict[str, list[dict]]:
+                """Get admin menu items grouped by category.
+
+                Returns:
+                    Dict mapping category IDs to lists of menu items.
+                    Example: {'legal': [{'label': 'Impressum', ...}]}
+                """
+                from flask_login import current_user
+                user = current_user if current_user.is_authenticated else None
+                return self.slot_manager.get_admin_menu(user=user, app=app)
+
+            def get_admin_categories() -> dict[str, dict]:
+                """Get all admin categories with their metadata.
+
+                Returns:
+                    Dict mapping category ID to category info (label, icon, order).
+                """
+                from v_flask.plugins.categories import ADMIN_CATEGORIES
+                return ADMIN_CATEGORIES
+
+            def get_sorted_admin_categories() -> list[tuple[str, dict]]:
+                """Get admin categories sorted by display order.
+
+                Returns:
+                    List of (category_id, category_info) tuples sorted by order.
+                """
+                from v_flask.plugins.categories import get_sorted_categories
+                return get_sorted_categories()
+
+            def get_help_text(schluessel: str):
+                """Get help text by key for use in templates.
+
+                Used by help_icon macro to display context-sensitive help.
+
+                Args:
+                    schluessel: Unique key (e.g. 'impressum.editor')
+
+                Returns:
+                    HelpText instance if found and active, None otherwise.
+                """
+                from v_flask.models import HelpText
+                return HelpText.query.filter_by(
+                    schluessel=schluessel,
+                    aktiv=True
+                ).first()
+
+            def safe_csrf_token():
+                """Get CSRF token if Flask-WTF is available, empty string otherwise.
+
+                This provides a fallback for apps that don't use Flask-WTF's CSRF protection.
+                """
+                try:
+                    from flask_wtf.csrf import generate_csrf
+                    return generate_csrf()
+                except (ImportError, RuntimeError):
+                    return ''
+
             return {
                 'get_betreiber': get_betreiber,
                 'get_plugin_slots': get_plugin_slots,
+                'get_admin_menu': get_admin_menu,
+                'get_admin_categories': get_admin_categories,
+                'get_sorted_admin_categories': get_sorted_admin_categories,
+                'get_help_text': get_help_text,
+                'csrf_token': safe_csrf_token,
                 'v_flask_version': __version__,
                 'restart_required': get_restart_required,
                 'scheduled_restart': get_scheduled_restart,
@@ -414,12 +476,14 @@ class VFlask:
         This method is called automatically at the end of init_app().
         """
         # Load activated plugins from database
+        # Note: We need an app context for database queries
         try:
-            loaded = self.plugin_manager.load_activated_plugins(self.plugin_registry)
-            if loaded:
-                app.logger.info(
-                    f"Loaded {len(loaded)} activated plugin(s) from database: {', '.join(loaded)}"
-                )
+            with app.app_context():
+                loaded = self.plugin_manager.load_activated_plugins(self.plugin_registry)
+                if loaded:
+                    app.logger.info(
+                        f"Loaded {len(loaded)} activated plugin(s) from database: {', '.join(loaded)}"
+                    )
         except Exception as e:
             # Don't fail startup if plugin loading fails (DB might not exist yet)
             app.logger.warning(f"Could not load activated plugins: {e}")

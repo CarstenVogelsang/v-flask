@@ -38,6 +38,12 @@ uv run pytest -v     # Verbose Tests
 
 > ⚠️ **WICHTIG:** Das Quell-Projekt wird NIEMALS geändert! Nur LESEN!
 
+## Test-Projekt (Frühstückenclick)
+
+**Pfad:** `/Users/cvogelsang/projektz/vz_fruehstueckenclick/`
+
+Wird zum Testen von v-flask Plugins und Features verwendet.
+
 ## Technische Dokumentation
 
 Detaillierte Spezifikationen findest du in:
@@ -45,3 +51,15 @@ Detaillierte Spezifikationen findest du in:
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Package-Struktur, Models
 - **[docs/AUTH-SYSTEM.md](docs/AUTH-SYSTEM.md)** - Permission-System, Decorators
 - **[docs/IMPLEMENTATION-CHECKLIST.md](docs/IMPLEMENTATION-CHECKLIST.md)** - Implementierungs-Status
+
+## Admin Template Guidelines
+
+Für Plugin-Entwicklung und Admin-Template-Erstellung siehe:
+
+→ **[docs/PLUGIN-DEVELOPMENT.md](docs/PLUGIN-DEVELOPMENT.md)** - Section "Admin Template UI Guidelines"
+
+Dort findest du:
+- Admin View Layout Pattern (Breadcrumb → Titel → Content)
+- Pflicht-Elemente (Base Template, Blocks)
+- DaisyUI vs Bootstrap Mapping
+- Template-Struktur Referenz
