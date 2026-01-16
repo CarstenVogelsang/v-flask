@@ -1,0 +1,59 @@
+{# Impressum Preview Partial - Used by editor.html and HTMX live preview #}
+
+{# Completeness indicator #}
+{% if completeness is defined %}
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <small class="text-muted">Vollständigkeit</small>
+        <small class="fw-bold {{ 'text-success' if completeness >= 80 else 'text-warning' if completeness >= 50 else 'text-danger' }}">
+            {{ completeness }}%
+        </small>
+    </div>
+    <div class="progress" style="height: 6px;">
+        <div class="progress-bar {{ 'bg-success' if completeness >= 80 else 'bg-warning' if completeness >= 50 else 'bg-danger' }}"
+             role="progressbar"
+             style="width: {{ completeness }}%"
+             aria-valuenow="{{ completeness }}"
+             aria-valuemin="0"
+             aria-valuemax="100">
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# Validation summary #}
+{% if validation %}
+    {% if not validation.is_valid %}
+    <div class="alert alert-danger py-2 mb-3" role="alert">
+        <small>
+            <i class="ti ti-alert-circle me-1"></i>
+            {{ validation.errors|length }} Pflichtangabe{{ 'n' if validation.errors|length > 1 else '' }} fehlt
+        </small>
+    </div>
+    {% elif validation.has_warnings %}
+    <div class="alert alert-warning py-2 mb-3" role="alert">
+        <small>
+            <i class="ti ti-alert-triangle me-1"></i>
+            {{ validation.warnings|length }} Empfehlung{{ 'en' if validation.warnings|length > 1 else '' }}
+        </small>
+    </div>
+    {% else %}
+    <div class="alert alert-success py-2 mb-3" role="alert">
+        <small>
+            <i class="ti ti-check me-1"></i>
+            Impressum vollständig
+        </small>
+    </div>
+    {% endif %}
+{% endif %}
+
+{# Preview content #}
+<div class="impressum-preview">
+    {% if preview_html %}
+    {{ preview_html|safe }}
+    {% else %}
+    <p class="text-muted fst-italic">
+        Fülle die Felder aus, um eine Vorschau zu sehen.
+    </p>
+    {% endif %}
+</div>

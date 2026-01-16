@@ -1,0 +1,281 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ fragebogen.titel }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('fragebogen_admin.index') }}">Fragebögen</a></li>
+        <li>{{ fragebogen.titel }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-clipboard-list text-primary mr-2"></i>{{ fragebogen.titel }}
+        {% if fragebogen.version_nummer > 1 %}
+        <span class="badge badge-ghost">V{{ fragebogen.version_nummer }}</span>
+        {% endif %}
+    </h1>
+    <div class="flex gap-2">
+        {% if fragebogen.is_entwurf %}
+        <a href="{{ url_for('fragebogen_admin.edit', fragebogen_id=fragebogen.id) }}"
+           class="btn btn-outline btn-sm">
+            <i class="ti ti-edit mr-1"></i> Bearbeiten
+        </a>
+        <form action="{{ url_for('fragebogen_admin.change_status', fragebogen_id=fragebogen.id) }}" method="post" class="inline">
+            <input type="hidden" name="action" value="aktivieren">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="ti ti-player-play mr-1"></i> Aktivieren
+            </button>
+        </form>
+        {% elif fragebogen.is_aktiv %}
+        <a href="{{ url_for('fragebogen_admin.teilnehmer', fragebogen_id=fragebogen.id) }}"
+           class="btn btn-outline btn-sm">
+            <i class="ti ti-users mr-1"></i> Teilnehmer
+        </a>
+        <a href="{{ url_for('fragebogen_admin.auswertung', fragebogen_id=fragebogen.id) }}"
+           class="btn btn-outline btn-sm">
+            <i class="ti ti-chart-bar mr-1"></i> Auswertung
+        </a>
+        <form action="{{ url_for('fragebogen_admin.change_status', fragebogen_id=fragebogen.id) }}" method="post" class="inline">
+            <input type="hidden" name="action" value="schliessen">
+            <button type="submit" class="btn btn-warning btn-sm">
+                <i class="ti ti-player-stop mr-1"></i> Schließen
+            </button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('fragebogen_admin.auswertung', fragebogen_id=fragebogen.id) }}"
+           class="btn btn-outline btn-sm">
+            <i class="ti ti-chart-bar mr-1"></i> Auswertung
+        </a>
+        <a href="{{ url_for('fragebogen_admin.export_xlsx', fragebogen_id=fragebogen.id) }}"
+           class="btn btn-outline btn-sm">
+            <i class="ti ti-download mr-1"></i> Export
+        </a>
+        <form action="{{ url_for('fragebogen_admin.change_status', fragebogen_id=fragebogen.id) }}" method="post" class="inline">
+            <input type="hidden" name="action" value="reaktivieren">
+            <button type="submit" class="btn btn-secondary btn-sm">
+                <i class="ti ti-player-play mr-1"></i> Reaktivieren
+            </button>
+        </form>
+        {% endif %}
+
+        <div class="dropdown dropdown-end">
+            <label tabindex="0" class="btn btn-ghost btn-sm">
+                <i class="ti ti-dots-vertical"></i>
+            </label>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                {% if fragebogen.ist_neueste_version %}
+                <li>
+                    <form action="{{ url_for('fragebogen_admin.duplicate', fragebogen_id=fragebogen.id) }}" method="post">
+                        <button type="submit" class="w-full text-left">
+                            <i class="ti ti-copy"></i> Neue Version erstellen
+                        </button>
+                    </form>
+                </li>
+                {% endif %}
+                {% if not fragebogen.archiviert %}
+                <li>
+                    <form action="{{ url_for('fragebogen_admin.change_status', fragebogen_id=fragebogen.id) }}" method="post">
+                        <input type="hidden" name="action" value="archivieren">
+                        <button type="submit" class="w-full text-left">
+                            <i class="ti ti-archive"></i> Archivieren
+                        </button>
+                    </form>
+                </li>
+                {% else %}
+                <li>
+                    <form action="{{ url_for('fragebogen_admin.change_status', fragebogen_id=fragebogen.id) }}" method="post">
+                        <input type="hidden" name="action" value="dearchivieren">
+                        <button type="submit" class="w-full text-left">
+                            <i class="ti ti-archive-off"></i> Wiederherstellen
+                        </button>
+                    </form>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{# Status Badge #}
+<div class="mb-6">
+    {% if fragebogen.status == 'entwurf' %}
+    <span class="badge badge-ghost badge-lg">
+        <i class="ti ti-pencil mr-1"></i> Entwurf
+    </span>
+    {% elif fragebogen.status == 'aktiv' %}
+    <span class="badge badge-success badge-lg">
+        <i class="ti ti-player-play mr-1"></i> Aktiv seit {{ fragebogen.aktiviert_am.strftime('%d.%m.%Y') if fragebogen.aktiviert_am else '-' }}
+    </span>
+    {% else %}
+    <span class="badge badge-secondary badge-lg">
+        <i class="ti ti-player-stop mr-1"></i> Geschlossen am {{ fragebogen.geschlossen_am.strftime('%d.%m.%Y') if fragebogen.geschlossen_am else '-' }}
+    </span>
+    {% endif %}
+
+    {% if fragebogen.erlaubt_anonym %}
+    <span class="badge badge-info badge-lg ml-2">
+        <i class="ti ti-user-question mr-1"></i> Anonyme Teilnahme
+    </span>
+    {% endif %}
+
+    {% if fragebogen.archiviert %}
+    <span class="badge badge-outline badge-lg ml-2">
+        <i class="ti ti-archive mr-1"></i> Archiviert
+    </span>
+    {% endif %}
+</div>
+
+{# Stats Cards #}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-primary">
+            <i class="ti ti-file-text text-3xl"></i>
+        </div>
+        <div class="stat-title">Seiten</div>
+        <div class="stat-value text-primary">{{ fragebogen.anzahl_seiten }}</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-secondary">
+            <i class="ti ti-help text-3xl"></i>
+        </div>
+        <div class="stat-title">Fragen</div>
+        <div class="stat-value text-secondary">{{ fragebogen.anzahl_fragen }}</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-info">
+            <i class="ti ti-users text-3xl"></i>
+        </div>
+        <div class="stat-title">Teilnehmer</div>
+        <div class="stat-value text-info">{{ stats.gesamt }}</div>
+        <div class="stat-desc">{{ stats.anonym }} anonym</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-success">
+            <i class="ti ti-check text-3xl"></i>
+        </div>
+        <div class="stat-title">Abgeschlossen</div>
+        <div class="stat-value text-success">{{ stats.abgeschlossen }}</div>
+        <div class="stat-desc">
+            {% if stats.gesamt > 0 %}
+            {{ ((stats.abgeschlossen / stats.gesamt) * 100)|round|int }}%
+            {% else %}
+            -
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Description #}
+{% if fragebogen.beschreibung %}
+<div class="card bg-base-100 shadow mb-6">
+    <div class="card-body">
+        <h2 class="card-title">Beschreibung</h2>
+        <p>{{ fragebogen.beschreibung }}</p>
+    </div>
+</div>
+{% endif %}
+
+{# Question Preview #}
+<div class="card bg-base-100 shadow mb-6">
+    <div class="card-body">
+        <h2 class="card-title mb-4">
+            <i class="ti ti-list mr-2"></i>Fragenübersicht
+        </h2>
+
+        {% if fragebogen.is_v2 %}
+        {% for seite in fragebogen.seiten %}
+        <div class="collapse collapse-arrow bg-base-200 mb-2">
+            <input type="checkbox" {% if loop.first %}checked{% endif %}>
+            <div class="collapse-title font-medium">
+                {{ seite.titel }}
+                <span class="badge badge-ghost badge-sm ml-2">{{ seite.fragen|length }} Fragen</span>
+            </div>
+            <div class="collapse-content">
+                <ul class="list-disc list-inside">
+                    {% for frage in seite.fragen %}
+                    <li class="py-1">
+                        <span class="font-medium">{{ frage.frage }}</span>
+                        <span class="badge badge-outline badge-xs ml-2">{{ frage.typ }}</span>
+                        {% if frage.pflicht %}
+                        <span class="text-error">*</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="ti ti-alert-triangle"></i>
+            <span>V1-Schema wird nicht mehr unterstützt. Bitte auf V2 migrieren.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Anonymous Link Generator (if enabled) #}
+{% if fragebogen.erlaubt_anonym and fragebogen.is_aktiv %}
+<div class="card bg-base-100 shadow mb-6">
+    <div class="card-body">
+        <h2 class="card-title mb-4">
+            <i class="ti ti-link mr-2"></i>Anonymer Teilnahme-Link
+        </h2>
+        <div class="flex gap-4 items-end">
+            <div class="form-control flex-1">
+                <label class="label">
+                    <span class="label-text">Öffentlicher Link für anonyme Teilnahme</span>
+                </label>
+                <input type="text" readonly class="input input-bordered"
+                       id="anonym-link"
+                       value="{{ url_for('fragebogen_public.start_anonymous', fragebogen_id=fragebogen.id, _external=True) }}">
+            </div>
+            <button class="btn btn-outline" onclick="copyAnonymLink()">
+                <i class="ti ti-copy mr-1"></i> Kopieren
+            </button>
+        </div>
+        <p class="text-sm text-base-content/60 mt-2">
+            Dieser Link erstellt bei jedem Aufruf eine neue anonyme Teilnahme.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+{# Version Chain #}
+{% if fragebogen.vorgaenger_id or fragebogen.nachfolger.count() > 0 %}
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        <h2 class="card-title mb-4">
+            <i class="ti ti-git-branch mr-2"></i>Versionsverlauf
+        </h2>
+        <ul class="steps steps-vertical">
+            {% for version in fragebogen.version_kette %}
+            <li class="step {% if version.id == fragebogen.id %}step-primary{% endif %}">
+                <a href="{{ url_for('fragebogen_admin.detail', fragebogen_id=version.id) }}"
+                   class="{% if version.id == fragebogen.id %}font-bold{% endif %}">
+                    V{{ version.version_nummer }}: {{ version.titel }}
+                    <span class="badge badge-ghost badge-sm">{{ version.status }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function copyAnonymLink() {
+    const input = document.getElementById('anonym-link');
+    input.select();
+    document.execCommand('copy');
+    // Optional: Show toast notification
+}
+</script>
+{% endblock %}

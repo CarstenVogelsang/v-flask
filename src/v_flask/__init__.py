@@ -498,6 +498,7 @@ class VFlask:
 
         # Clear restart flag after successful startup
         try:
-            self.restart_manager.clear_restart_flag()
+            with app.app_context():
+                self.restart_manager.clear_restart_flag()
         except Exception:
             pass  # Ignore if DB not ready

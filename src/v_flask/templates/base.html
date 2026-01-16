@@ -1,0 +1,26 @@
+{#
+    Overridable Base Template for Plugins
+
+    This template serves as a bridge that allows host applications to override
+    the base template used by plugins.
+
+    How it works:
+    1. Plugins extend "base.html" (without namespace)
+    2. Jinja2 ChoiceLoader searches in priority order:
+       - Host app templates (highest priority)
+       - v-flask templates (this file)
+       - Plugin templates
+    3. If host app has its own base.html, plugins use that
+    4. Otherwise, this fallback redirects to v_flask/base.html
+
+    For host apps:
+    - Create your own templates/base.html to override this
+    - Plugins will automatically use your app's layout
+
+    Required blocks that plugins may use:
+    - title: Page title
+    - content: Main page content
+    - extra_css: Additional CSS
+    - extra_js: Additional JavaScript
+#}
+{% extends "v_flask/base.html" %}

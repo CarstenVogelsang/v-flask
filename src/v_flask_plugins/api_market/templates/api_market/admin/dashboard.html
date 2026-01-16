@@ -1,0 +1,111 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}API Marketplace - Admin{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">API Marketplace</h1>
+            <p class="text-gray-600">{{ active_count }} aktive APIs</p>
+        </div>
+        <a href="{{ url_for('api_market_admin.add_api') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-2"></i>
+            API hinzufügen
+        </a>
+    </div>
+
+    <!-- API List -->
+    {% if apis %}
+    <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Slug</th>
+                    <th>Status</th>
+                    <th>Spec URL</th>
+                    <th>Zuletzt aktualisiert</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for api in apis %}
+                <tr>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            {% if api.icon_url %}
+                            <img src="{{ api.icon_url }}" alt="" class="w-8 h-8 rounded">
+                            {% else %}
+                            <div class="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
+                                <i class="ti ti-api text-primary"></i>
+                            </div>
+                            {% endif %}
+                            <span class="font-medium">{{ api.name }}</span>
+                        </div>
+                    </td>
+                    <td><code class="text-sm">{{ api.slug }}</code></td>
+                    <td>
+                        {% if api.status == 'active' %}
+                        <span class="badge badge-success">Aktiv</span>
+                        {% elif api.status == 'inactive' %}
+                        <span class="badge badge-ghost">Inaktiv</span>
+                        {% elif api.status == 'maintenance' %}
+                        <span class="badge badge-warning">Wartung</span>
+                        {% else %}
+                        <span class="badge">{{ api.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="max-w-xs truncate">
+                        <a href="{{ api.spec_url }}" target="_blank" class="link link-primary text-sm">
+                            {{ api.spec_url[:50] }}{% if api.spec_url|length > 50 %}...{% endif %}
+                        </a>
+                    </td>
+                    <td>
+                        {% if api.spec_cached_at %}
+                        {{ api.spec_cached_at.strftime('%d.%m.%Y %H:%M') }}
+                        {% else %}
+                        <span class="text-gray-400">Nie</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex gap-2">
+                            <form action="{{ url_for('api_market_admin.refresh_spec', api_id=api.id) }}" method="POST" class="inline">
+                                <button type="submit" class="btn btn-ghost btn-sm" title="Spec aktualisieren">
+                                    <i class="ti ti-refresh"></i>
+                                </button>
+                            </form>
+                            <a href="{{ url_for('api_market_admin.edit_api', api_id=api.id) }}" class="btn btn-ghost btn-sm" title="Bearbeiten">
+                                <i class="ti ti-edit"></i>
+                            </a>
+                            <a href="{{ url_for('api_market.api_detail', slug=api.slug) }}" target="_blank" class="btn btn-ghost btn-sm" title="Ansehen">
+                                <i class="ti ti-external-link"></i>
+                            </a>
+                            <form action="{{ url_for('api_market_admin.delete_api', api_id=api.id) }}" method="POST" class="inline" onsubmit="return confirm('API wirklich löschen?')">
+                                <button type="submit" class="btn btn-ghost btn-sm text-error" title="Löschen">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body text-center py-12">
+            <i class="ti ti-api text-6xl text-gray-300 mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Keine APIs registriert</h2>
+            <p class="text-gray-600 mb-4">Füge deine erste API zum Marketplace hinzu.</p>
+            <a href="{{ url_for('api_market_admin.add_api') }}" class="btn btn-primary">
+                <i class="ti ti-plus mr-2"></i>
+                Erste API hinzufügen
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

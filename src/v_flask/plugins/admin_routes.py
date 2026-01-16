@@ -10,6 +10,7 @@ from flask_login import current_user
 
 from v_flask.auth import permission_required
 from v_flask.plugins.manager import (
+    DependencyNotActivatedError,
     PluginManager,
     PluginNotFoundError,
     PluginNotInstalledError,
@@ -75,6 +76,8 @@ def activate_plugin(name: str):
         flash(f'Plugin "{name}" wurde nicht gefunden.', 'error')
     except PluginNotInstalledError as e:
         flash(f'Plugin "{name}" ist nicht installiert: {e}', 'error')
+    except DependencyNotActivatedError as e:
+        flash(str(e), 'warning')
     except Exception as e:
         flash(f'Fehler beim Aktivieren: {e}', 'error')
 

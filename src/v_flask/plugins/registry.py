@@ -281,7 +281,59 @@ class PluginRegistry:
                     f"{list(plugin.ui_slots.keys())}"
                 )
 
+        # 8. Seed help texts (if plugin provides any)
+        help_texts = plugin.get_help_texts()
+        if help_texts:
+            self._seed_help_texts(app, plugin, help_texts)
+
         app.logger.info(f"Plugin initialized: {plugin}")
+
+    def _seed_help_texts(
+        self, app: Flask, plugin: PluginManifest, help_texts: list[dict]
+    ) -> None:
+        """Seed help texts from a plugin.
+
+        Only creates new help texts - existing ones are not updated
+        to preserve administrator customizations.
+
+        Args:
+            app: Flask application instance.
+            plugin: Plugin providing the help texts.
+            help_texts: List of help text dictionaries.
+        """
+        from v_flask.extensions import db
+        from v_flask.models import HelpText
+
+        try:
+            created = 0
+            for help_data in help_texts:
+                schluessel = help_data.get('schluessel')
+                if not schluessel:
+                    continue
+
+                # Only create if doesn't exist (preserve customizations)
+                existing = HelpText.query.filter_by(schluessel=schluessel).first()
+                if existing is None:
+                    help_text = HelpText(
+                        schluessel=schluessel,
+                        titel=help_data.get('titel', schluessel),
+                        inhalt_markdown=help_data.get('inhalt_markdown', ''),
+                        plugin=plugin.name,
+                    )
+                    db.session.add(help_text)
+                    created += 1
+
+            if created > 0:
+                db.session.commit()
+                app.logger.debug(
+                    f"Plugin '{plugin.name}': Seeded {created} help text(s)"
+                )
+        except Exception as e:
+            # Don't fail plugin init if help text seeding fails
+            # (e.g., database table might not exist yet)
+            app.logger.warning(
+                f"Plugin '{plugin.name}': Could not seed help texts: {e}"
+            )
 
     @property
     def is_initialized(self) -> bool:

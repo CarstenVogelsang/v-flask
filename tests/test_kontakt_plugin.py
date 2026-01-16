@@ -24,6 +24,17 @@ def create_mock_auth_blueprint():
     return auth_bp
 
 
+def create_mock_admin_blueprint():
+    """Create a mock admin blueprint for testing plugin templates."""
+    admin_bp = Blueprint('admin', __name__)
+
+    @admin_bp.route('/')
+    def dashboard():
+        return 'Admin Dashboard'
+
+    return admin_bp
+
+
 @pytest.fixture
 def app_with_kontakt():
     """Create a Flask app with Kontakt plugin."""
@@ -34,8 +45,9 @@ def app_with_kontakt():
     app.config['SECRET_KEY'] = 'test-secret-key'
     app.config['WTF_CSRF_ENABLED'] = False
 
-    # Register mock auth blueprint for template to work
+    # Register mock blueprints for template to work
     app.register_blueprint(create_mock_auth_blueprint(), url_prefix='/auth')
+    app.register_blueprint(create_mock_admin_blueprint(), url_prefix='/admin')
 
     v_flask = VFlask()
     v_flask.register_plugin(KontaktPlugin())
@@ -90,7 +102,7 @@ class TestKontaktPluginManifest:
         plugin = KontaktPlugin()
 
         assert plugin.name == 'kontakt'
-        assert plugin.version == '1.0.0'
+        assert plugin.version == '1.1.0'  # Updated for UI slots
         assert plugin.author == 'v-flask'
         assert plugin.dependencies == []
 
@@ -129,7 +141,7 @@ class TestKontaktPluginManifest:
         assert 'forms' in plugin.categories
         assert 'communication' in plugin.categories
         assert 'kontakt' in plugin.tags
-        assert plugin.min_v_flask_version == '0.1.0'
+        assert plugin.min_v_flask_version == '0.2.0'  # Requires UI slots feature
         assert len(plugin.long_description) > 50  # Has substantial description
 
     def test_plugin_get_readme(self):

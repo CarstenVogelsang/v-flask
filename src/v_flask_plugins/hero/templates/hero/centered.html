@@ -1,0 +1,37 @@
+{# Hero Section: Centered - Text zentriert über Bild #}
+{#
+   Variables:
+   - hero: HeroSection model instance
+   - title: Rendered title string
+   - subtitle: Rendered subtitle string
+#}
+
+<div class="hero min-h-[400px] rounded-box mb-8 relative overflow-hidden"
+     style="{% if hero.image_path %}background-image: url('{{ url_for('static', filename=hero.image_path.lstrip('/')) }}'); background-size: cover; background-position: center;{% else %}background: linear-gradient(135deg, oklch(var(--p)), oklch(var(--a)));{% endif %}">
+
+    {# Background overlay for better text readability #}
+    <div class="hero-overlay bg-base-content/40 rounded-box"></div>
+
+    <div class="hero-content text-center text-neutral-content z-10">
+        <div class="max-w-lg">
+            {% if title %}
+            <h1 class="text-5xl font-bold drop-shadow-lg">
+                {{ title }}
+            </h1>
+            {% endif %}
+
+            {% if subtitle %}
+            <p class="py-6 text-lg drop-shadow">
+                {{ subtitle }}
+            </p>
+            {% endif %}
+
+            {% if hero.cta_text and hero.cta_link %}
+            <a href="{{ hero.cta_link }}"
+               class="btn btn-primary btn-lg">
+                {{ hero.cta_text }}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>

@@ -1,28 +1,28 @@
-{% extends "v_flask/base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Kontakt{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h4 class="mb-0">
-                        <i class="ti ti-mail me-2"></i>Kontakt
-                    </h4>
-                </div>
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-center">
+        <div class="w-full max-w-lg">
+            <div class="card bg-base-100 shadow-xl">
                 <div class="card-body">
-                    <p class="text-muted mb-4">
+                    <h2 class="card-title mb-2">
+                        <i class="ti ti-mail mr-2"></i>Kontakt
+                    </h2>
+                    <p class="text-base-content/60 mb-6">
                         Hast du eine Frage oder möchtest uns etwas mitteilen?
                         Fülle einfach das Formular aus und wir melden uns so schnell wie möglich.
                     </p>
 
                     <form method="POST" action="{{ url_for('kontakt.form') }}">
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Name *</label>
+                        <div class="form-control mb-4">
+                            <label class="label" for="name">
+                                <span class="label-text">Name <span class="text-error">*</span></span>
+                            </label>
                             <input type="text"
-                                   class="form-control"
+                                   class="input input-bordered w-full"
                                    id="name"
                                    name="name"
                                    value="{{ name|default('', true) }}"
@@ -30,10 +30,12 @@
                                    placeholder="Dein Name">
                         </div>
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label">E-Mail *</label>
+                        <div class="form-control mb-4">
+                            <label class="label" for="email">
+                                <span class="label-text">E-Mail <span class="text-error">*</span></span>
+                            </label>
                             <input type="email"
-                                   class="form-control"
+                                   class="input input-bordered w-full"
                                    id="email"
                                    name="email"
                                    value="{{ email|default('', true) }}"
@@ -41,9 +43,11 @@
                                    placeholder="deine@email.de">
                         </div>
 
-                        <div class="mb-3">
-                            <label for="nachricht" class="form-label">Nachricht *</label>
-                            <textarea class="form-control"
+                        <div class="form-control mb-6">
+                            <label class="label" for="nachricht">
+                                <span class="label-text">Nachricht <span class="text-error">*</span></span>
+                            </label>
+                            <textarea class="textarea textarea-bordered w-full"
                                       id="nachricht"
                                       name="nachricht"
                                       rows="5"
@@ -51,11 +55,9 @@
                                       placeholder="Deine Nachricht an uns...">{{ nachricht|default('', true) }}</textarea>
                         </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="ti ti-send me-2"></i>Nachricht senden
-                            </button>
-                        </div>
+                        <button type="submit" class="btn btn-primary w-full">
+                            <i class="ti ti-send mr-2"></i>Nachricht senden
+                        </button>
                     </form>
                 </div>
             </div>

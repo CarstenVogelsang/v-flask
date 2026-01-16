@@ -1,91 +1,96 @@
-{% extends "v_flask/base.html" %}
+{% extends "admin/base.html" %}
 
 {% block title %}Kontaktanfragen{% endblock %}
 
-{% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-0">
-                <i class="ti ti-mail me-2"></i>Kontaktanfragen
-            </h2>
-            {% if unread_count > 0 %}
-            <small class="text-muted">
-                {{ unread_count }} ungelesene Nachricht{% if unread_count != 1 %}en{% endif %}
-            </small>
-            {% endif %}
-        </div>
-    </div>
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-messages mr-1"></i>Kommunikation</li>
+        <li>Kontaktanfragen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-mail text-primary mr-2"></i>Kontaktanfragen
+        {% if unread_count > 0 %}
+        <span class="badge badge-primary ml-2">{{ unread_count }} ungelesen</span>
+        {% endif %}
+    </h1>
+</div>
 
     {% if anfragen %}
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
+    <div class="card bg-base-100 shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
                 <thead>
                     <tr>
-                        <th style="width: 40px;"></th>
+                        <th class="w-10"></th>
                         <th>Name</th>
                         <th>E-Mail</th>
                         <th>Nachricht</th>
                         <th>Datum</th>
-                        <th style="width: 150px;">Aktionen</th>
+                        <th class="w-40">Aktionen</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for anfrage in anfragen %}
-                    <tr class="{% if not anfrage.gelesen %}table-warning{% endif %}">
+                    <tr class="{% if not anfrage.gelesen %}bg-warning/10{% endif %}">
                         <td class="text-center">
                             {% if not anfrage.gelesen %}
-                            <span class="badge bg-primary" title="Ungelesen">
+                            <span class="badge badge-primary" title="Ungelesen">
                                 <i class="ti ti-mail"></i>
                             </span>
                             {% else %}
-                            <span class="text-muted" title="Gelesen">
+                            <span class="text-base-content/40" title="Gelesen">
                                 <i class="ti ti-mail-opened"></i>
                             </span>
                             {% endif %}
                         </td>
                         <td>
                             <a href="{{ url_for('kontakt_admin.detail', anfrage_id=anfrage.id) }}"
-                               class="{% if not anfrage.gelesen %}fw-bold{% endif %}">
+                               class="link link-hover {% if not anfrage.gelesen %}font-bold{% endif %}">
                                 {{ anfrage.name }}
                             </a>
                         </td>
                         <td>
-                            <a href="mailto:{{ anfrage.email }}">{{ anfrage.email }}</a>
+                            <a href="mailto:{{ anfrage.email }}" class="link link-primary">{{ anfrage.email }}</a>
                         </td>
                         <td>
-                            <span class="text-truncate d-inline-block" style="max-width: 300px;">
+                            <span class="text-sm truncate inline-block max-w-xs">
                                 {{ anfrage.nachricht[:100] }}{% if anfrage.nachricht|length > 100 %}...{% endif %}
                             </span>
                         </td>
                         <td>
-                            <small class="text-muted">
+                            <span class="text-base-content/60 text-sm">
                                 {{ anfrage.created_at.strftime('%d.%m.%Y %H:%M') }}
-                            </small>
+                            </span>
                         </td>
                         <td>
-                            <div class="btn-group btn-group-sm">
+                            <div class="join">
                                 <a href="{{ url_for('kontakt_admin.detail', anfrage_id=anfrage.id) }}"
-                                   class="btn btn-outline-primary"
+                                   class="btn btn-outline btn-primary btn-sm join-item"
                                    title="Anzeigen">
                                     <i class="ti ti-eye"></i>
                                 </a>
                                 <form action="{{ url_for('kontakt_admin.toggle_read', anfrage_id=anfrage.id) }}"
                                       method="POST"
-                                      class="d-inline">
+                                      class="inline">
                                     <button type="submit"
-                                            class="btn btn-outline-secondary"
+                                            class="btn btn-outline btn-sm join-item"
                                             title="{% if anfrage.gelesen %}Als ungelesen markieren{% else %}Als gelesen markieren{% endif %}">
                                         <i class="ti ti-{% if anfrage.gelesen %}mail{% else %}mail-opened{% endif %}"></i>
                                     </button>
                                 </form>
                                 <form action="{{ url_for('kontakt_admin.delete', anfrage_id=anfrage.id) }}"
                                       method="POST"
-                                      class="d-inline"
+                                      class="inline"
                                       onsubmit="return confirm('Anfrage wirklich löschen?');">
                                     <button type="submit"
-                                            class="btn btn-outline-danger"
+                                            class="btn btn-outline btn-error btn-sm join-item"
                                             title="Löschen">
                                         <i class="ti ti-trash"></i>
                                     </button>
@@ -99,10 +104,9 @@
         </div>
     </div>
     {% else %}
-    <div class="alert alert-info">
-        <i class="ti ti-info-circle me-2"></i>
-        Noch keine Kontaktanfragen eingegangen.
-    </div>
-    {% endif %}
+<div class="alert alert-info">
+    <i class="ti ti-info-circle mr-2"></i>
+    Noch keine Kontaktanfragen eingegangen.
 </div>
+{% endif %}
 {% endblock %}

@@ -1,0 +1,253 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Stock-Fotos{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('media_admin.library') }}">Media-Library</a></li>
+        <li>Stock-Fotos</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-camera text-primary"></i>
+        <span>Stock-Fotos</span>
+    </h1>
+    <a href="{{ url_for('media_admin.library') }}" class="btn btn-ghost btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Zuruck
+    </a>
+</div>
+
+{# Provider Tabs #}
+<div class="tabs tabs-boxed mb-6">
+    <a href="{{ url_for('media_admin.stock_search', provider='pexels', q=query, orientation=orientation) }}"
+       class="tab {% if provider == 'pexels' %}tab-active{% endif %}">
+        <i class="ti ti-brand-pexels mr-1"></i> Pexels
+    </a>
+    <a href="{{ url_for('media_admin.stock_search', provider='unsplash', q=query, orientation=orientation) }}"
+       class="tab {% if provider == 'unsplash' %}tab-active{% endif %}">
+        <i class="ti ti-brand-unsplash mr-1"></i> Unsplash
+    </a>
+</div>
+
+{% if not is_configured %}
+{# API Key Missing #}
+<div class="alert alert-warning mb-6">
+    <i class="ti ti-alert-triangle"></i>
+    <div>
+        <p class="font-medium">API-Key nicht konfiguriert</p>
+        <p class="text-sm">
+            {% if provider == 'pexels' %}
+            Bitte setze <code>PEXELS_API_KEY</code> in der .env Datei.
+            <a href="https://www.pexels.com/api/" target="_blank" class="link">API-Key holen</a>
+            {% else %}
+            Bitte setze <code>UNSPLASH_ACCESS_KEY</code> in der .env Datei.
+            <a href="https://unsplash.com/developers" target="_blank" class="link">API-Key holen</a>
+            {% endif %}
+        </p>
+    </div>
+</div>
+{% else %}
+
+{# Search Form #}
+<div class="card bg-base-100 shadow-xl mb-6">
+    <div class="card-body py-4">
+        <form method="get" class="flex flex-wrap items-end gap-4">
+            <input type="hidden" name="provider" value="{{ provider }}">
+
+            <div class="form-control flex-1 min-w-[200px]">
+                <label class="label">
+                    <span class="label-text">Suche</span>
+                </label>
+                <input type="text"
+                       name="q"
+                       class="input input-bordered"
+                       value="{{ query }}"
+                       placeholder="z.B. Fruhstuck, Kaffee, Restaurant...">
+            </div>
+
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Ausrichtung</span>
+                </label>
+                <select name="orientation" class="select select-bordered">
+                    <option value="">Alle</option>
+                    <option value="landscape" {% if orientation == 'landscape' %}selected{% endif %}>Querformat</option>
+                    <option value="portrait" {% if orientation == 'portrait' %}selected{% endif %}>Hochformat</option>
+                    <option value="square" {% if orientation == 'square' %}selected{% endif %}>Quadratisch</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="ti ti-search mr-1"></i> Suchen
+            </button>
+        </form>
+    </div>
+</div>
+
+{# Results #}
+{% if results and results.photos %}
+<div class="mb-4 text-sm text-base-content/70">
+    {{ results.total_results|default(0) }} Ergebnisse gefunden
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    {% for photo in results.photos %}
+    <div class="card bg-base-100 shadow hover:shadow-lg transition-shadow group">
+        <figure class="relative aspect-[4/3] bg-base-200 overflow-hidden">
+            <img src="{{ photo.src.medium if provider == 'pexels' else photo.urls.small }}"
+                 alt="{{ photo.alt if provider == 'pexels' else photo.description or 'Unsplash Photo' }}"
+                 class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                 loading="lazy">
+
+            {# Import Button Overlay #}
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <form action="{{ url_for('media_admin.stock_import') }}" method="post">
+                    <input type="hidden" name="provider" value="{{ provider }}">
+                    <input type="hidden" name="photo_id" value="{{ photo.id }}">
+                    {% if provider == 'pexels' %}
+                    <input type="hidden" name="photo_url" value="{{ photo.src.large2x }}">
+                    <input type="hidden" name="photographer" value="{{ photo.photographer }}">
+                    <input type="hidden" name="photographer_url" value="{{ photo.photographer_url }}">
+                    <input type="hidden" name="alt_text" value="{{ photo.alt or '' }}">
+                    {% else %}
+                    <input type="hidden" name="photo_url" value="{{ photo.urls.full }}">
+                    <input type="hidden" name="photographer" value="{{ photo.user.name }}">
+                    <input type="hidden" name="photographer_url" value="{{ photo.user.links.html }}">
+                    <input type="hidden" name="alt_text" value="{{ photo.description or photo.alt_description or '' }}">
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="ti ti-download mr-1"></i> Importieren
+                    </button>
+                </form>
+            </div>
+        </figure>
+        <div class="card-body p-2">
+            <p class="text-xs text-base-content/70 truncate">
+                <i class="ti ti-user text-xs mr-1"></i>
+                {{ photo.photographer if provider == 'pexels' else photo.user.name }}
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{# Pagination #}
+{% if results.total_results and results.total_results > 15 %}
+<div class="flex justify-center mt-6">
+    <div class="join">
+        {% if page > 1 %}
+        <a href="{{ url_for('media_admin.stock_search', provider=provider, q=query, page=page-1, orientation=orientation) }}"
+           class="join-item btn btn-sm">
+            <i class="ti ti-chevron-left"></i>
+        </a>
+        {% endif %}
+
+        <span class="join-item btn btn-sm btn-disabled">
+            Seite {{ page }}
+        </span>
+
+        {% if results.photos|length == 15 %}
+        <a href="{{ url_for('media_admin.stock_search', provider=provider, q=query, page=page+1, orientation=orientation) }}"
+           class="join-item btn btn-sm">
+            <i class="ti ti-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% elif query %}
+<div class="text-center py-12 text-base-content/60">
+    <i class="ti ti-photo-off text-4xl mb-2"></i>
+    <p>Keine Fotos fur "{{ query }}" gefunden.</p>
+</div>
+{% else %}
+{# Show curated/editorial photos when no search #}
+{% if results and results.photos %}
+<div class="mb-4">
+    <h2 class="text-lg font-semibold">
+        {% if provider == 'pexels' %}
+        <i class="ti ti-star mr-1"></i> Kuratierte Fotos
+        {% else %}
+        <i class="ti ti-star mr-1"></i> Redaktionelle Auswahl
+        {% endif %}
+    </h2>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    {% for photo in results.photos %}
+    <div class="card bg-base-100 shadow hover:shadow-lg transition-shadow group">
+        <figure class="relative aspect-[4/3] bg-base-200 overflow-hidden">
+            <img src="{{ photo.src.medium if provider == 'pexels' else photo.urls.small }}"
+                 alt="{{ photo.alt if provider == 'pexels' else photo.description or 'Unsplash Photo' }}"
+                 class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                 loading="lazy">
+
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <form action="{{ url_for('media_admin.stock_import') }}" method="post">
+                    <input type="hidden" name="provider" value="{{ provider }}">
+                    <input type="hidden" name="photo_id" value="{{ photo.id }}">
+                    {% if provider == 'pexels' %}
+                    <input type="hidden" name="photo_url" value="{{ photo.src.large2x }}">
+                    <input type="hidden" name="photographer" value="{{ photo.photographer }}">
+                    <input type="hidden" name="photographer_url" value="{{ photo.photographer_url }}">
+                    <input type="hidden" name="alt_text" value="{{ photo.alt or '' }}">
+                    {% else %}
+                    <input type="hidden" name="photo_url" value="{{ photo.urls.full }}">
+                    <input type="hidden" name="photographer" value="{{ photo.user.name }}">
+                    <input type="hidden" name="photographer_url" value="{{ photo.user.links.html }}">
+                    <input type="hidden" name="alt_text" value="{{ photo.description or photo.alt_description or '' }}">
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="ti ti-download mr-1"></i> Importieren
+                    </button>
+                </form>
+            </div>
+        </figure>
+        <div class="card-body p-2">
+            <p class="text-xs text-base-content/70 truncate">
+                <i class="ti ti-user text-xs mr-1"></i>
+                {{ photo.photographer if provider == 'pexels' else photo.user.name }}
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-12 text-base-content/60">
+    <i class="ti ti-search text-4xl mb-2"></i>
+    <p>Gib einen Suchbegriff ein, um Fotos zu finden.</p>
+</div>
+{% endif %}
+{% endif %}
+
+{% endif %}
+
+{# Attribution Info #}
+<div class="mt-8">
+    <div class="alert">
+        <i class="ti ti-info-circle"></i>
+        <div>
+            <p class="font-medium">Lizenzhinweis</p>
+            <p class="text-sm">
+                {% if provider == 'pexels' %}
+                Alle Fotos stehen unter der <a href="https://www.pexels.com/license/" target="_blank" class="link">Pexels Lizenz</a>.
+                Attribution wird automatisch hinzugefugt.
+                {% else %}
+                Alle Fotos stehen unter der <a href="https://unsplash.com/license" target="_blank" class="link">Unsplash Lizenz</a>.
+                Attribution wird automatisch hinzugefugt.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

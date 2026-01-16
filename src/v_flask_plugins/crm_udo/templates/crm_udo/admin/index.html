@@ -1,0 +1,91 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}CRM - Dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li>CRM</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-building-community mr-2"></i>CRM Dashboard
+    </h1>
+</div>
+
+{# Stats Cards #}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    {# Unternehmen Card #}
+    <a href="{{ url_for('crm_udo_admin.unternehmen_list') }}"
+       class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+        <div class="card-body">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <i class="ti ti-building text-2xl text-primary"></i>
+                </div>
+                <div>
+                    <p class="text-3xl font-bold">{{ unternehmen_count }}</p>
+                    <p class="text-base-content/60">Unternehmen</p>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    {# Organisationen Card #}
+    <div class="card bg-base-100 shadow opacity-60">
+        <div class="card-body">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-lg bg-secondary/10 flex items-center justify-center">
+                    <i class="ti ti-users-group text-2xl text-secondary"></i>
+                </div>
+                <div>
+                    <p class="text-3xl font-bold">-</p>
+                    <p class="text-base-content/60">Organisationen</p>
+                    <p class="text-xs text-base-content/40">Coming Soon</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Kontakte Card #}
+    <div class="card bg-base-100 shadow opacity-60">
+        <div class="card-body">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <i class="ti ti-address-book text-2xl text-accent"></i>
+                </div>
+                <div>
+                    <p class="text-3xl font-bold">-</p>
+                    <p class="text-base-content/60">Kontakte</p>
+                    <p class="text-xs text-base-content/40">Coming Soon</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Quick Actions #}
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        <h2 class="card-title mb-4">Schnellaktionen</h2>
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url_for('crm_udo_admin.unternehmen_neu') }}"
+               class="btn btn-primary">
+                <i class="ti ti-plus mr-2"></i>
+                Neues Unternehmen
+            </a>
+            <a href="{{ url_for('crm_udo_admin.unternehmen_list') }}"
+               class="btn btn-outline">
+                <i class="ti ti-list mr-2"></i>
+                Unternehmen anzeigen
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,386 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ projekt.name }} - Projektverwaltung{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-article mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('projektverwaltung_admin.index') }}">Projektverwaltung</a></li>
+        <li>{{ projekt.name }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<style>
+    .kanban-board {
+        display: flex;
+        gap: 0.75rem;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+        min-height: calc(100vh - 320px);
+    }
+    .kanban-column {
+        flex: 1 1 200px;
+        min-width: 200px;
+        max-width: 280px;
+        background: oklch(var(--b2));
+        border-radius: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 280px);
+    }
+    .kanban-column-header {
+        padding: 0.5rem 0.75rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-bottom: 3px solid;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .kanban-column[data-status="backlog"] .kanban-column-header { border-color: oklch(var(--bc) / 0.3); }
+    .kanban-column[data-status="geplant"] .kanban-column-header { border-color: oklch(var(--p)); }
+    .kanban-column[data-status="in_arbeit"] .kanban-column-header { border-color: oklch(var(--wa)); }
+    .kanban-column[data-status="review"] .kanban-column-header { border-color: oklch(var(--in)); }
+    .kanban-column[data-status="erledigt"] .kanban-column-header { border-color: oklch(var(--su)); }
+    .kanban-tasks {
+        flex: 1;
+        padding: 0.5rem;
+        overflow-y: auto;
+        min-height: 100px;
+    }
+    .kanban-task {
+        background: oklch(var(--b1));
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        cursor: grab;
+        transition: box-shadow 0.2s, opacity 0.2s;
+    }
+    .kanban-task:hover {
+        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    .kanban-task.sortable-ghost {
+        opacity: 0.4;
+    }
+    .kanban-task.archived {
+        opacity: 0.5;
+        border-left: 3px solid oklch(var(--bc) / 0.3);
+    }
+    .kanban-task.archived .kanban-task-title {
+        text-decoration: line-through;
+    }
+    #taskEditorDrawer {
+        width: 100%;
+        max-width: 550px;
+    }
+</style>
+
+{# Title Row #}
+<div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+    <div class="flex items-center gap-3">
+        <h1 class="text-xl font-bold">
+            <i class="ti ti-folder text-primary mr-2"></i>{{ projekt.name }}
+        </h1>
+        <span class="badge badge-{{ 'secondary' if projekt.ist_kundenprojekt else 'ghost' }}">
+            {{ 'Kunde' if projekt.ist_kundenprojekt else 'Intern' }}
+        </span>
+    </div>
+    <div class="flex gap-2">
+        <a href="{{ url_for('projektverwaltung_admin.komponente_neu', projekt_id=projekt.id) }}"
+           class="btn btn-primary btn-sm">
+            <i class="ti ti-plus mr-1"></i> Komponente
+        </a>
+        <a href="{{ url_for('projektverwaltung_admin.projekt_bearbeiten', id=projekt.id) }}"
+           class="btn btn-outline btn-sm">
+            <i class="ti ti-settings"></i>
+        </a>
+    </div>
+</div>
+
+{# Component Tabs #}
+{% if komponenten %}
+<div class="tabs tabs-boxed mb-4">
+    {% for komp in komponenten_direkt %}
+    <a class="tab{% if aktive_komponente and aktive_komponente.id == komp.id %} tab-active{% endif %}"
+       href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id, komponente=komp.id) }}">
+        {% if komp.prd_nummer %}PRD-{{ komp.prd_nummer }}{% else %}{{ komp.name[:15] }}{% endif %}
+    </a>
+    {% endfor %}
+    {% if komponenten_dropdown %}
+    <div class="dropdown dropdown-end">
+        <label tabindex="0" class="tab">+{{ komponenten_dropdown|length }}</label>
+        <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-50">
+            {% for komp in komponenten_dropdown %}
+            <li>
+                <a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id, komponente=komp.id) }}">
+                    {% if komp.prd_nummer %}PRD-{{ komp.prd_nummer }} - {% endif %}{{ komp.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if aktive_komponente %}
+{# Component Info Row #}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4 pb-3 border-b border-base-300">
+    <div class="flex items-center gap-3">
+        <span class="font-semibold">
+            <i class="ti {{ aktive_komponente.icon or 'ti-package' }} mr-1"></i>
+            {{ aktive_komponente.name }}
+        </span>
+        <span class="badge badge-info badge-sm">{{ aktive_komponente.aktuelle_phase|upper }}</span>
+        <div class="btn-group btn-group-horizontal">
+            <a href="{{ url_for('projektverwaltung_admin.prd_editor', id=aktive_komponente.id) }}"
+               class="btn btn-ghost btn-xs" title="PRD bearbeiten">
+                <i class="ti ti-file-text"></i>
+            </a>
+            <a href="{{ url_for('projektverwaltung_admin.changelog_liste', id=aktive_komponente.id) }}"
+               class="btn btn-ghost btn-xs" title="Changelog">
+                <i class="ti ti-history"></i>
+            </a>
+            <a href="{{ url_for('projektverwaltung_admin.komponente_bearbeiten', id=aktive_komponente.id) }}"
+               class="btn btn-ghost btn-xs" title="Bearbeiten">
+                <i class="ti ti-edit"></i>
+            </a>
+        </div>
+    </div>
+
+    {# Phase Filter #}
+    <div class="btn-group btn-group-horizontal">
+        <a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id, komponente=aktive_komponente.id) }}"
+           class="btn btn-sm{% if not phase_filter %} btn-active{% endif %}">
+            Alle
+        </a>
+        {% for value, label in phasen %}
+        <a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id, komponente=aktive_komponente.id, phase=value) }}"
+           class="btn btn-sm{% if phase_filter == value %} btn-active{% endif %}">
+            {{ label }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{# Kanban Board #}
+<div class="kanban-board" id="kanban-board" data-komponente-id="{{ aktive_komponente.id }}">
+    {% for status in task_status_liste %}
+    <div class="kanban-column" data-status="{{ status.value }}">
+        <div class="kanban-column-header">
+            <span>{{ status.name.replace('_', ' ').title() }}</span>
+            {% set current_count = tasks_by_status.get(status.value, [])|length %}
+            {% set total_count = tasks_total_by_status.get(status.value, 0) %}
+            <span class="badge badge-ghost badge-sm">
+                {{ current_count }}{% if current_count != total_count %} ({{ total_count }}){% endif %}
+            </span>
+        </div>
+
+        {% if status.value == 'backlog' %}
+        <div class="p-2 pb-0">
+            <input type="text" class="input input-sm input-bordered w-full"
+                   placeholder="+ Neuer Task..." id="new-task-input"
+                   onkeypress="if(event.key==='Enter') addQuickTask(this)">
+        </div>
+        {% endif %}
+
+        <div class="kanban-tasks" id="tasks-{{ status.value }}">
+            {% for task in tasks_by_status.get(status.value, []) %}
+            {% if not phase_filter or task.phase == phase_filter %}
+            <div class="kanban-task{% if task.ist_archiviert %} archived{% endif %}"
+                 data-task-id="{{ task.id }}" onclick="openTaskEditor({{ task.id }})">
+                <div class="flex justify-between items-center text-xs opacity-60 mb-1">
+                    <span class="font-mono">{{ task.task_nummer }}</span>
+                    <div class="flex items-center gap-1">
+                        {% if task.entstanden_aus_id %}
+                        <i class="ti ti-git-branch text-info" title="Entstanden aus {{ task.entstanden_aus_nummer }}"></i>
+                        {% endif %}
+                        <i class="ti {{ task.typ_icon }}"></i>
+                    </div>
+                </div>
+                <div class="kanban-task-title font-medium text-sm">{{ task.titel }}</div>
+                <div class="flex gap-1 mt-2 flex-wrap">
+                    <span class="badge {{ task.prioritaet_badge }} badge-sm">{{ task.prioritaet }}</span>
+                    {% if task.phase %}
+                    <span class="badge badge-ghost badge-sm">{{ task.phase|upper }}</span>
+                    {% endif %}
+                    {% if task.zugewiesen %}
+                    <span class="ml-auto" title="{{ task.zugewiesen_name }}">
+                        <i class="ti ti-user text-xs"></i>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+{# No component selected #}
+<div class="text-center py-12">
+    <i class="ti ti-layout-kanban text-6xl opacity-30"></i>
+    <h3 class="text-xl font-semibold mt-4">Keine Komponente ausgewählt</h3>
+    <p class="text-base-content/60 mt-2">Wähle eine Komponente aus den Tabs oben oder erstelle eine neue.</p>
+    <a href="{{ url_for('projektverwaltung_admin.komponente_neu', projekt_id=projekt.id) }}"
+       class="btn btn-primary mt-4">
+        <i class="ti ti-plus mr-1"></i> Erste Komponente anlegen
+    </a>
+</div>
+{% endif %}
+
+{# Task Editor Drawer #}
+<div class="drawer drawer-end">
+    <input id="task-drawer" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-side z-50">
+        <label for="task-drawer" class="drawer-overlay"></label>
+        <div id="taskEditorDrawer" class="bg-base-100 min-h-full p-6">
+            <div id="taskEditorContent">
+                <div class="flex justify-center py-12">
+                    <span class="loading loading-spinner loading-lg"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+const komponenteId = {{ aktive_komponente.id if aktive_komponente else 'null' }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (!komponenteId) return;
+
+    document.querySelectorAll('.kanban-tasks').forEach(function(el) {
+        new Sortable(el, {
+            group: 'tasks',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function(evt) {
+                const taskId = evt.item.dataset.taskId;
+                const newStatus = evt.to.id.replace('tasks-', '');
+                const order = Array.from(evt.to.children)
+                    .filter(el => el.classList.contains('kanban-task'))
+                    .map(el => el.dataset.taskId);
+
+                fetch('{{ url_for("projektverwaltung_admin.tasks_reorder") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        task_id: taskId,
+                        status: newStatus,
+                        order: order
+                    })
+                });
+
+                updateColumnCounts();
+            }
+        });
+    });
+});
+
+function updateColumnCounts() {
+    document.querySelectorAll('.kanban-column').forEach(function(col) {
+        const count = col.querySelectorAll('.kanban-task').length;
+        col.querySelector('.kanban-column-header .badge').textContent = count;
+    });
+}
+
+function addQuickTask(input) {
+    const titel = input.value.trim();
+    if (!titel) return;
+
+    fetch('{{ url_for("projektverwaltung_admin.task_neu", komponente_id=aktive_komponente.id if aktive_komponente else 0) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: new URLSearchParams({ 'titel': titel, 'status': 'backlog' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        location.reload();
+    });
+}
+
+function openTaskEditor(taskId) {
+    const content = document.getElementById('taskEditorContent');
+    const drawer = document.getElementById('task-drawer');
+
+    content.innerHTML = '<div class="flex justify-center py-12"><span class="loading loading-spinner loading-lg"></span></div>';
+    drawer.checked = true;
+
+    fetch(`{{ url_for('projektverwaltung_admin.index') }}task/${taskId}`)
+        .then(response => response.text())
+        .then(html => {
+            content.innerHTML = html;
+        });
+}
+
+function saveTask(form) {
+    const formData = new FormData(form);
+    const taskId = form.dataset.taskId;
+
+    fetch(`{{ url_for('projektverwaltung_admin.index') }}task/${taskId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        location.reload();
+    });
+    return false;
+}
+
+function deleteTask(taskId) {
+    if (!confirm('Task wirklich löschen?')) return;
+
+    fetch(`{{ url_for('projektverwaltung_admin.index') }}task/${taskId}/delete`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+async function copyTaskAsPrompt(taskId) {
+    try {
+        const response = await fetch(`/api/tasks/${taskId}/prompt`);
+        if (!response.ok) throw new Error('API-Fehler');
+        const data = await response.json();
+        await navigator.clipboard.writeText(data.prompt);
+        alert(`${data.task_nummer} als KI-Prompt kopiert`);
+    } catch (error) {
+        console.error('Fehler beim Kopieren:', error);
+        alert('Kopieren fehlgeschlagen');
+    }
+}
+</script>
+{% endblock %}

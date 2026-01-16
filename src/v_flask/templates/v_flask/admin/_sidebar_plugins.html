@@ -1,0 +1,68 @@
+{# Plugin Navigation Partial
+
+Renders plugin menu items grouped by category.
+This partial is included by the admin base template's sidebar_nav_plugins block.
+
+Satellite projects can either:
+1. Use this partial via {{ super() }} or {% include %}
+2. Override sidebar_nav_plugins block entirely for custom rendering
+
+Required context (provided automatically by v-flask):
+    - get_admin_menu(): Returns menu items grouped by category
+    - get_sorted_admin_categories(): Returns categories in display order
+#}
+
+{% set admin_menu = get_admin_menu() %}
+{% set current_path = request.path %}
+
+{% for category_id, category in get_sorted_admin_categories() %}
+    {% set items = admin_menu.get(category_id, []) %}
+
+    {# Only show categories that have items #}
+    {% if items %}
+    <div class="mb-4">
+        {# Category Header #}
+        <div class="px-3 py-2 text-xs uppercase tracking-wider text-base-content/50 font-semibold flex items-center gap-2">
+            <i class="{{ category.icon }} text-sm"></i>
+            <span class="sidebar-text">{{ category.label }}</span>
+        </div>
+
+        {# Menu Items #}
+        <ul class="menu menu-sm bg-transparent">
+            {% for item in items %}
+            {% set item_url = url_for(item.url) %}
+            {% set is_active = current_path.startswith(item_url) %}
+
+            <li>
+                <a href="{{ item_url }}"
+                   class="{{ 'active' if is_active else '' }}"
+                   title="{{ item.label }}">
+                    {% if item.icon %}
+                    <i class="{{ item.icon }}"></i>
+                    {% endif %}
+                    <span class="sidebar-text">{{ item.label }}</span>
+                    {% if item.badge %}
+                    <span class="badge badge-sm badge-primary sidebar-text">{{ item.badge }}</span>
+                    {% endif %}
+                </a>
+
+                {# Submenu if present #}
+                {% if item.children %}
+                <ul>
+                    {% for child in item.children %}
+                    <li>
+                        <a href="{{ url_for(child.url) }}"
+                           class="{{ 'active' if current_path == url_for(child.url) else '' }}"
+                           title="{{ child.label }}">
+                            <span class="sidebar-text">{{ child.label }}</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+{% endfor %}

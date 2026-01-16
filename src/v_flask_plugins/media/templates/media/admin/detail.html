@@ -1,0 +1,266 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ media.title or media.original_filename }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('media_admin.library') }}">Media-Library</a></li>
+        <li>{{ media.original_filename|truncate(30) }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-photo text-primary"></i>
+        <span>{{ media.title or media.original_filename }}</span>
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('media_admin.library') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zuruck
+        </a>
+        <form action="{{ url_for('media_admin.delete', id=media.id) }}"
+              method="post"
+              onsubmit="return confirm('Datei wirklich loschen? Dies kann nicht ruckgangig gemacht werden.');">
+            <button type="submit" class="btn btn-error btn-sm">
+                <i class="ti ti-trash mr-1"></i> Loschen
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {# Image Preview #}
+    <div>
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="ti ti-eye"></i>
+                    Vorschau
+                </h2>
+
+                {% if media.is_image %}
+                <figure class="bg-base-200 rounded-lg overflow-hidden">
+                    <img src="{{ media.get_url('large') }}"
+                         alt="{{ media.alt_text or media.original_filename }}"
+                         class="w-full h-auto">
+                </figure>
+
+                {# Size Variants #}
+                <div class="mt-4">
+                    <p class="text-sm font-medium mb-2">Verfugbare Grossen:</p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ media.url }}" target="_blank" class="badge badge-outline gap-1">
+                            <i class="ti ti-external-link text-xs"></i>
+                            Original {% if media.width %}({{ media.width }}x{{ media.height }}){% endif %}
+                        </a>
+                        {% if media.path_large %}
+                        <a href="{{ media.get_url('large') }}" target="_blank" class="badge badge-outline gap-1">
+                            <i class="ti ti-external-link text-xs"></i>
+                            Large (1200px)
+                        </a>
+                        {% endif %}
+                        {% if media.path_medium %}
+                        <a href="{{ media.get_url('medium') }}" target="_blank" class="badge badge-outline gap-1">
+                            <i class="ti ti-external-link text-xs"></i>
+                            Medium (800px)
+                        </a>
+                        {% endif %}
+                        {% if media.path_small %}
+                        <a href="{{ media.get_url('small') }}" target="_blank" class="badge badge-outline gap-1">
+                            <i class="ti ti-external-link text-xs"></i>
+                            Small (400px)
+                        </a>
+                        {% endif %}
+                        {% if media.path_thumbnail %}
+                        <a href="{{ media.get_url('thumbnail') }}" target="_blank" class="badge badge-outline gap-1">
+                            <i class="ti ti-external-link text-xs"></i>
+                            Thumbnail (150px)
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="flex items-center justify-center py-12 bg-base-200 rounded-lg">
+                    <div class="text-center">
+                        <i class="ti ti-file text-6xl text-base-content/30 mb-2"></i>
+                        <p class="text-base-content/70">{{ media.mime_type }}</p>
+                        <a href="{{ media.url }}" target="_blank" class="btn btn-primary btn-sm mt-4">
+                            <i class="ti ti-download mr-1"></i> Herunterladen
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Attribution #}
+                {% if media.requires_attribution %}
+                <div class="alert alert-info mt-4">
+                    <i class="ti ti-info-circle"></i>
+                    <div>
+                        <p class="font-medium">Attribution erforderlich</p>
+                        <p class="text-sm">{{ media.attribution_html|safe }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Metadata Form #}
+    <div>
+        <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="ti ti-edit"></i>
+                    Metadaten
+                </h2>
+
+                <form method="post"
+                      action="{{ url_for('media_admin.edit', id=media.id) }}"
+                      hx-post="{{ url_for('media_admin.edit', id=media.id) }}"
+                      hx-target="#save-feedback"
+                      hx-swap="innerHTML">
+
+                    <div class="form-control mb-4">
+                        <label class="label" for="alt_text">
+                            <span class="label-text">Alt-Text <span class="text-warning">(SEO)</span></span>
+                        </label>
+                        <input type="text"
+                               class="input input-bordered w-full"
+                               id="alt_text"
+                               name="alt_text"
+                               value="{{ media.alt_text or '' }}"
+                               placeholder="Beschreibung des Bildes...">
+                        <label class="label">
+                            <span class="label-text-alt">Wichtig fur Barrierefreiheit und Suchmaschinen</span>
+                        </label>
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label" for="title">
+                            <span class="label-text">Titel</span>
+                        </label>
+                        <input type="text"
+                               class="input input-bordered w-full"
+                               id="title"
+                               name="title"
+                               value="{{ media.title or '' }}"
+                               placeholder="Anzeige-Titel...">
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label" for="caption">
+                            <span class="label-text">Beschreibung</span>
+                        </label>
+                        <textarea class="textarea textarea-bordered w-full"
+                                  id="caption"
+                                  name="caption"
+                                  rows="3"
+                                  placeholder="Optionale Beschreibung...">{{ media.caption or '' }}</textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-device-floppy mr-1"></i>
+                        Speichern
+                    </button>
+
+                    <div id="save-feedback" class="mt-2"></div>
+                </form>
+            </div>
+        </div>
+
+        {# File Info #}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="ti ti-info-circle"></i>
+                    Datei-Informationen
+                </h2>
+
+                <div class="overflow-x-auto">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td class="font-medium text-base-content/70">Dateiname</td>
+                                <td>{{ media.original_filename }}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium text-base-content/70">Typ</td>
+                                <td>{{ media.mime_type }}</td>
+                            </tr>
+                            {% if media.file_size %}
+                            <tr>
+                                <td class="font-medium text-base-content/70">Grosse</td>
+                                <td>{{ (media.file_size / 1024)|round(1) }} KB</td>
+                            </tr>
+                            {% endif %}
+                            {% if media.width and media.height %}
+                            <tr>
+                                <td class="font-medium text-base-content/70">Abmessungen</td>
+                                <td>{{ media.width }} x {{ media.height }} px</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td class="font-medium text-base-content/70">Quelle</td>
+                                <td>
+                                    {% if media.source == 'upload' %}
+                                    <span class="badge badge-ghost">Upload</span>
+                                    {% elif media.source == 'pexels' %}
+                                    <span class="badge badge-accent">Pexels</span>
+                                    {% elif media.source == 'unsplash' %}
+                                    <span class="badge badge-info">Unsplash</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if media.photographer %}
+                            <tr>
+                                <td class="font-medium text-base-content/70">Fotograf</td>
+                                <td>{{ media.photographer }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td class="font-medium text-base-content/70">Hochgeladen</td>
+                                <td>{{ media.uploaded_at.strftime('%d.%m.%Y %H:%M') if media.uploaded_at else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium text-base-content/70">Pfad</td>
+                                <td><code class="text-xs">{{ media.storage_path }}</code></td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium text-base-content/70">ID</td>
+                                <td>{{ media.id }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {# Copy URL Button #}
+                <div class="mt-4">
+                    <button class="btn btn-outline btn-sm"
+                            onclick="copyToClipboard('{{ media.url }}')">
+                        <i class="ti ti-copy mr-1"></i>
+                        URL kopieren
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show toast or feedback
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-top toast-end';
+        toast.innerHTML = '<div class="alert alert-success"><span>URL kopiert!</span></div>';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Fragebögen{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-article mr-1"></i>Inhalte</li>
+        <li>Fragebögen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-clipboard-list text-primary mr-2"></i>Fragebögen
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('fragebogen_admin.create') }}" class="btn btn-primary btn-sm">
+            <i class="ti ti-plus mr-1"></i> Neuer Fragebogen
+        </a>
+    </div>
+</div>
+
+{# Filters #}
+<div class="flex gap-4 mb-4">
+    <div class="join">
+        <a href="{{ url_for('fragebogen_admin.index', status='all', archived='true' if show_archived else 'false') }}"
+           class="btn btn-sm join-item {% if status_filter == 'all' %}btn-active{% endif %}">
+            Alle
+        </a>
+        <a href="{{ url_for('fragebogen_admin.index', status='entwurf', archived='true' if show_archived else 'false') }}"
+           class="btn btn-sm join-item {% if status_filter == 'entwurf' %}btn-active{% endif %}">
+            Entwürfe
+        </a>
+        <a href="{{ url_for('fragebogen_admin.index', status='aktiv', archived='true' if show_archived else 'false') }}"
+           class="btn btn-sm join-item {% if status_filter == 'aktiv' %}btn-active{% endif %}">
+            Aktiv
+        </a>
+        <a href="{{ url_for('fragebogen_admin.index', status='geschlossen', archived='true' if show_archived else 'false') }}"
+           class="btn btn-sm join-item {% if status_filter == 'geschlossen' %}btn-active{% endif %}">
+            Geschlossen
+        </a>
+    </div>
+
+    <label class="label cursor-pointer gap-2">
+        <span class="label-text">Archivierte anzeigen</span>
+        <input type="checkbox"
+               class="toggle toggle-sm"
+               {% if show_archived %}checked{% endif %}
+               onchange="window.location='{{ url_for('fragebogen_admin.index', status=status_filter, archived='true' if not show_archived else 'false') }}'">
+    </label>
+</div>
+
+{# Fragebogen List #}
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        {% if frageboegen %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Titel</th>
+                        <th>Status</th>
+                        <th>Fragen</th>
+                        <th>Teilnehmer</th>
+                        <th>Abgeschlossen</th>
+                        <th>Erstellt</th>
+                        <th class="text-right">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fb in frageboegen %}
+                    <tr class="{% if fb.archiviert %}opacity-50{% endif %}">
+                        <td>
+                            <a href="{{ url_for('fragebogen_admin.detail', fragebogen_id=fb.id) }}"
+                               class="font-medium hover:text-primary">
+                                {{ fb.titel }}
+                                {% if fb.version_nummer > 1 %}
+                                <span class="badge badge-ghost badge-xs">V{{ fb.version_nummer }}</span>
+                                {% endif %}
+                            </a>
+                            {% if fb.beschreibung %}
+                            <p class="text-sm text-base-content/60 max-w-md truncate">
+                                {{ fb.beschreibung }}
+                            </p>
+                            {% endif %}
+                            {% if fb.archiviert %}
+                            <span class="badge badge-outline badge-xs">Archiviert</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if fb.status == 'entwurf' %}
+                            <span class="badge badge-ghost">Entwurf</span>
+                            {% elif fb.status == 'aktiv' %}
+                            <span class="badge badge-success">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-secondary">Geschlossen</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-outline">{{ fb.anzahl_fragen }}</span>
+                        </td>
+                        <td>{{ fb.anzahl_teilnehmer }}</td>
+                        <td>
+                            <span class="{% if fb.anzahl_abgeschlossen > 0 %}text-success{% endif %}">
+                                {{ fb.anzahl_abgeschlossen }}
+                            </span>
+                        </td>
+                        <td class="text-sm">
+                            {{ fb.erstellt_am.strftime('%d.%m.%Y') if fb.erstellt_am else '-' }}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex gap-1 justify-end">
+                                <a href="{{ url_for('fragebogen_admin.detail', fragebogen_id=fb.id) }}"
+                                   class="btn btn-ghost btn-xs" title="Details">
+                                    <i class="ti ti-eye"></i>
+                                </a>
+                                {% if fb.is_entwurf %}
+                                <a href="{{ url_for('fragebogen_admin.edit', fragebogen_id=fb.id) }}"
+                                   class="btn btn-ghost btn-xs" title="Bearbeiten">
+                                    <i class="ti ti-edit"></i>
+                                </a>
+                                {% endif %}
+                                {% if fb.is_aktiv or fb.is_geschlossen %}
+                                <a href="{{ url_for('fragebogen_admin.auswertung', fragebogen_id=fb.id) }}"
+                                   class="btn btn-ghost btn-xs" title="Auswertung">
+                                    <i class="ti ti-chart-bar"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert">
+            <i class="ti ti-info-circle"></i>
+            <span>Noch keine Fragebögen vorhanden. Erstelle deinen ersten Fragebogen!</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

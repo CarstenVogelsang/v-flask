@@ -25,8 +25,14 @@ dev = [
 markdown = [
     "markdown>=3.5",
 ]
+media = [
+    "pillow>=10.0",
+    "requests>=2.31",
+]
 all = [
     "markdown>=3.5",
+    "pillow>=10.0",
+    "requests>=2.31",
 ]
 
 [build-system]

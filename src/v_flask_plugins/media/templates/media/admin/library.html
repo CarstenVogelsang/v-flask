@@ -1,0 +1,154 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Media-Library{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
+        <li>Media-Library</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-photo text-primary"></i>
+        <span>Media-Library</span>
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('media_admin.stock_search') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-camera mr-1"></i> Stock-Fotos
+        </a>
+        <a href="{{ url_for('media_admin.upload') }}" class="btn btn-primary btn-sm">
+            <i class="ti ti-upload mr-1"></i> Hochladen
+        </a>
+    </div>
+</div>
+
+{# Stats Overview #}
+<div class="stats shadow mb-6 w-full">
+    <div class="stat">
+        <div class="stat-figure text-primary">
+            <i class="ti ti-files text-3xl"></i>
+        </div>
+        <div class="stat-title">Gesamt</div>
+        <div class="stat-value text-primary">{{ stats.total }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-figure text-secondary">
+            <i class="ti ti-photo text-3xl"></i>
+        </div>
+        <div class="stat-title">Bilder</div>
+        <div class="stat-value text-secondary">{{ stats.images }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-figure text-accent">
+            <i class="ti ti-brand-unsplash text-3xl"></i>
+        </div>
+        <div class="stat-title">Pexels</div>
+        <div class="stat-value text-accent">{{ stats.pexels }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-figure text-info">
+            <i class="ti ti-camera text-3xl"></i>
+        </div>
+        <div class="stat-title">Unsplash</div>
+        <div class="stat-value text-info">{{ stats.unsplash }}</div>
+    </div>
+</div>
+
+{# Filters #}
+<div class="card bg-base-100 shadow-xl mb-6">
+    <div class="card-body py-4">
+        <div class="flex flex-wrap items-center gap-4">
+            {# Search #}
+            <div class="form-control flex-1 min-w-[200px]">
+                <div class="input-group">
+                    <input type="text"
+                           name="q"
+                           placeholder="Suchen..."
+                           class="input input-bordered input-sm w-full"
+                           value="{{ search_query or '' }}"
+                           hx-get="{{ url_for('media_admin.search') }}"
+                           hx-trigger="keyup changed delay:300ms"
+                           hx-target="#media-grid"
+                           hx-include="[name='type'], [name='source']">
+                    <button class="btn btn-sm btn-square">
+                        <i class="ti ti-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            {# Type Filter #}
+            <div class="form-control">
+                <select name="type"
+                        class="select select-bordered select-sm"
+                        hx-get="{{ url_for('media_admin.grid') }}"
+                        hx-trigger="change"
+                        hx-target="#media-grid"
+                        hx-include="[name='source']">
+                    <option value="">Alle Typen</option>
+                    <option value="image" {% if current_type == 'image' %}selected{% endif %}>Bilder</option>
+                    <option value="document" {% if current_type == 'document' %}selected{% endif %}>Dokumente</option>
+                    <option value="other" {% if current_type == 'other' %}selected{% endif %}>Sonstige</option>
+                </select>
+            </div>
+
+            {# Source Filter #}
+            <div class="form-control">
+                <select name="source"
+                        class="select select-bordered select-sm"
+                        hx-get="{{ url_for('media_admin.grid') }}"
+                        hx-trigger="change"
+                        hx-target="#media-grid"
+                        hx-include="[name='type']">
+                    <option value="">Alle Quellen</option>
+                    <option value="upload" {% if current_source == 'upload' %}selected{% endif %}>Uploads</option>
+                    <option value="pexels" {% if current_source == 'pexels' %}selected{% endif %}>Pexels</option>
+                    <option value="unsplash" {% if current_source == 'unsplash' %}selected{% endif %}>Unsplash</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Media Grid #}
+<div id="media-grid">
+    {% include 'media/admin/_grid.html' %}
+</div>
+
+{# Pagination #}
+{% if pagination and pagination.pages > 1 %}
+<div class="flex justify-center mt-6">
+    <div class="join">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('media_admin.library', page=pagination.prev_num, type=current_type, source=current_source) }}"
+           class="join-item btn btn-sm">
+            <i class="ti ti-chevron-left"></i>
+        </a>
+        {% endif %}
+
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                <a href="{{ url_for('media_admin.library', page=page_num, type=current_type, source=current_source) }}"
+                   class="join-item btn btn-sm {% if page_num == pagination.page %}btn-active{% endif %}">
+                    {{ page_num }}
+                </a>
+            {% else %}
+                <span class="join-item btn btn-sm btn-disabled">...</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if pagination.has_next %}
+        <a href="{{ url_for('media_admin.library', page=pagination.next_num, type=current_type, source=current_source) }}"
+           class="join-item btn btn-sm">
+            <i class="ti ti-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

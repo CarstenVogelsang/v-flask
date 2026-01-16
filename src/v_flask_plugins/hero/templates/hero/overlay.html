@@ -1,0 +1,45 @@
+{# Hero Section: Overlay - Vollbild mit dunklem Overlay #}
+{#
+   Variables:
+   - hero: HeroSection model instance
+   - title: Rendered title string
+   - subtitle: Rendered subtitle string
+#}
+
+<div class="hero min-h-[500px] rounded-box mb-8 relative overflow-hidden"
+     style="{% if hero.image_path %}background-image: url('{{ url_for('static', filename=hero.image_path.lstrip('/')) }}'); background-size: cover; background-position: center;{% else %}background: linear-gradient(135deg, oklch(var(--p)), oklch(var(--s)));{% endif %}">
+
+    {# Dark gradient overlay #}
+    <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70 rounded-box"></div>
+
+    <div class="hero-content text-center text-white z-10 py-12">
+        <div class="max-w-2xl">
+            {% if title %}
+            <h1 class="text-5xl lg:text-6xl font-bold mb-6 drop-shadow-2xl">
+                {{ title }}
+            </h1>
+            {% endif %}
+
+            {% if subtitle %}
+            <p class="text-xl lg:text-2xl mb-8 text-white/90 drop-shadow-lg max-w-xl mx-auto">
+                {{ subtitle }}
+            </p>
+            {% endif %}
+
+            {% if hero.cta_text and hero.cta_link %}
+            <a href="{{ hero.cta_link }}"
+               class="btn btn-primary btn-lg shadow-xl">
+                {{ hero.cta_text }}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Decorative bottom wave #}
+    <div class="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full">
+            <path fill="currentColor" class="text-base-100"
+                  d="M0,50 C360,100 720,0 1080,50 C1260,75 1380,50 1440,50 L1440,100 L0,100 Z"/>
+        </svg>
+    </div>
+</div>

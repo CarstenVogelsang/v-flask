@@ -82,6 +82,14 @@ class PluginManifest(ABC):
     min_v_flask_version: str = ''    # Minimum required v-flask version
     screenshots: list[str] = []      # Relative paths to screenshot images
 
+    # Optional: Admin navigation category
+    # Determines where this plugin's admin pages appear in the sidebar.
+    # Standard categories: core, directory, content, legal, communication,
+    #                     marketing, users, analytics, ecommerce, system
+    # Host apps can register custom categories via register_category().
+    # See v_flask.plugins.categories for available categories.
+    admin_category: str = 'system'
+
     # Optional: UI Slots for automatic template integration
     # When activated, these UI elements appear in predefined template slots.
     # When deactivated, they automatically disappear.
@@ -222,6 +230,39 @@ class PluginManifest(ABC):
 
         # Fallback to long_description
         return self.long_description if self.long_description else None
+
+    def get_help_texts(self) -> list[dict]:
+        """Return help texts to be seeded when plugin is initialized.
+
+        Help texts provide context-sensitive documentation for admin editors
+        and other UI elements. They are stored in the database and can be
+        customized by the site administrator.
+
+        Each help text dict must have:
+            - schluessel: Unique key (e.g., 'impressum.editor')
+            - titel: Display title for the help modal
+            - inhalt_markdown: Help content in Markdown format
+
+        Returns:
+            List of help text dictionaries.
+
+        Example:
+            def get_help_texts(self):
+                return [{
+                    'schluessel': 'impressum.editor',
+                    'titel': 'Hilfe zum Impressum',
+                    'inhalt_markdown': '''## Warum ein Impressum?
+
+Nach § 5 TMG sind geschäftsmäßige Online-Dienste zur Angabe
+eines Impressums verpflichtet.
+
+## Disclaimer
+
+Dieses Tool ersetzt keine Rechtsberatung.
+'''
+                }]
+        """
+        return []
 
     def to_marketplace_dict(self) -> dict:
         """Return plugin metadata as dictionary for marketplace APIs.

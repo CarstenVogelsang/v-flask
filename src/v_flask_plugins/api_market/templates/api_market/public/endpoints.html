@@ -1,0 +1,27 @@
+{% extends "v_flask/public/base.html" %}
+
+{% block title %}{{ api.name }} - Dokumentation{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumb -->
+    <div class="text-sm breadcrumbs mb-6">
+        <ul>
+            <li><a href="{{ url_for('api_market.list_apis') }}">API Marketplace</a></li>
+            <li><a href="{{ url_for('api_market.api_detail', slug=api.slug) }}">{{ api.name }}</a></li>
+            <li>Dokumentation</li>
+        </ul>
+    </div>
+
+    <h1 class="text-3xl font-bold mb-6">{{ api.name }} - Endpoints</h1>
+
+    {% if api.documentation_html %}
+        {{ api.documentation_html|safe }}
+    {% else %}
+        <div class="alert alert-info">
+            <i class="ti ti-loader animate-spin"></i>
+            <span>Dokumentation wird generiert...</span>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

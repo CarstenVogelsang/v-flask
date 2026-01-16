@@ -1,0 +1,370 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Impressum Editor{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-shield-check mr-1"></i>Rechtliches</li>
+        <li>Impressum</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar with Help Icon #}
+<div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-file-certificate text-primary"></i>
+        <span>Impressum Editor</span>
+        {# Help Icon #}
+        {% set help = get_help_text('impressum.editor') %}
+        {% if help and help.aktiv %}
+        <button type="button" class="btn btn-ghost btn-sm btn-circle" onclick="help_modal_impressum.showModal()" title="Hilfe anzeigen">
+            <i class="ti ti-help text-base-content/60 text-lg"></i>
+        </button>
+        {% endif %}
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('impressum.public') }}" target="_blank" class="btn btn-outline btn-sm">
+            <i class="ti ti-external-link mr-1"></i> Vorschau
+        </a>
+        <button type="submit" form="impressum-form" class="btn btn-primary btn-sm">
+            <i class="ti ti-device-floppy mr-1"></i> Speichern
+        </button>
+    </div>
+</div>
+
+{# Consolidated Status Line #}
+<div class="flex items-center gap-4 mb-6 p-3 bg-base-200 rounded-lg">
+    <div class="flex items-center gap-2">
+        <span class="text-sm font-medium">Vollständigkeit:</span>
+        <progress class="progress progress-primary w-32" value="{{ completeness }}" max="100"></progress>
+        <span class="badge {% if completeness >= 80 %}badge-success{% elif completeness >= 50 %}badge-warning{% else %}badge-error{% endif %}">
+            {{ completeness }}%
+        </span>
+    </div>
+    {% if completeness == 100 %}
+    <span class="text-success text-sm flex items-center"><i class="ti ti-check mr-1"></i>Alle Pflichtangaben vorhanden</span>
+    {% else %}
+    <span class="text-warning text-sm flex items-center"><i class="ti ti-alert-triangle mr-1"></i>Pflichtangaben fehlen</span>
+    {% endif %}
+</div>
+
+{# Help Modal (DaisyUI) #}
+{% if help and help.aktiv %}
+<dialog id="help_modal_impressum" class="modal">
+    <div class="modal-box max-w-2xl">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <h3 class="font-bold text-lg flex items-center gap-2 mb-4">
+            <i class="ti ti-help-circle text-info"></i>
+            {{ help.titel or 'Hilfe zum Impressum' }}
+        </h3>
+        <div class="prose prose-sm max-w-none">
+            {{ help.inhalt_markdown|markdown|safe }}
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+{% endif %}
+
+{# Validation Messages #}
+{% if validation and not validation.is_valid %}
+<div class="alert alert-error mb-4" role="alert">
+    <div>
+        <h3 class="font-bold">
+            <i class="ti ti-alert-circle mr-2"></i>Fehlende Pflichtangaben
+        </h3>
+        <ul class="list-disc list-inside mt-2">
+            {% for error in validation.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{% if validation and validation.has_warnings %}
+<div class="alert alert-warning mb-4" role="alert">
+    <div>
+        <h3 class="font-bold">
+            <i class="ti ti-alert-triangle mr-2"></i>Empfehlungen
+        </h3>
+        <ul class="list-disc list-inside mt-2">
+            {% for warning in validation.warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {# Form Column #}
+    <div>
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('impressum_admin.save') }}" id="impressum-form">
+                        {# Firmenname #}
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-base-content/60 border-b border-base-300 pb-2 mb-4">Unternehmen</h3>
+                            <div class="form-control mb-4">
+                                <label class="label" for="name">
+                                    <span class="label-text">Firmenname <span class="text-error">*</span></span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="name" name="name"
+                                       value="{{ betreiber.name or '' }}" required>
+                            </div>
+                            <div class="form-control mb-4">
+                                <label class="label" for="rechtsform">
+                                    <span class="label-text">Rechtsform</span>
+                                </label>
+                                <select class="select select-bordered w-full" id="rechtsform" name="rechtsform">
+                                    {% for value, label in rechtsformen %}
+                                    <option value="{{ value }}" {{ 'selected' if betreiber.rechtsform == value else '' }}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        {# Anschrift #}
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-base-content/60 border-b border-base-300 pb-2 mb-4">Anschrift</h3>
+                            <div class="form-control mb-4">
+                                <label class="label" for="strasse">
+                                    <span class="label-text">Straße und Hausnummer <span class="text-error">*</span></span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="strasse" name="strasse"
+                                       value="{{ betreiber.strasse or '' }}" placeholder="Musterstraße 1">
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="form-control">
+                                    <label class="label" for="plz">
+                                        <span class="label-text">PLZ <span class="text-error">*</span></span>
+                                    </label>
+                                    <input type="text" class="input input-bordered w-full" id="plz" name="plz"
+                                           value="{{ betreiber.plz or '' }}" placeholder="12345">
+                                </div>
+                                <div class="form-control col-span-2">
+                                    <label class="label" for="ort">
+                                        <span class="label-text">Ort <span class="text-error">*</span></span>
+                                    </label>
+                                    <input type="text" class="input input-bordered w-full" id="ort" name="ort"
+                                           value="{{ betreiber.ort or '' }}" placeholder="Musterstadt">
+                                </div>
+                            </div>
+                            <div class="form-control mt-4">
+                                <label class="label" for="land">
+                                    <span class="label-text">Land</span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="land" name="land"
+                                       value="{{ betreiber.land or 'Deutschland' }}" placeholder="Deutschland">
+                                <label class="label">
+                                    <span class="label-text-alt">Wird nur angezeigt wenn nicht 'Deutschland'</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {# Kontakt #}
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-base-content/60 border-b border-base-300 pb-2 mb-4">Kontakt</h3>
+                            <div class="form-control mb-4">
+                                <label class="label" for="telefon">
+                                    <span class="label-text">Telefon</span>
+                                </label>
+                                <input type="tel" class="input input-bordered w-full" id="telefon" name="telefon"
+                                       value="{{ betreiber.telefon or '' }}" placeholder="+49 123 456789">
+                            </div>
+                            <div class="form-control mb-4">
+                                <label class="label" for="fax">
+                                    <span class="label-text">Fax</span>
+                                </label>
+                                <input type="tel" class="input input-bordered w-full" id="fax" name="fax"
+                                       value="{{ betreiber.fax or '' }}" placeholder="+49 123 456780">
+                            </div>
+                            <div class="form-control mb-4">
+                                <label class="label" for="email">
+                                    <span class="label-text">E-Mail <span class="text-error">*</span></span>
+                                </label>
+                                <input type="email" class="input input-bordered w-full" id="email" name="email"
+                                       value="{{ betreiber.email or '' }}" placeholder="info@example.de">
+                            </div>
+                        </div>
+
+                        {# Vertretung #}
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-base-content/60 border-b border-base-300 pb-2 mb-4">Vertretung</h3>
+                            <div class="form-control mb-4">
+                                <label class="label" for="geschaeftsfuehrer">
+                                    <span class="label-text">Geschäftsführer / Vertretungsberechtigte</span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="geschaeftsfuehrer" name="geschaeftsfuehrer"
+                                       value="{{ betreiber.geschaeftsfuehrer or '' }}"
+                                       placeholder="Max Mustermann, Maria Musterfrau">
+                                <label class="label">
+                                    <span class="label-text-alt">Bei mehreren Personen mit Komma trennen</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {# Handelsregister #}
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-base-content/60 border-b border-base-300 pb-2 mb-4">Handelsregister</h3>
+                            <div class="form-control mb-4">
+                                <label class="label" for="handelsregister_gericht">
+                                    <span class="label-text">Registergericht</span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="handelsregister_gericht" name="handelsregister_gericht"
+                                       value="{{ betreiber.handelsregister_gericht or '' }}"
+                                       placeholder="Amtsgericht Düsseldorf">
+                            </div>
+                            <div class="form-control mb-4">
+                                <label class="label" for="handelsregister_nummer">
+                                    <span class="label-text">Registernummer</span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="handelsregister_nummer" name="handelsregister_nummer"
+                                       value="{{ betreiber.handelsregister_nummer or '' }}"
+                                       placeholder="HRB 12345">
+                            </div>
+                        </div>
+
+                        {# Steuern #}
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-base-content/60 border-b border-base-300 pb-2 mb-4">Steuernummern</h3>
+                            <div class="form-control mb-4">
+                                <label class="label" for="ust_idnr">
+                                    <span class="label-text">USt-IdNr.</span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="ust_idnr" name="ust_idnr"
+                                       value="{{ betreiber.ust_idnr or '' }}"
+                                       placeholder="DE123456789">
+                                <label class="label">
+                                    <span class="label-text-alt">Umsatzsteuer-Identifikationsnummer</span>
+                                </label>
+                            </div>
+                            <div class="form-control mb-4">
+                                <label class="label" for="wirtschafts_idnr">
+                                    <span class="label-text">Wirtschafts-IdNr.</span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="wirtschafts_idnr" name="wirtschafts_idnr"
+                                       value="{{ betreiber.wirtschafts_idnr or '' }}"
+                                       placeholder="DE123456789012">
+                                <label class="label">
+                                    <span class="label-text-alt">Wirtschafts-Identifikationsnummer (optional)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {# Optionen #}
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-base-content/60 border-b border-base-300 pb-2 mb-4">Optionale Angaben</h3>
+
+                            <div class="form-control mb-4">
+                                <label class="label cursor-pointer justify-start gap-4">
+                                    <input type="checkbox" class="toggle toggle-primary" id="show_visdp" name="show_visdp"
+                                           {{ 'checked' if betreiber.get_impressum_option('show_visdp') else '' }}>
+                                    <div>
+                                        <span class="label-text font-medium">V.i.S.d.P. anzeigen</span>
+                                        <p class="text-xs text-base-content/60">Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div id="visdp-field" class="ml-14 mb-4" style="{{ '' if betreiber.get_impressum_option('show_visdp') else 'display: none;' }}">
+                                <div class="form-control">
+                                    <label class="label" for="inhaltlich_verantwortlich">
+                                        <span class="label-text">Inhaltlich Verantwortlicher</span>
+                                    </label>
+                                    <input type="text" class="input input-bordered w-full" id="inhaltlich_verantwortlich" name="inhaltlich_verantwortlich"
+                                           value="{{ betreiber.inhaltlich_verantwortlich or '' }}"
+                                           placeholder="Max Mustermann">
+                                </div>
+                            </div>
+
+                            <div class="form-control mb-4">
+                                <label class="label cursor-pointer justify-start gap-4">
+                                    <input type="checkbox" class="toggle toggle-primary" id="show_streitschlichtung" name="show_streitschlichtung"
+                                           {{ 'checked' if betreiber.get_impressum_option('show_streitschlichtung') else '' }}>
+                                    <div>
+                                        <span class="label-text font-medium">Streitschlichtung anzeigen</span>
+                                        <p class="text-xs text-base-content/60">Hinweis zur EU-Streitschlichtungsplattform</p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div id="streitschlichtung-field" class="ml-14 mb-4" style="{{ '' if betreiber.get_impressum_option('show_streitschlichtung') else 'display: none;' }}">
+                                <div class="form-control">
+                                    <label class="label" for="streitschlichtung_text">
+                                        <span class="label-text">Eigener Streitschlichtungs-Text (optional)</span>
+                                    </label>
+                                    <textarea class="textarea textarea-bordered w-full" id="streitschlichtung_text" name="streitschlichtung_text"
+                                              rows="3" placeholder="Leer lassen für Standardtext">{{ betreiber.get_impressum_option('streitschlichtung_text') or '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {# Preview Column #}
+        <div>
+            <div class="card bg-base-100 shadow-xl sticky top-4">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-eye mr-2"></i>Vorschau
+                    </h2>
+                    <div id="preview-container" class="impressum-preview">
+                        {% include 'impressum/admin/_preview.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Toggle V.i.S.d.P. field visibility
+document.getElementById('show_visdp').addEventListener('change', function() {
+    document.getElementById('visdp-field').style.display = this.checked ? '' : 'none';
+});
+
+// Toggle Streitschlichtung field visibility
+document.getElementById('show_streitschlichtung').addEventListener('change', function() {
+    document.getElementById('streitschlichtung-field').style.display = this.checked ? '' : 'none';
+});
+
+// Note: For full HTMX live preview, add hx-get/hx-trigger attributes to form fields
+// and include HTMX library. Current implementation updates preview on page reload.
+</script>
+
+<style>
+.impressum-preview {
+    line-height: 1.7;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.impressum-preview h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid oklch(var(--p));
+}
+.impressum-preview h3 {
+    font-size: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+.impressum-preview p {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

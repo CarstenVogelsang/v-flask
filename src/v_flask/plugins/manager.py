@@ -32,6 +32,12 @@ class PluginNotInstalledError(PluginManagerError):
     pass
 
 
+class DependencyNotActivatedError(PluginManagerError):
+    """Raised when a required dependency plugin is not activated."""
+
+    pass
+
+
 class PluginManager:
     """Manages plugin discovery, activation, and loading.
 
@@ -159,15 +165,42 @@ class PluginManager:
 
         return result
 
+    def _check_dependencies(self, name: str) -> None:
+        """Check if all plugin dependencies are activated.
+
+        Args:
+            name: The plugin name to check dependencies for.
+
+        Raises:
+            DependencyNotActivatedError: If a dependency is not activated.
+        """
+        info = self.get_plugin_info(name)
+        if not info:
+            return  # Already validated in activate_plugin
+
+        dependencies = info.get('dependencies', [])
+        if not dependencies:
+            return  # No dependencies to check
+
+        activated = set(self.get_activated_plugin_names())
+
+        for dep in dependencies:
+            if dep not in activated:
+                raise DependencyNotActivatedError(
+                    f"Plugin '{name}' benötigt '{dep}', aber '{dep}' ist nicht aktiviert. "
+                    f"Bitte aktiviere zuerst '{dep}'."
+                )
+
     def activate_plugin(self, name: str, user_id: int | None = None) -> bool:
         """Activate a plugin.
 
         This method:
         1. Validates the plugin exists in marketplace
         2. Validates the plugin package is installed
-        3. Creates/updates PluginActivation record
-        4. Sets restart_required flag
-        5. Adds to migrations_pending list
+        3. Validates all dependencies are activated
+        4. Creates/updates PluginActivation record
+        5. Sets restart_required flag
+        6. Adds to migrations_pending list
 
         Args:
             name: The plugin name to activate.
@@ -179,6 +212,7 @@ class PluginManager:
         Raises:
             PluginNotFoundError: If plugin is not in marketplace.
             PluginNotInstalledError: If plugin package is not installed.
+            DependencyNotActivatedError: If a dependency is not activated.
         """
         from v_flask.models import PluginActivation, SystemStatus
 
@@ -192,6 +226,9 @@ class PluginManager:
             raise PluginNotInstalledError(
                 f"Plugin '{name}' package not installed: {info.get('package')}"
             )
+
+        # Validate dependencies are activated
+        self._check_dependencies(name)
 
         # Activate in database
         PluginActivation.activate(name, user_id=user_id)

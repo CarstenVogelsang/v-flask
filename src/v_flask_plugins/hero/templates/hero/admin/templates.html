@@ -1,0 +1,111 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Hero Vorlagen{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('hero_admin.editor') }}">Hero Section</a></li>
+        <li>Vorlagen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-template text-primary"></i>
+        <span>Hero Vorlagen</span>
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('hero_admin.editor') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zurück
+        </a>
+        <a href="{{ url_for('hero_admin.create_template') }}" class="btn btn-primary btn-sm">
+            <i class="ti ti-plus mr-1"></i> Neue Vorlage
+        </a>
+    </div>
+</div>
+
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        {% if templates %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Slug</th>
+                        <th>Status</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for template in templates %}
+                    <tr>
+                        <td>
+                            <div class="font-medium">{{ template.name }}</div>
+                            {% if template.is_default %}
+                            <span class="badge badge-primary badge-sm">Standard</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code class="text-sm bg-base-200 px-2 py-1 rounded">{{ template.slug }}</code>
+                        </td>
+                        <td>
+                            {% if template.active %}
+                            <span class="badge badge-success badge-sm">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-ghost badge-sm">Inaktiv</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('hero_admin.edit_template', template_id=template.id) }}"
+                                   class="btn btn-ghost btn-sm btn-square"
+                                   title="Bearbeiten">
+                                    <i class="ti ti-edit"></i>
+                                </a>
+                                <form action="{{ url_for('hero_admin.delete_template', template_id=template.id) }}"
+                                      method="post"
+                                      onsubmit="return confirm('Vorlage wirklich löschen?');">
+                                    <button type="submit"
+                                            class="btn btn-ghost btn-sm btn-square text-error"
+                                            title="Löschen">
+                                        <i class="ti ti-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12 text-base-content/60">
+            <i class="ti ti-template text-4xl mb-2"></i>
+            <p>Noch keine Vorlagen vorhanden.</p>
+            <a href="{{ url_for('hero_admin.create_template') }}" class="btn btn-primary btn-sm mt-4">
+                <i class="ti ti-plus mr-1"></i> Erste Vorlage erstellen
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-6">
+    <div class="alert alert-info">
+        <i class="ti ti-info-circle"></i>
+        <div>
+            <p class="font-medium">Platzhalter</p>
+            <p class="text-sm">
+                Vorlagen unterstützen Jinja2-Platzhalter wie
+                <code class="bg-base-200 px-1 rounded">{{ '{{ betreiber.name }}' }}</code>.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

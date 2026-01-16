@@ -1,0 +1,225 @@
+{% extends "admin/base.html" %}
+
+{% block title %}PRD Editor - {{ komponente.name }} - Projektverwaltung{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-article mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('projektverwaltung_admin.index') }}">Projektverwaltung</a></li>
+        <li><a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id) }}">{{ projekt.name }}</a></li>
+        <li>PRD Editor</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<style>
+    .prd-editor-container {
+        display: flex;
+        gap: 1rem;
+        height: calc(100vh - 280px);
+        min-height: 500px;
+    }
+    .prd-editor-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .prd-editor-panel .card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .prd-editor-panel .card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+    }
+    #prd-editor {
+        flex: 1;
+        width: 100%;
+        border: none;
+        resize: none;
+        padding: 1rem;
+        font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        background: oklch(var(--b1));
+    }
+    #prd-preview {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    #prd-preview h1 { font-size: 1.75rem; border-bottom: 2px solid oklch(var(--b3)); padding-bottom: 0.5rem; }
+    #prd-preview h2 { font-size: 1.4rem; border-bottom: 1px solid oklch(var(--b3)); padding-bottom: 0.3rem; margin-top: 1.5rem; }
+    #prd-preview h3 { font-size: 1.2rem; margin-top: 1rem; }
+    #prd-preview table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    #prd-preview th, #prd-preview td { border: 1px solid oklch(var(--b3)); padding: 0.5rem; text-align: left; }
+    #prd-preview th { background: oklch(var(--b2)); }
+    #prd-preview code { background: oklch(var(--b2)); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.85em; }
+    #prd-preview pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+    #prd-preview pre code { background: transparent; padding: 0; color: inherit; }
+    #prd-preview blockquote { border-left: 4px solid oklch(var(--p)); padding-left: 1rem; opacity: 0.8; margin: 1rem 0; }
+</style>
+
+{# Title Row #}
+<div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+    <h1 class="text-xl font-bold">
+        <i class="ti ti-file-text text-primary mr-2"></i>
+        {% if komponente.prd_nummer %}PRD-{{ komponente.prd_nummer }} -{% endif %}
+        {{ komponente.name }}
+    </h1>
+    <div class="flex gap-2">
+        {# Mobile View Toggle #}
+        <div class="btn-group md:hidden">
+            <button type="button" class="btn btn-sm btn-active" onclick="toggleView('editor')" id="btn-editor">
+                <i class="ti ti-code"></i>
+            </button>
+            <button type="button" class="btn btn-sm" onclick="toggleView('preview')" id="btn-preview">
+                <i class="ti ti-eye"></i>
+            </button>
+        </div>
+        <a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id, komponente=komponente.id) }}"
+           class="btn btn-outline btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zurück
+        </a>
+    </div>
+</div>
+
+<form method="post" id="prd-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="prd-editor-container">
+        {# Editor Panel #}
+        <div class="prd-editor-panel" id="editor-panel">
+            <div class="card bg-base-100 shadow">
+                <div class="card-body p-0">
+                    <div class="flex justify-between items-center px-4 py-2 border-b border-base-300">
+                        <span class="font-medium text-sm">
+                            <i class="ti ti-code mr-1"></i> Markdown Editor
+                        </span>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="ti ti-device-floppy mr-1"></i> Speichern
+                        </button>
+                    </div>
+                    <textarea id="prd-editor" name="prd_inhalt" placeholder="# PRD-XXX - Titel
+
+## Übersicht
+Kurze Beschreibung des Moduls...
+
+## Features
+- Feature 1
+- Feature 2
+
+## Datenmodell
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| id   | int | Primary Key  |
+">{{ komponente.prd_inhalt or '' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        {# Preview Panel #}
+        <div class="prd-editor-panel hidden md:flex" id="preview-panel">
+            <div class="card bg-base-100 shadow">
+                <div class="card-body p-0">
+                    <div class="px-4 py-2 border-b border-base-300">
+                        <span class="font-medium text-sm">
+                            <i class="ti ti-eye mr-1"></i> Vorschau
+                        </span>
+                    </div>
+                    <div id="prd-preview" class="prose max-w-none">
+                        {% if komponente.prd_inhalt %}
+                        {{ komponente.prd_inhalt|markdown }}
+                        {% else %}
+                        <p class="text-center py-12 opacity-50">
+                            <i class="ti ti-file-text text-5xl"></i>
+                            <br>Beginne mit dem Schreiben...
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editor = document.getElementById('prd-editor');
+    const preview = document.getElementById('prd-preview');
+    let debounceTimer;
+
+    marked.setOptions({
+        breaks: true,
+        gfm: true
+    });
+
+    // Live preview update
+    editor.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function() {
+            updatePreview();
+        }, 300);
+    });
+
+    function updatePreview() {
+        const markdown = editor.value;
+        if (markdown.trim()) {
+            preview.innerHTML = marked.parse(markdown);
+        } else {
+            preview.innerHTML = '<p class="text-center py-12 opacity-50"><i class="ti ti-file-text text-5xl"></i><br>Beginne mit dem Schreiben...</p>';
+        }
+    }
+
+    // Keyboard shortcuts
+    editor.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + S to save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('prd-form').submit();
+        }
+
+        // Tab key for indentation
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 4;
+        }
+    });
+});
+
+// Mobile view toggle
+function toggleView(view) {
+    const editorPanel = document.getElementById('editor-panel');
+    const previewPanel = document.getElementById('preview-panel');
+    const btnEditor = document.getElementById('btn-editor');
+    const btnPreview = document.getElementById('btn-preview');
+
+    if (view === 'editor') {
+        editorPanel.classList.remove('hidden');
+        previewPanel.classList.add('hidden');
+        btnEditor.classList.add('btn-active');
+        btnPreview.classList.remove('btn-active');
+    } else {
+        editorPanel.classList.add('hidden');
+        previewPanel.classList.remove('hidden');
+        previewPanel.classList.add('flex');
+        btnEditor.classList.remove('btn-active');
+        btnPreview.classList.add('btn-active');
+        // Update preview when switching
+        document.getElementById('prd-preview').innerHTML =
+            marked.parse(document.getElementById('prd-editor').value || '');
+    }
+}
+</script>
+{% endblock %}

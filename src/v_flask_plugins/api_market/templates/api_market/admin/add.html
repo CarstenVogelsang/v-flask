@@ -1,0 +1,89 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}API hinzufügen{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="text-sm breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('api_market_admin.dashboard') }}">API Marketplace</a></li>
+                <li>Hinzufügen</li>
+            </ul>
+        </div>
+        <h1 class="text-2xl font-bold mt-2">API hinzufügen</h1>
+    </div>
+
+    <!-- Form -->
+    <div class="card bg-base-100 shadow max-w-2xl">
+        <div class="card-body">
+            <form method="POST">
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Name *</span>
+                    </label>
+                    <input type="text" name="name" value="{{ name|default('') }}"
+                           class="input input-bordered" required
+                           placeholder="z.B. UDO API">
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Slug *</span>
+                    </label>
+                    <input type="text" name="slug" value="{{ slug|default('') }}"
+                           class="input input-bordered" required
+                           pattern="[a-z0-9-]+"
+                           placeholder="z.B. udo-api">
+                    <label class="label">
+                        <span class="label-text-alt">Kleinbuchstaben, Zahlen und Bindestriche</span>
+                    </label>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">OpenAPI Spec URL *</span>
+                    </label>
+                    <input type="url" name="spec_url" value="{{ spec_url|default('') }}"
+                           class="input input-bordered" required
+                           placeholder="https://api.example.com/openapi.json">
+                    <label class="label">
+                        <span class="label-text-alt">URL zur OpenAPI Spezifikation (JSON oder YAML)</span>
+                    </label>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Basis-URL</span>
+                    </label>
+                    <input type="url" name="base_url" value="{{ base_url|default('') }}"
+                           class="input input-bordered"
+                           placeholder="https://api.example.com/api/v1">
+                    <label class="label">
+                        <span class="label-text-alt">Wird aus Spec extrahiert falls leer</span>
+                    </label>
+                </div>
+
+                <div class="form-control mb-6">
+                    <label class="label">
+                        <span class="label-text">Beschreibung</span>
+                    </label>
+                    <textarea name="description" class="textarea textarea-bordered"
+                              rows="3" placeholder="Kurze Beschreibung der API">{{ description|default('') }}</textarea>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-plus mr-2"></i>
+                        API hinzufügen
+                    </button>
+                    <a href="{{ url_for('api_market_admin.dashboard') }}" class="btn btn-ghost">
+                        Abbrechen
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

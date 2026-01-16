@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ fragebogen.titel }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+</head>
+<body class="min-h-screen bg-base-200">
+    <div class="container mx-auto max-w-2xl px-4 py-8">
+        {# Header #}
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2">{{ fragebogen.titel }}</h1>
+            {% if fragebogen.beschreibung %}
+            <p class="text-base-content/60">{{ fragebogen.beschreibung }}</p>
+            {% endif %}
+        </div>
+
+        {# Progress #}
+        {% if fragebogen.anzahl_seiten > 1 %}
+        <div class="mb-6">
+            <ul class="steps steps-horizontal w-full">
+                {% for seite in fragebogen.seiten %}
+                <li class="step {% if loop.index0 <= current_page %}step-primary{% endif %}"
+                    data-page="{{ loop.index0 }}">
+                    {{ seite.titel }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {# Wizard Content #}
+        <form id="fragebogen-form" method="post"
+              action="{{ url_for('fragebogen_public.abschliessen', token=teilnahme.token) }}">
+
+            {% for seite in fragebogen.seiten %}
+            <div class="wizard-page card bg-base-100 shadow-lg {% if loop.index0 != current_page %}hidden{% endif %}"
+                 data-page="{{ loop.index0 }}">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">{{ seite.titel }}</h2>
+                    {% if seite.hilfetext %}
+                    <p class="text-base-content/60 mb-4">{{ seite.hilfetext }}</p>
+                    {% endif %}
+
+                    {% for frage in seite.fragen %}
+                    <div class="form-control mb-6 frage-container"
+                         data-frage-id="{{ frage.id }}"
+                         {% if frage.show_if %}data-show-if='{{ frage.show_if|tojson }}'{% endif %}>
+
+                        <label class="label">
+                            <span class="label-text font-medium">
+                                {{ frage.frage }}
+                                {% if frage.pflicht %}<span class="text-error">*</span>{% endif %}
+                            </span>
+                        </label>
+
+                        {% if frage.hilfetext %}
+                        <p class="text-sm text-base-content/60 mb-2">{{ frage.hilfetext }}</p>
+                        {% endif %}
+
+                        {# Render based on type #}
+                        {% if frage.typ == 'text' %}
+                        <textarea name="{{ frage.id }}"
+                                  class="textarea textarea-bordered w-full"
+                                  {% if frage.pflicht %}required{% endif %}
+                                  {% if frage.multiline is defined and not frage.multiline %}rows="1"{% else %}rows="3"{% endif %}
+                                  data-autosave>{{ antworten.get(frage.id, {}).get('value', '') }}</textarea>
+
+                        {% elif frage.typ == 'single_choice' %}
+                        <div class="space-y-2">
+                            {% for option in frage.optionen %}
+                            <label class="label cursor-pointer justify-start gap-3">
+                                <input type="radio" name="{{ frage.id }}" value="{{ option }}"
+                                       class="radio radio-primary" data-autosave
+                                       {% if frage.pflicht %}required{% endif %}
+                                       {% if antworten.get(frage.id, {}).get('value') == option %}checked{% endif %}>
+                                <span class="label-text">{{ option }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+
+                        {% elif frage.typ == 'multiple_choice' %}
+                        <div class="space-y-2">
+                            {% for option in frage.optionen %}
+                            <label class="label cursor-pointer justify-start gap-3">
+                                <input type="checkbox" name="{{ frage.id }}" value="{{ option }}"
+                                       class="checkbox checkbox-primary" data-autosave
+                                       {% if option in (antworten.get(frage.id, {}).get('values', [])) %}checked{% endif %}>
+                                <span class="label-text">{{ option }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+
+                        {% elif frage.typ == 'dropdown' %}
+                        <select name="{{ frage.id }}" class="select select-bordered w-full"
+                                {% if frage.pflicht %}required{% endif %} data-autosave>
+                            <option value="">Bitte wählen...</option>
+                            {% for option in frage.optionen %}
+                            <option value="{{ option }}"
+                                    {% if antworten.get(frage.id, {}).get('value') == option %}selected{% endif %}>
+                                {{ option }}
+                            </option>
+                            {% endfor %}
+                        </select>
+
+                        {% elif frage.typ == 'skala' %}
+                        <div class="flex items-center gap-2">
+                            {% if frage.labels and frage.labels.get(frage.min|string) %}
+                            <span class="text-sm text-base-content/60">{{ frage.labels.get(frage.min|string) }}</span>
+                            {% endif %}
+                            <div class="rating rating-lg">
+                                {% for i in range(frage.min, frage.max + 1) %}
+                                <input type="radio" name="{{ frage.id }}" value="{{ i }}"
+                                       class="mask mask-star-2 bg-primary" data-autosave
+                                       {% if frage.pflicht %}required{% endif %}
+                                       {% if antworten.get(frage.id, {}).get('value')|string == i|string %}checked{% endif %}>
+                                {% endfor %}
+                            </div>
+                            {% if frage.labels and frage.labels.get(frage.max|string) %}
+                            <span class="text-sm text-base-content/60">{{ frage.labels.get(frage.max|string) }}</span>
+                            {% endif %}
+                        </div>
+
+                        {% elif frage.typ == 'ja_nein' %}
+                        <div class="flex gap-4">
+                            <label class="label cursor-pointer gap-2">
+                                <input type="radio" name="{{ frage.id }}" value="true"
+                                       class="radio radio-success" data-autosave
+                                       {% if frage.pflicht %}required{% endif %}
+                                       {% if antworten.get(frage.id, {}).get('value') == true %}checked{% endif %}>
+                                <span class="label-text">Ja</span>
+                            </label>
+                            <label class="label cursor-pointer gap-2">
+                                <input type="radio" name="{{ frage.id }}" value="false"
+                                       class="radio radio-error" data-autosave
+                                       {% if antworten.get(frage.id, {}).get('value') == false %}checked{% endif %}>
+                                <span class="label-text">Nein</span>
+                            </label>
+                        </div>
+
+                        {% elif frage.typ == 'date' %}
+                        <input type="date" name="{{ frage.id }}"
+                               class="input input-bordered w-full"
+                               {% if frage.pflicht %}required{% endif %} data-autosave
+                               value="{{ antworten.get(frage.id, {}).get('value', '') }}">
+
+                        {% elif frage.typ == 'number' %}
+                        <input type="number" name="{{ frage.id }}"
+                               class="input input-bordered w-full"
+                               {% if frage.pflicht %}required{% endif %} data-autosave
+                               {% if frage.min is defined %}min="{{ frage.min }}"{% endif %}
+                               {% if frage.max is defined %}max="{{ frage.max }}"{% endif %}
+                               value="{{ antworten.get(frage.id, {}).get('value', '') }}">
+
+                        {% elif frage.typ == 'url' %}
+                        <input type="url" name="{{ frage.id }}"
+                               class="input input-bordered w-full"
+                               {% if frage.pflicht %}required{% endif %} data-autosave
+                               placeholder="https://..."
+                               value="{{ antworten.get(frage.id, {}).get('value', '') }}">
+
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {# Contact Form for Anonymous (last page) #}
+            {% if is_anonym %}
+            <div class="wizard-page card bg-base-100 shadow-lg hidden"
+                 data-page="{{ fragebogen.seiten|length }}" id="kontakt-page">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Ihre Kontaktdaten</h2>
+                    <p class="text-base-content/60 mb-4">
+                        Bitte geben Sie Ihre Kontaktdaten an, damit wir Sie bei Rückfragen erreichen können.
+                    </p>
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Name <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="kontakt_name" required
+                               class="input input-bordered w-full"
+                               value="{{ teilnahme.kontakt_name or '' }}">
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">E-Mail <span class="text-error">*</span></span>
+                        </label>
+                        <input type="email" name="kontakt_email" required
+                               class="input input-bordered w-full"
+                               value="{{ teilnahme.kontakt_email or '' }}">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Navigation Buttons #}
+            <div class="flex justify-between mt-6">
+                <button type="button" id="prev-btn" class="btn btn-ghost"
+                        {% if current_page == 0 %}disabled{% endif %}>
+                    <i class="ti ti-arrow-left mr-1"></i> Zurück
+                </button>
+
+                <div class="flex gap-2">
+                    <span id="save-status" class="text-sm text-base-content/40 self-center"></span>
+                    <button type="button" id="next-btn" class="btn btn-primary"
+                            {% if current_page >= fragebogen.anzahl_seiten - 1 and not is_anonym %}style="display:none"{% endif %}>
+                        Weiter <i class="ti ti-arrow-right ml-1"></i>
+                    </button>
+                    <button type="submit" id="submit-btn" class="btn btn-success"
+                            {% if current_page < fragebogen.anzahl_seiten - 1 or is_anonym %}style="display:none"{% endif %}>
+                        Abschließen <i class="ti ti-check ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+    const totalPages = {{ fragebogen.anzahl_seiten }}{% if is_anonym %} + 1{% endif %};
+    let currentPage = {{ current_page }};
+    const token = '{{ teilnahme.token }}';
+    const isAnonym = {{ 'true' if is_anonym else 'false' }};
+
+    // Show/hide pages
+    function showPage(pageNum) {
+        document.querySelectorAll('.wizard-page').forEach((page, idx) => {
+            page.classList.toggle('hidden', idx !== pageNum);
+        });
+
+        // Update step indicators
+        document.querySelectorAll('.steps .step').forEach((step, idx) => {
+            step.classList.toggle('step-primary', idx <= pageNum);
+        });
+
+        // Update buttons
+        document.getElementById('prev-btn').disabled = pageNum === 0;
+
+        const isLastPage = pageNum >= totalPages - 1;
+        const isContactPage = isAnonym && pageNum === totalPages - 1;
+
+        document.getElementById('next-btn').style.display = isLastPage ? 'none' : 'inline-flex';
+        document.getElementById('submit-btn').style.display = isLastPage ? 'inline-flex' : 'none';
+
+        currentPage = pageNum;
+    }
+
+    // Navigation
+    document.getElementById('prev-btn').addEventListener('click', () => {
+        if (currentPage > 0) showPage(currentPage - 1);
+    });
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+        // Validate current page before proceeding
+        const currentPageEl = document.querySelector(`.wizard-page[data-page="${currentPage}"]`);
+        const requiredFields = currentPageEl.querySelectorAll('[required]');
+        let valid = true;
+
+        requiredFields.forEach(field => {
+            if (!field.checkValidity()) {
+                field.reportValidity();
+                valid = false;
+            }
+        });
+
+        if (valid && currentPage < totalPages - 1) {
+            showPage(currentPage + 1);
+        }
+    });
+
+    // Auto-save
+    let saveTimeout;
+    document.querySelectorAll('[data-autosave]').forEach(input => {
+        const eventType = input.type === 'checkbox' || input.type === 'radio' ? 'change' : 'input';
+        input.addEventListener(eventType, () => {
+            clearTimeout(saveTimeout);
+            document.getElementById('save-status').textContent = 'Speichern...';
+
+            saveTimeout = setTimeout(() => {
+                const container = input.closest('.frage-container');
+                const frageId = container.dataset.frageId;
+                let value;
+
+                if (input.type === 'checkbox') {
+                    // Multiple choice - collect all checked values
+                    const checked = container.querySelectorAll('input[type="checkbox"]:checked');
+                    value = { values: Array.from(checked).map(cb => cb.value) };
+                } else if (input.type === 'radio') {
+                    value = { value: input.value };
+                } else {
+                    value = { value: input.value };
+                }
+
+                fetch(`/fragebogen/t/${token}/antwort`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ frage_id: frageId, antwort: value })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('save-status').textContent = data.success ? 'Gespeichert' : 'Fehler';
+                    setTimeout(() => {
+                        document.getElementById('save-status').textContent = '';
+                    }, 2000);
+                });
+            }, 500);
+        });
+    });
+
+    // Conditional display (show_if)
+    function evaluateShowIf() {
+        document.querySelectorAll('[data-show-if]').forEach(container => {
+            const condition = JSON.parse(container.dataset.showIf);
+            const refField = document.querySelector(`[name="${condition.frage_id}"]`);
+            let visible = true;
+
+            if (refField) {
+                const refValue = refField.type === 'checkbox'
+                    ? refField.checked
+                    : refField.value;
+
+                if ('equals' in condition) {
+                    visible = refValue == condition.equals;
+                } else if ('not_equals' in condition) {
+                    visible = refValue != condition.not_equals;
+                } else if ('is_set' in condition) {
+                    visible = refValue !== '' && refValue !== null;
+                } else if ('is_not_set' in condition) {
+                    visible = refValue === '' || refValue === null;
+                }
+            }
+
+            container.style.display = visible ? '' : 'none';
+            // Remove required from hidden fields
+            container.querySelectorAll('[required]').forEach(f => {
+                f.required = visible;
+            });
+        });
+    }
+
+    // Re-evaluate on any input change
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('change', evaluateShowIf);
+    });
+    evaluateShowIf();
+
+    // Contact form save for anonymous
+    {% if is_anonym %}
+    document.getElementById('fragebogen-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Save contact data first
+        const formData = new FormData(e.target);
+        const kontaktData = {
+            kontakt_name: formData.get('kontakt_name'),
+            kontakt_email: formData.get('kontakt_email')
+        };
+
+        const response = await fetch(`/fragebogen/t/${token}/kontakt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(kontaktData)
+        });
+
+        if (response.ok) {
+            e.target.submit();
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Fehler beim Speichern der Kontaktdaten');
+        }
+    });
+    {% endif %}
+    </script>
+</body>
+</html>

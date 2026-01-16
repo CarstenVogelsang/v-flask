@@ -1,0 +1,401 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Hero Section Editor{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
+        <li>Hero Section</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-photo text-primary"></i>
+        <span>Hero Section</span>
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('hero_admin.list_templates') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-template mr-1"></i> Vorlagen
+        </a>
+        <button type="submit" form="hero-form" class="btn btn-primary btn-sm">
+            <i class="ti ti-device-floppy mr-1"></i> Speichern
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {# Form Column #}
+    <div>
+        <form method="post" action="{{ url_for('hero_admin.save') }}" id="hero-form"
+              enctype="multipart/form-data">
+
+            {# Variant Selection #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-layout"></i>
+                        Layout-Variante
+                    </h2>
+
+                    <p class="text-sm text-base-content/70 mb-4">
+                        Wähle ein Layout für die Hero Section.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {% for variant in variants %}
+                        <label class="cursor-pointer">
+                            <input type="radio" name="variant" value="{{ variant.value }}"
+                                   class="peer hidden"
+                                   {% if hero.variant == variant.value %}checked{% endif %}
+                                   hx-post="{{ url_for('hero_admin.preview') }}"
+                                   hx-trigger="change"
+                                   hx-target="#hero-preview"
+                                   hx-include="#hero-form">
+                            <div class="card bg-base-200 peer-checked:ring-2 peer-checked:ring-primary transition-all hover:bg-base-300">
+                                <div class="card-body p-3">
+                                    <div class="aspect-video bg-base-300 rounded mb-2 relative overflow-hidden">
+                                        {% if variant.value == 'centered' %}
+                                        <div class="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30"></div>
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <div class="text-center">
+                                                <div class="w-6 h-1 bg-base-content/40 mx-auto mb-1 rounded"></div>
+                                                <div class="w-10 h-1 bg-base-content/30 mx-auto rounded"></div>
+                                            </div>
+                                        </div>
+                                        {% elif variant.value == 'split' %}
+                                        <div class="flex gap-1 p-1 h-full">
+                                            <div class="w-1/2 bg-gradient-to-br from-primary/30 to-accent/30 rounded"></div>
+                                            <div class="w-1/2 flex flex-col justify-center p-1">
+                                                <div class="w-full h-1 bg-base-content/40 mb-1 rounded"></div>
+                                                <div class="w-2/3 h-1 bg-base-content/30 rounded"></div>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <div class="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30"></div>
+                                        <div class="absolute inset-0 bg-gradient-to-b from-black/50 to-black/50"></div>
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <div class="text-center">
+                                                <div class="w-8 h-1.5 bg-white/60 mx-auto mb-1 rounded"></div>
+                                                <div class="w-12 h-1 bg-white/40 mx-auto rounded"></div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <span class="text-sm font-medium">{{ variant.label }}</span>
+                                </div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {# Background Image via Media Picker #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-photo-up"></i>
+                        Hintergrundbild
+                    </h2>
+
+                    {# Hidden input for media_id #}
+                    <input type="hidden" name="media_id" id="media_id"
+                           value="{{ hero.media_id or '' }}">
+
+                    <div id="image-preview-area" class="mb-4">
+                        {% if hero.media %}
+                        <div class="relative">
+                            <img src="{{ hero.media.get_url('medium') }}"
+                                 alt="{{ hero.media.alt_text or 'Hero Bild' }}"
+                                 class="w-full max-h-48 object-cover rounded-lg">
+                            <button type="button"
+                                    onclick="clearMediaSelection()"
+                                    class="btn btn-sm btn-circle btn-error absolute top-2 right-2">
+                                <i class="ti ti-x"></i>
+                            </button>
+                            {% if hero.media.requires_attribution %}
+                            <div class="text-xs text-base-content/60 mt-1">
+                                {{ hero.media.attribution_html|safe }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% elif hero._image_path %}
+                        {# Legacy image path support #}
+                        <div class="relative">
+                            <img src="{{ url_for('static', filename=hero._image_path.lstrip('/')) }}"
+                                 alt="Hero Bild (Legacy)"
+                                 class="w-full max-h-48 object-cover rounded-lg">
+                            <div class="alert alert-warning mt-2">
+                                <i class="ti ti-alert-triangle"></i>
+                                <span class="text-sm">Legacy-Bild. Bitte ein neues Bild aus der Media-Bibliothek wahlen.</span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center">
+                            <i class="ti ti-photo text-4xl text-base-content/30 mb-2"></i>
+                            <p class="text-base-content/60 text-sm">Noch kein Bild ausgewahlt</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <button type="button"
+                            onclick="openMediaPicker()"
+                            class="btn btn-outline btn-primary w-full">
+                        <i class="ti ti-photo-plus mr-1"></i>
+                        {% if hero.media %}Bild andern{% else %}Bild auswahlen{% endif %}
+                    </button>
+                    <label class="label">
+                        <span class="label-text-alt">
+                            <a href="{{ url_for('media_admin.library') }}" class="link">Media-Bibliothek offnen</a>
+                            oder
+                            <a href="{{ url_for('media_admin.stock_search') }}" class="link">Stock-Fotos durchsuchen</a>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            {# Text Content #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-text-size"></i>
+                        Text-Inhalt
+                    </h2>
+
+                    {# Text Source Toggle #}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Text-Quelle</span>
+                        </label>
+                        <div class="flex gap-4">
+                            <label class="cursor-pointer flex items-center gap-2">
+                                <input type="radio" name="text_source" value="custom"
+                                       class="radio radio-primary"
+                                       {% if not hero.template_id %}checked{% endif %}
+                                       onchange="toggleTextSource('custom')"
+                                       hx-post="{{ url_for('hero_admin.preview') }}"
+                                       hx-trigger="change"
+                                       hx-target="#hero-preview"
+                                       hx-include="#hero-form">
+                                <span>Eigener Text</span>
+                            </label>
+                            <label class="cursor-pointer flex items-center gap-2">
+                                <input type="radio" name="text_source" value="template"
+                                       class="radio radio-primary"
+                                       {% if hero.template_id %}checked{% endif %}
+                                       onchange="toggleTextSource('template')"
+                                       hx-post="{{ url_for('hero_admin.preview') }}"
+                                       hx-trigger="change"
+                                       hx-target="#hero-preview"
+                                       hx-include="#hero-form">
+                                <span>Vorlage</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {# Template Selection #}
+                    <div id="template-selection" class="{% if not hero.template_id %}hidden{% endif %}">
+                        <div class="form-control mb-4">
+                            <label class="label">
+                                <span class="label-text">Vorlage auswählen</span>
+                            </label>
+                            <select name="template_id" class="select select-bordered w-full"
+                                    hx-post="{{ url_for('hero_admin.preview') }}"
+                                    hx-trigger="change"
+                                    hx-target="#hero-preview"
+                                    hx-include="#hero-form">
+                                <option value="">-- Vorlage wählen --</option>
+                                {% for tpl in templates %}
+                                <option value="{{ tpl.id }}" {% if hero.template_id == tpl.id %}selected{% endif %}>
+                                    {{ tpl.name }}{% if tpl.is_default %} (Standard){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <label class="label">
+                                <span class="label-text-alt">Vorlagen unterstützen Platzhalter wie {{ '{{ betreiber.name }}' }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {# Custom Text #}
+                    <div id="custom-text" class="{% if hero.template_id %}hidden{% endif %}">
+                        <div class="form-control mb-4">
+                            <label class="label">
+                                <span class="label-text">Titel</span>
+                            </label>
+                            <input type="text" name="custom_title"
+                                   value="{{ hero.custom_title or '' }}"
+                                   class="input input-bordered"
+                                   placeholder="Willkommen bei..."
+                                   hx-post="{{ url_for('hero_admin.preview') }}"
+                                   hx-trigger="keyup changed delay:500ms"
+                                   hx-target="#hero-preview"
+                                   hx-include="#hero-form">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Untertitel</span>
+                            </label>
+                            <textarea name="custom_subtitle"
+                                      class="textarea textarea-bordered"
+                                      rows="2"
+                                      placeholder="Entdecke die besten..."
+                                      hx-post="{{ url_for('hero_admin.preview') }}"
+                                      hx-trigger="keyup changed delay:500ms"
+                                      hx-target="#hero-preview"
+                                      hx-include="#hero-form">{{ hero.custom_subtitle or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# CTA Button #}
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-click"></i>
+                        Call-to-Action
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Button-Text</span>
+                            </label>
+                            <input type="text" name="cta_text"
+                                   value="{{ hero.cta_text or '' }}"
+                                   class="input input-bordered"
+                                   placeholder="Jetzt entdecken"
+                                   hx-post="{{ url_for('hero_admin.preview') }}"
+                                   hx-trigger="keyup changed delay:500ms"
+                                   hx-target="#hero-preview"
+                                   hx-include="#hero-form">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Button-Link</span>
+                            </label>
+                            <input type="text" name="cta_link"
+                                   value="{{ hero.cta_link or '' }}"
+                                   class="input input-bordered"
+                                   placeholder="/entdecken"
+                                   hx-post="{{ url_for('hero_admin.preview') }}"
+                                   hx-trigger="keyup changed delay:500ms"
+                                   hx-target="#hero-preview"
+                                   hx-include="#hero-form">
+                        </div>
+                    </div>
+                    <label class="label">
+                        <span class="label-text-alt">Beide Felder leer lassen, um keinen Button anzuzeigen</span>
+                    </label>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {# Preview Column #}
+    <div>
+        <div class="card bg-base-100 shadow-xl sticky top-4">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="ti ti-eye mr-2"></i>Vorschau
+                </h2>
+                <div id="hero-preview" class="rounded-lg overflow-hidden bg-base-200">
+                    {% include 'hero/admin/_preview.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Media Picker Modal #}
+<dialog id="media-picker-modal" class="modal">
+    <div class="modal-box w-11/12 max-w-4xl">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                <i class="ti ti-x"></i>
+            </button>
+        </form>
+        <h3 class="font-bold text-lg mb-4">
+            <i class="ti ti-photo mr-2"></i>Bild auswahlen
+        </h3>
+        <div id="media-picker-content"
+             hx-get="{{ url_for('media_admin.picker', field='media_id', accept='image/*') }}"
+             hx-trigger="load">
+            <div class="flex justify-center py-8">
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<script>
+function toggleTextSource(source) {
+    const templateSection = document.getElementById('template-selection');
+    const customSection = document.getElementById('custom-text');
+
+    if (source === 'template') {
+        templateSection.classList.remove('hidden');
+        customSection.classList.add('hidden');
+    } else {
+        templateSection.classList.add('hidden');
+        customSection.classList.remove('hidden');
+    }
+}
+
+function openMediaPicker() {
+    const modal = document.getElementById('media-picker-modal');
+    // Reload picker content
+    htmx.trigger('#media-picker-content', 'load');
+    modal.showModal();
+}
+
+function selectMedia(mediaId, url, altText, fieldName) {
+    // Update hidden input
+    document.getElementById('media_id').value = mediaId;
+
+    // Update preview
+    const previewArea = document.getElementById('image-preview-area');
+    previewArea.innerHTML = `
+        <div class="relative">
+            <img src="${url}" alt="${altText || 'Hero Bild'}"
+                 class="w-full max-h-48 object-cover rounded-lg">
+            <button type="button"
+                    onclick="clearMediaSelection()"
+                    class="btn btn-sm btn-circle btn-error absolute top-2 right-2">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+    `;
+
+    // Close modal
+    document.getElementById('media-picker-modal').close();
+
+    // Trigger preview update
+    htmx.trigger('#hero-form', 'submit', {target: '#hero-preview'});
+}
+
+function clearMediaSelection() {
+    document.getElementById('media_id').value = '';
+
+    const previewArea = document.getElementById('image-preview-area');
+    previewArea.innerHTML = `
+        <div class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center">
+            <i class="ti ti-photo text-4xl text-base-content/30 mb-2"></i>
+            <p class="text-base-content/60 text-sm">Noch kein Bild ausgewahlt</p>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

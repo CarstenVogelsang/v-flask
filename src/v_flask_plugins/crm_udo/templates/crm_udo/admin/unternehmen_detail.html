@@ -1,0 +1,468 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{{ unternehmen.kurzname or 'Unternehmen' }} - CRM{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('crm_udo_admin.index') }}">CRM</a></li>
+        <li><a href="{{ url_for('crm_udo_admin.unternehmen_list') }}">Unternehmen</a></li>
+        <li>{{ unternehmen.kurzname or 'Details' }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-building mr-2"></i>{{ unternehmen.kurzname or 'Unternehmen' }}
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('crm_udo_admin.unternehmen_edit', unternehmen_id=unternehmen.id) }}"
+           class="btn btn-primary">
+            <i class="ti ti-edit mr-2"></i>
+            Bearbeiten
+        </a>
+        <button type="button" class="btn btn-error btn-outline"
+                onclick="document.getElementById('delete-modal').showModal()">
+            <i class="ti ti-trash mr-2"></i>
+            Löschen
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Company Details #}
+    <div class="lg:col-span-2 space-y-6">
+        {# Basic Info Card #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg mb-4">
+                    <i class="ti ti-info-circle mr-2"></i>
+                    Stammdaten
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm text-base-content/60">Kurzname</label>
+                        <p class="font-semibold">{{ unternehmen.kurzname or '-' }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-base-content/60">Firmierung</label>
+                        <p>{{ unternehmen.firmierung or '-' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Address Card #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg mb-4">
+                    <i class="ti ti-map-pin mr-2"></i>
+                    Adresse
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm text-base-content/60">Straße</label>
+                        <p>
+                            {{ unternehmen.strasse or '' }}
+                            {{ unternehmen.strasse_hausnr or '' }}
+                            {% if not unternehmen.strasse and not unternehmen.strasse_hausnr %}-{% endif %}
+                        </p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-base-content/60">Ort</label>
+                        {% if unternehmen.geo_ort %}
+                        <p>
+                            {{ unternehmen.geo_ort.name }}
+                            {% if unternehmen.geo_ort.kreis %}
+                                <span class="text-base-content/60">
+                                    ({{ unternehmen.geo_ort.kreis.name }})
+                                </span>
+                            {% endif %}
+                        </p>
+                        {% if unternehmen.geo_ort.bundesland %}
+                        <p class="text-sm text-base-content/60">
+                            {{ unternehmen.geo_ort.bundesland.name }}
+                            {% if unternehmen.geo_ort.land %}
+                                / {{ unternehmen.geo_ort.land.name }}
+                            {% endif %}
+                        </p>
+                        {% endif %}
+                        {% else %}
+                        <p class="text-base-content/40">-</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Contacts Card #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="card-title text-lg">
+                        <i class="ti ti-users mr-2"></i>
+                        Kontakte
+                        <span class="badge badge-ghost">{{ kontakte|length }}</span>
+                    </h2>
+                    <button type="button" class="btn btn-sm btn-primary"
+                            onclick="document.getElementById('kontakt-modal').showModal()">
+                        <i class="ti ti-plus mr-1"></i>
+                        Neuer Kontakt
+                    </button>
+                </div>
+
+                {% if kontakte %}
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Position</th>
+                                <th>Kontakt</th>
+                                <th class="w-24">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for kontakt in kontakte %}
+                            <tr class="hover">
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        {% if kontakt.ist_hauptkontakt %}
+                                        <span class="badge badge-primary badge-sm" title="Hauptkontakt">
+                                            <i class="ti ti-star-filled"></i>
+                                        </span>
+                                        {% endif %}
+                                        <div>
+                                            <span class="font-semibold">
+                                                {{ kontakt.titel }} {{ kontakt.vorname }} {{ kontakt.nachname }}
+                                            </span>
+                                            {% if kontakt.anrede %}
+                                            <span class="text-xs text-base-content/50">
+                                                ({{ kontakt.anrede }})
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        {{ kontakt.position or '-' }}
+                                        {% if kontakt.abteilung %}
+                                        <span class="text-xs text-base-content/50 block">
+                                            {{ kontakt.abteilung }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if kontakt.email %}
+                                    <a href="mailto:{{ kontakt.email }}" class="link link-primary text-sm">
+                                        {{ kontakt.email }}
+                                    </a>
+                                    {% endif %}
+                                    {% if kontakt.telefon %}
+                                    <span class="text-sm block">
+                                        <i class="ti ti-phone text-xs"></i> {{ kontakt.telefon }}
+                                    </span>
+                                    {% endif %}
+                                    {% if kontakt.mobil %}
+                                    <span class="text-sm block">
+                                        <i class="ti ti-device-mobile text-xs"></i> {{ kontakt.mobil }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button type="button" class="btn btn-sm btn-ghost"
+                                                title="Bearbeiten"
+                                                onclick="editKontakt({{ kontakt|tojson }})">
+                                            <i class="ti ti-edit"></i>
+                                        </button>
+                                        <form method="post"
+                                              action="{{ url_for('crm_udo_admin.kontakt_delete', unternehmen_id=unternehmen.id, kontakt_id=kontakt.id) }}"
+                                              onsubmit="return confirm('Kontakt wirklich löschen?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-ghost text-error"
+                                                    title="Löschen">
+                                                <i class="ti ti-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8 text-base-content/50">
+                    <i class="ti ti-users text-4xl mb-2"></i>
+                    <p>Noch keine Kontakte vorhanden.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Sidebar #}
+    <div class="space-y-6">
+        {# Metadata Card #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg mb-4">
+                    <i class="ti ti-info-square mr-2"></i>
+                    Metadaten
+                </h2>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <label class="text-base-content/60">ID</label>
+                        <p class="font-mono text-xs">{{ unternehmen.id }}</p>
+                    </div>
+                    {% if unternehmen.legacy_id %}
+                    <div>
+                        <label class="text-base-content/60">Legacy ID</label>
+                        <p>{{ unternehmen.legacy_id }}</p>
+                    </div>
+                    {% endif %}
+                    {% if unternehmen.erstellt_am %}
+                    <div>
+                        <label class="text-base-content/60">Erstellt am</label>
+                        <p>{{ unternehmen.erstellt_am|default('-') }}</p>
+                    </div>
+                    {% endif %}
+                    {% if unternehmen.aktualisiert_am %}
+                    <div>
+                        <label class="text-base-content/60">Aktualisiert am</label>
+                        <p>{{ unternehmen.aktualisiert_am|default('-') }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Quick Actions #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg mb-4">
+                    <i class="ti ti-bolt mr-2"></i>
+                    Schnellaktionen
+                </h2>
+                <div class="space-y-2">
+                    <button type="button" class="btn btn-sm btn-block btn-outline"
+                            onclick="document.getElementById('kontakt-modal').showModal()">
+                        <i class="ti ti-user-plus mr-2"></i>
+                        Kontakt hinzufügen
+                    </button>
+                    <a href="{{ url_for('crm_udo_admin.unternehmen_list') }}"
+                       class="btn btn-sm btn-block btn-ghost">
+                        <i class="ti ti-arrow-left mr-2"></i>
+                        Zurück zur Liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Delete Confirmation Modal #}
+<dialog id="delete-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg text-error">
+            <i class="ti ti-alert-triangle mr-2"></i>
+            Unternehmen löschen?
+        </h3>
+        <p class="py-4">
+            Möchtest du <strong>{{ unternehmen.kurzname }}</strong> wirklich löschen?
+            Diese Aktion kann nicht rückgängig gemacht werden.
+        </p>
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-ghost">Abbrechen</button>
+            </form>
+            <form method="post"
+                  action="{{ url_for('crm_udo_admin.unternehmen_delete', unternehmen_id=unternehmen.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-error">
+                    <i class="ti ti-trash mr-2"></i>
+                    Löschen
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+{# New Contact Modal #}
+<dialog id="kontakt-modal" class="modal">
+    <div class="modal-box max-w-2xl">
+        <h3 class="font-bold text-lg mb-4">
+            <i class="ti ti-user-plus mr-2"></i>
+            <span id="kontakt-modal-title">Neuer Kontakt</span>
+        </h3>
+        <form id="kontakt-form" method="post"
+              action="{{ url_for('crm_udo_admin.kontakt_neu', unternehmen_id=unternehmen.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {# Name Section #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Anrede</span>
+                    </label>
+                    <select name="anrede" class="select select-bordered">
+                        <option value="">- Auswählen -</option>
+                        <option value="Herr">Herr</option>
+                        <option value="Frau">Frau</option>
+                        <option value="Divers">Divers</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Titel</span>
+                    </label>
+                    <input type="text" name="titel" class="input input-bordered"
+                           placeholder="z.B. Dr., Prof.">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Vorname *</span>
+                    </label>
+                    <input type="text" name="vorname" class="input input-bordered" required>
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Nachname *</span>
+                    </label>
+                    <input type="text" name="nachname" class="input input-bordered" required>
+                </div>
+
+                {# Position Section #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Position</span>
+                    </label>
+                    <input type="text" name="position" class="input input-bordered"
+                           placeholder="z.B. Geschäftsführer">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Abteilung</span>
+                    </label>
+                    <input type="text" name="abteilung" class="input input-bordered"
+                           placeholder="z.B. Vertrieb">
+                </div>
+
+                {# Contact Section #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">E-Mail</span>
+                    </label>
+                    <input type="email" name="email" class="input input-bordered">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Telefon</span>
+                    </label>
+                    <input type="text" name="telefon" class="input input-bordered">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Mobil</span>
+                    </label>
+                    <input type="text" name="mobil" class="input input-bordered">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Fax</span>
+                    </label>
+                    <input type="text" name="fax" class="input input-bordered">
+                </div>
+
+                {# Type & Main Contact #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Typ</span>
+                    </label>
+                    <input type="text" name="typ" class="input input-bordered"
+                           placeholder="z.B. Ansprechpartner">
+                </div>
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-4">
+                        <input type="checkbox" name="ist_hauptkontakt" class="checkbox checkbox-primary">
+                        <span class="label-text">Hauptkontakt</span>
+                    </label>
+                </div>
+
+                {# Notes #}
+                <div class="form-control md:col-span-2">
+                    <label class="label">
+                        <span class="label-text">Notizen</span>
+                    </label>
+                    <textarea name="notizen" class="textarea textarea-bordered" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="closeKontaktModal()">
+                    Abbrechen
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-check mr-2"></i>
+                    Speichern
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<script>
+function editKontakt(kontakt) {
+    const form = document.getElementById('kontakt-form');
+    const modal = document.getElementById('kontakt-modal');
+    const title = document.getElementById('kontakt-modal-title');
+
+    // Update form action for edit
+    form.action = '{{ url_for("crm_udo_admin.kontakt_edit", unternehmen_id=unternehmen.id, kontakt_id="KONTAKT_ID") }}'.replace('KONTAKT_ID', kontakt.id);
+    title.textContent = 'Kontakt bearbeiten';
+
+    // Fill form fields
+    form.querySelector('[name="anrede"]').value = kontakt.anrede || '';
+    form.querySelector('[name="titel"]').value = kontakt.titel || '';
+    form.querySelector('[name="vorname"]').value = kontakt.vorname || '';
+    form.querySelector('[name="nachname"]').value = kontakt.nachname || '';
+    form.querySelector('[name="position"]').value = kontakt.position || '';
+    form.querySelector('[name="abteilung"]').value = kontakt.abteilung || '';
+    form.querySelector('[name="email"]').value = kontakt.email || '';
+    form.querySelector('[name="telefon"]').value = kontakt.telefon || '';
+    form.querySelector('[name="mobil"]').value = kontakt.mobil || '';
+    form.querySelector('[name="fax"]').value = kontakt.fax || '';
+    form.querySelector('[name="typ"]').value = kontakt.typ || '';
+    form.querySelector('[name="ist_hauptkontakt"]').checked = kontakt.ist_hauptkontakt;
+    form.querySelector('[name="notizen"]').value = kontakt.notizen || '';
+
+    modal.showModal();
+}
+
+function closeKontaktModal() {
+    const form = document.getElementById('kontakt-form');
+    const modal = document.getElementById('kontakt-modal');
+    const title = document.getElementById('kontakt-modal-title');
+
+    // Reset form
+    form.reset();
+    form.action = '{{ url_for("crm_udo_admin.kontakt_neu", unternehmen_id=unternehmen.id) }}';
+    title.textContent = 'Neuer Kontakt';
+
+    modal.close();
+}
+</script>
+{% endblock %}

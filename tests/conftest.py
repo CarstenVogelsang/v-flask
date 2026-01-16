@@ -1,10 +1,20 @@
 """Test fixtures for v-flask tests."""
 
 import pytest
-from flask import Flask
+from flask import Flask, Blueprint
 
 from v_flask import VFlask, db
 from v_flask.models import User, Rolle, Permission, Betreiber
+
+
+# Dummy admin blueprint for testing plugin templates
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+
+@admin_bp.route('/')
+def dashboard():
+    """Dummy admin dashboard for template url_for() calls."""
+    return 'Admin Dashboard'
 
 
 @pytest.fixture
@@ -16,6 +26,9 @@ def app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = 'test-secret-key'
     app.config['WTF_CSRF_ENABLED'] = False
+
+    # Register dummy admin blueprint for template tests
+    app.register_blueprint(admin_bp)
 
     v_flask = VFlask(app)
 

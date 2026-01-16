@@ -53,3 +53,12 @@ htmlcov/
 
 # Logs
 *.log
+
+# Playwright MCP Screenshots (testing)
+.playwright-mcp/
+
+# KI-Tasks (temporary AI planning)
+ki-tasks/
+
+# Temporary prompt files
+docs/PLUGIN-PROMPT-*.md

@@ -53,6 +53,9 @@ Das Plugin funktioniert standalone ohne externe Abhängigkeiten.
     tags = ['kontakt', 'formular', 'contact', 'admin', 'anfrage', 'email']
     min_v_flask_version = '0.2.0'  # Requires UI slots feature
 
+    # Admin navigation: appears under "Kommunikation" category
+    admin_category = 'communication'
+
     # UI Slots: Automatic UI integration when plugin is activated
     ui_slots = {
         'footer_links': [
@@ -63,14 +66,14 @@ Das Plugin funktioniert standalone ohne externe Abhängigkeiten.
                 'order': 100,
             }
         ],
-        'admin_sidebar': [
+        'admin_menu': [
             {
                 'label': 'Kontakt-Anfragen',
                 'url': 'kontakt_admin.list_anfragen',
                 'icon': 'ti ti-inbox',
                 'badge_func': 'get_unread_count',
                 'permission': 'admin.*',
-                'order': 50,
+                'order': 10,  # First in communication category
             }
         ],
         'admin_dashboard_widgets': [

@@ -1,0 +1,169 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Unternehmen - CRM{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('crm_udo_admin.index') }}">CRM</a></li>
+        <li>Unternehmen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-building mr-2"></i>Unternehmen
+    </h1>
+    <a href="{{ url_for('crm_udo_admin.unternehmen_neu') }}" class="btn btn-primary">
+        <i class="ti ti-plus mr-2"></i>
+        Neues Unternehmen
+    </a>
+</div>
+
+{# Search & Filter #}
+<div class="card bg-base-100 shadow mb-6">
+    <div class="card-body py-4">
+        <form method="get" class="flex gap-4 items-end flex-wrap">
+            <div class="form-control flex-grow">
+                <label class="label">
+                    <span class="label-text">Suche</span>
+                </label>
+                <input type="text" name="suche" value="{{ suche }}"
+                       placeholder="Kurzname oder Firmierung..."
+                       class="input input-bordered w-full">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-search mr-2"></i>
+                    Suchen
+                </button>
+                {% if suche %}
+                <a href="{{ url_for('crm_udo_admin.unternehmen_list') }}" class="btn btn-ghost">
+                    <i class="ti ti-x mr-2"></i>
+                    Zurücksetzen
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Results Info #}
+<div class="flex justify-between items-center mb-4">
+    <p class="text-sm text-base-content/60">
+        {{ total }} Unternehmen gefunden
+        {% if suche %} für "{{ suche }}"{% endif %}
+    </p>
+</div>
+
+{# Companies Table #}
+<div class="card bg-base-100 shadow">
+    <div class="card-body p-0">
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Kurzname</th>
+                        <th>Firmierung</th>
+                        <th>Ort</th>
+                        <th class="w-24">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr class="hover">
+                        <td>
+                            <a href="{{ url_for('crm_udo_admin.unternehmen_detail', unternehmen_id=item.id) }}"
+                               class="font-semibold text-primary hover:underline">
+                                {{ item.kurzname or '-' }}
+                            </a>
+                        </td>
+                        <td class="text-base-content/70">
+                            {{ item.firmierung or '-' }}
+                        </td>
+                        <td>
+                            {% if item.geo_ort %}
+                                {{ item.geo_ort.name }}
+                                {% if item.geo_ort.kreis %}
+                                    <span class="text-xs text-base-content/50">
+                                        ({{ item.geo_ort.kreis.name }})
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-base-content/40">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="flex gap-1">
+                                <a href="{{ url_for('crm_udo_admin.unternehmen_detail', unternehmen_id=item.id) }}"
+                                   class="btn btn-sm btn-ghost" title="Details">
+                                    <i class="ti ti-eye"></i>
+                                </a>
+                                <a href="{{ url_for('crm_udo_admin.unternehmen_edit', unternehmen_id=item.id) }}"
+                                   class="btn btn-sm btn-ghost" title="Bearbeiten">
+                                    <i class="ti ti-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-base-content/50 py-8">
+                            {% if suche %}
+                                Keine Unternehmen für "{{ suche }}" gefunden.
+                            {% else %}
+                                Noch keine Unternehmen vorhanden.
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Pagination #}
+{% if total_pages > 1 %}
+<div class="flex justify-center mt-6">
+    <div class="join">
+        {% if page > 1 %}
+        <a href="{{ url_for('crm_udo_admin.unternehmen_list', page=page-1, suche=suche) }}"
+           class="join-item btn">
+            <i class="ti ti-chevron-left"></i>
+        </a>
+        {% else %}
+        <button class="join-item btn btn-disabled">
+            <i class="ti ti-chevron-left"></i>
+        </button>
+        {% endif %}
+
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <button class="join-item btn btn-active">{{ p }}</button>
+            {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+            <a href="{{ url_for('crm_udo_admin.unternehmen_list', page=p, suche=suche) }}"
+               class="join-item btn">{{ p }}</a>
+            {% elif p == page - 3 or p == page + 3 %}
+            <button class="join-item btn btn-disabled">...</button>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('crm_udo_admin.unternehmen_list', page=page+1, suche=suche) }}"
+           class="join-item btn">
+            <i class="ti ti-chevron-right"></i>
+        </a>
+        {% else %}
+        <button class="join-item btn btn-disabled">
+            <i class="ti ti-chevron-right"></i>
+        </button>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

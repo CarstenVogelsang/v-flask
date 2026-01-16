@@ -1,0 +1,133 @@
+{# Admin Sidebar Navigation
+
+This template renders the admin sidebar with plugin menu items grouped by category.
+Include this in your admin base template:
+
+    {% include 'v_flask/admin/_sidebar.html' %}
+
+The sidebar uses DaisyUI classes and Tabler Icons.
+
+Required context (provided automatically by v-flask):
+    - get_admin_menu(): Returns menu items grouped by category
+    - get_sorted_admin_categories(): Returns categories in display order
+
+Optional context:
+    - site_name: App name to display in sidebar header
+    - admin_dashboard_url: URL for the dashboard link (defaults to admin.dashboard)
+#}
+
+{% set admin_menu = get_admin_menu() %}
+{% set current_path = request.path %}
+
+<aside class="w-64 bg-base-200 min-h-screen flex flex-col" id="admin-sidebar">
+    {# Sidebar Header #}
+    <div class="p-4 border-b border-base-300">
+        <a href="{{ url_for(admin_dashboard_url|default('admin.dashboard')) }}"
+           class="text-xl font-bold flex items-center gap-2 hover:text-primary transition-colors">
+            <i class="ti ti-layout-dashboard"></i>
+            {{ site_name|default('Admin') }}
+        </a>
+    </div>
+
+    {# Navigation #}
+    <nav class="flex-1 overflow-y-auto p-2">
+        {% for category_id, category in get_sorted_admin_categories() %}
+            {% set items = admin_menu.get(category_id, []) %}
+
+            {# Only show categories that have items (or core dashboard) #}
+            {% if items %}
+            <div class="mb-4">
+                {# Category Header #}
+                <div class="px-3 py-2 text-xs uppercase tracking-wider text-base-content/50 font-semibold flex items-center gap-2">
+                    <i class="{{ category.icon }} text-sm"></i>
+                    {{ category.label }}
+                </div>
+
+                {# Menu Items #}
+                <ul class="menu menu-sm bg-transparent">
+                    {% for item in items %}
+                    {% set item_url = url_for(item.url) %}
+                    {% set is_active = current_path.startswith(item_url) %}
+
+                    <li>
+                        <a href="{{ item_url }}"
+                           class="{{ 'active' if is_active else '' }}">
+                            {% if item.icon %}
+                            <i class="{{ item.icon }}"></i>
+                            {% endif %}
+                            <span>{{ item.label }}</span>
+                            {% if item.badge %}
+                            <span class="badge badge-sm badge-primary">{{ item.badge }}</span>
+                            {% endif %}
+                        </a>
+
+                        {# Submenu if present #}
+                        {% if item.children %}
+                        <ul>
+                            {% for child in item.children %}
+                            <li>
+                                <a href="{{ url_for(child.url) }}"
+                                   class="{{ 'active' if current_path == url_for(child.url) else '' }}">
+                                    {{ child.label }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </nav>
+
+    {# Sidebar Footer #}
+    <div class="p-4 border-t border-base-300">
+        <button class="btn btn-ghost btn-sm w-full justify-start gap-2"
+                onclick="toggleAdminSidebar()"
+                title="Sidebar minimieren">
+            <i class="ti ti-chevron-left"></i>
+            <span class="sidebar-text">Minimieren</span>
+        </button>
+    </div>
+</aside>
+
+<style>
+    /* Sidebar toggle styles */
+    .sidebar-collapsed #admin-sidebar {
+        width: 4rem;
+    }
+
+    .sidebar-collapsed #admin-sidebar .sidebar-text,
+    .sidebar-collapsed #admin-sidebar .menu-title,
+    .sidebar-collapsed #admin-sidebar .badge {
+        display: none;
+    }
+
+    .sidebar-collapsed #admin-sidebar .ti-chevron-left {
+        transform: rotate(180deg);
+    }
+
+    .sidebar-collapsed #admin-sidebar .menu a {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    #admin-sidebar {
+        transition: width 0.2s ease-in-out;
+    }
+</style>
+
+<script>
+    function toggleAdminSidebar() {
+        document.body.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('sidebar-collapsed', document.body.classList.contains('sidebar-collapsed'));
+    }
+
+    // Restore sidebar state on page load
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+        document.body.classList.add('sidebar-collapsed');
+    }
+</script>

@@ -1,0 +1,424 @@
+{# Task Editor Content - loaded via AJAX into drawer #}
+<form onsubmit="return saveTask(this)" data-task-id="{{ task.id }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {# Header: Komponente → Task + Aktionen #}
+    <div class="flex flex-wrap items-end gap-2 mb-4">
+        {# Komponente Badge #}
+        <div>
+            <span class="text-xs opacity-60 block">Komponente</span>
+            <span class="badge badge-secondary">{{ task.komponente.name }}</span>
+        </div>
+        <i class="ti ti-arrow-right opacity-50 mb-1"></i>
+        {# Task-Nummer Badge #}
+        <div>
+            <span class="text-xs opacity-60 block">Task</span>
+            <span class="badge badge-secondary font-mono" id="taskIdBadge">{{ task.task_nummer }}</span>
+        </div>
+
+        {# Action Buttons #}
+        <div class="flex gap-1 ml-auto">
+            <button type="button" class="btn btn-sm btn-ghost"
+                    onclick="copyTaskAsPrompt({{ task.id }})"
+                    title="Als KI-Prompt kopieren">
+                <i class="ti ti-clipboard-copy"></i>
+            </button>
+
+            {% if task.offene_review_kommentare > 0 %}
+            <button type="button" class="btn btn-sm btn-ghost text-warning"
+                    onclick="copyReviewPrompt({{ task.id }})"
+                    title="Review-Prompt generieren">
+                <i class="ti ti-clipboard-check"></i>
+                <span class="badge badge-warning badge-xs">{{ task.offene_review_kommentare }}</span>
+            </button>
+            {% endif %}
+
+            <button type="button" class="btn btn-sm btn-ghost"
+                    onclick="document.getElementById('moveTaskModal').showModal()"
+                    title="Task verschieben">
+                <i class="ti ti-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    {# Entstanden aus Referenz #}
+    {% if task.entstanden_aus %}
+    <div class="alert alert-info py-2 mb-4">
+        <i class="ti ti-git-branch"></i>
+        <span>Entstanden aus:
+            <a href="#" onclick="openTaskEditor({{ task.entstanden_aus_id }}); return false;" class="font-bold link">
+                {{ task.entstanden_aus_nummer }}
+            </a>
+            <span class="opacity-70">- {{ task.entstanden_aus.titel|truncate(35) }}</span>
+        </span>
+    </div>
+    {% endif %}
+
+    {# Abgeleitete Tasks #}
+    {% if task.anzahl_abgeleitete > 0 %}
+    <div class="alert py-2 mb-4">
+        <i class="ti ti-git-fork"></i>
+        <span>{{ task.anzahl_abgeleitete }} abgeleitete Task(s)</span>
+    </div>
+    {% endif %}
+
+    {# Titel #}
+    <div class="form-control mb-3">
+        <label class="label">
+            <span class="label-text font-medium">Titel *</span>
+        </label>
+        <input type="text" name="titel" class="input input-bordered"
+               value="{{ task.titel }}" required>
+    </div>
+
+    {# Beschreibung #}
+    <div class="form-control mb-3">
+        <label class="label">
+            <span class="label-text font-medium">Beschreibung</span>
+        </label>
+        <textarea name="beschreibung" class="textarea textarea-bordered font-mono text-sm"
+                  rows="6" placeholder="Markdown wird unterstützt...">{{ task.beschreibung or '' }}</textarea>
+    </div>
+
+    {# Status + Priorität #}
+    <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="form-control">
+            <label class="label">
+                <span class="label-text">Status</span>
+            </label>
+            <select name="status" class="select select-bordered select-sm">
+                {% for value, label in task_status_liste %}
+                <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-control">
+            <label class="label">
+                <span class="label-text">Priorität</span>
+            </label>
+            <select name="prioritaet" class="select select-bordered select-sm">
+                {% for value, label in task_prioritaet_liste %}
+                <option value="{{ value }}" {% if task.prioritaet == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    {# Typ + Phase #}
+    <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="form-control">
+            <label class="label">
+                <span class="label-text">Typ</span>
+            </label>
+            <select name="typ" class="select select-bordered select-sm">
+                {% for eintrag in task_typen %}
+                <option value="{{ eintrag.schluessel }}" {% if task.typ == eintrag.schluessel %}selected{% endif %}>
+                    {{ eintrag.wert }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-control">
+            <label class="label">
+                <span class="label-text">Phase</span>
+            </label>
+            <select name="phase" class="select select-bordered select-sm">
+                <option value="">-- Keine Phase --</option>
+                {% for value, label in task_phase_liste %}
+                <option value="{{ value }}" {% if task.phase == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    {# Zugewiesen an #}
+    <div class="form-control mb-3">
+        <label class="label">
+            <span class="label-text">Zugewiesen an</span>
+        </label>
+        <select name="zugewiesen_an" class="select select-bordered select-sm">
+            <option value="">-- Nicht zugewiesen --</option>
+            {% for user in users %}
+            <option value="{{ user.id }}" {% if task.zugewiesen_an == user.id %}selected{% endif %}>
+                {{ user.full_name if user.full_name else user.email }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {# Changelog Checkbox #}
+    {% if task.status != 'erledigt' %}
+    <div class="form-control mb-3">
+        <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" name="create_changelog" class="checkbox checkbox-sm"
+                   {% if task.create_changelog_on_complete %}checked{% endif %}>
+            <span class="label-text">Bei Erledigung Changelog-Eintrag erstellen</span>
+        </label>
+    </div>
+    {% endif %}
+
+    {# Archivierung #}
+    <div class="form-control mb-4">
+        <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" name="ist_archiviert" class="checkbox checkbox-sm"
+                   {% if task.ist_archiviert %}checked{% endif %}>
+            <span class="label-text">
+                <i class="ti ti-archive opacity-50 mr-1"></i> Archiviert
+            </span>
+        </label>
+        <label class="label pt-0">
+            <span class="label-text-alt">Archivierte Tasks werden im Backlog und Erledigt ausgeblendet.</span>
+        </label>
+    </div>
+
+    {# Kommentare Section #}
+    <div class="collapse collapse-arrow bg-base-200 mb-4">
+        <input type="checkbox" {% if task.anzahl_kommentare > 0 %}checked{% endif %}>
+        <div class="collapse-title font-medium text-sm">
+            <i class="ti ti-messages mr-1"></i> Kommentare
+            {% if task.anzahl_kommentare > 0 %}
+            <span class="badge badge-ghost badge-sm ml-1">{{ task.anzahl_kommentare }}</span>
+            {% endif %}
+        </div>
+        <div class="collapse-content p-0">
+            {# New Comment Form #}
+            <div class="p-3 border-b border-base-300 bg-base-100">
+                <div class="flex gap-2 mb-2">
+                    <select class="select select-bordered select-xs flex-1" id="kommentar-typ-{{ task.id }}">
+                        <option value="kommentar">💬 Kommentar</option>
+                        <option value="review">🔍 Review</option>
+                        <option value="frage">❓ Frage</option>
+                        <option value="hinweis">💡 Hinweis</option>
+                    </select>
+                    <button type="button" class="btn btn-primary btn-xs"
+                            onclick="addKommentar({{ task.id }})">
+                        <i class="ti ti-send"></i>
+                    </button>
+                </div>
+                <textarea class="textarea textarea-bordered textarea-xs w-full"
+                          id="kommentar-inhalt-{{ task.id }}"
+                          rows="2" placeholder="Dein Kommentar..."></textarea>
+            </div>
+
+            {# Comments List #}
+            <div class="max-h-48 overflow-y-auto" id="kommentare-list-{{ task.id }}">
+                {% for k in task.kommentare %}
+                <div class="border-b border-base-300 p-2 {% if k.erledigt %}bg-base-200/50{% endif %}" data-kommentar-id="{{ k.id }}">
+                    <div class="flex items-center gap-2 mb-1">
+                        <input type="checkbox"
+                               class="checkbox checkbox-xs"
+                               {% if k.erledigt %}checked{% endif %}
+                               onclick="toggleKommentarErledigt({{ k.id }}, {{ task.id }})"
+                               title="Als erledigt markieren">
+                        <span class="badge badge-{{ k.typ_farbe }} badge-xs {% if k.erledigt %}opacity-50{% endif %}">
+                            {{ k.typ_label|upper }}
+                        </span>
+                        <span class="text-xs opacity-60">
+                            {{ k.user.vorname if k.user else 'System' }}
+                        </span>
+                        {% if k.erledigt %}<i class="ti ti-check text-success text-xs"></i>{% endif %}
+                        {% if k.user_id == current_user.id %}
+                        <div class="ml-auto flex gap-1">
+                            <button type="button" class="btn btn-ghost btn-xs p-0"
+                                    onclick="deleteKommentar({{ k.id }}, {{ task.id }})" title="Löschen">
+                                <i class="ti ti-trash text-error"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="pl-6 text-sm {% if k.erledigt %}opacity-50 line-through{% endif %}">
+                        {{ k.inhalt }}
+                    </div>
+                </div>
+                {% else %}
+                <div class="p-4 text-center opacity-50">
+                    <i class="ti ti-message-off"></i> Keine Kommentare
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="divider my-2"></div>
+
+    {# Actions #}
+    <div class="flex justify-between items-center gap-2">
+        <button type="button" class="btn btn-outline btn-error btn-sm" onclick="deleteTask({{ task.id }})">
+            <i class="ti ti-trash"></i> Löschen
+        </button>
+        <div class="flex gap-2">
+            {% if task.changelog_eintraege.count() > 0 %}
+            <a href="{{ url_for('projektverwaltung_admin.changelog_liste', id=task.komponente_id) }}"
+               class="btn btn-outline btn-success btn-sm" target="_blank">
+                <i class="ti ti-eye"></i> Changelog
+            </a>
+            {% endif %}
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="ti ti-device-floppy mr-1"></i> Speichern
+            </button>
+        </div>
+    </div>
+
+    {# Timestamps #}
+    {% if task.created_at %}
+    <div class="divider my-2"></div>
+    <div class="text-xs opacity-60">
+        Erstellt: {{ task.created_at.strftime('%d.%m.%Y %H:%M') }}
+        {% if task.erledigt_am %}
+        <br>Erledigt: {{ task.erledigt_am.strftime('%d.%m.%Y %H:%M') }}
+        {% endif %}
+    </div>
+    {% endif %}
+</form>
+
+{# Move Task Modal #}
+<dialog id="moveTaskModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">
+            <i class="ti ti-arrow-right mr-1"></i> Task verschieben
+        </h3>
+        <p class="py-2 text-sm opacity-70">
+            Die Task-Nummer ändert sich entsprechend der Zielkomponente.
+        </p>
+        <div class="form-control">
+            <label class="label">
+                <span class="label-text">Zielkomponente</span>
+            </label>
+            <select class="select select-bordered" id="moveTaskKomponente">
+                {% for komp in projekt.komponenten if komp.id != task.komponente_id %}
+                <option value="{{ komp.id }}">
+                    {% if komp.prd_nummer %}PRD-{{ komp.prd_nummer }} - {% endif %}{{ komp.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-ghost btn-sm">Abbrechen</button>
+            </form>
+            <button type="button" class="btn btn-primary btn-sm" onclick="moveTask({{ task.id }})">
+                <i class="ti ti-arrow-right mr-1"></i> Verschieben
+            </button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<script>
+// Type dropdown handler (simplified - using select instead of custom dropdown)
+document.querySelectorAll('#task-typ-dropdown + .dropdown-menu .dropdown-item').forEach(function(item) {
+    item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const typ = this.dataset.typ;
+        document.getElementById('task-typ').value = typ;
+        document.getElementById('typ-display').innerHTML = this.innerHTML;
+        this.closest('.dropdown-menu').querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+function toggleKommentarForm(taskId) {
+    const form = document.getElementById('kommentar-form-' + taskId);
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function addKommentar(taskId) {
+    const typ = document.getElementById('kommentar-typ-' + taskId).value;
+    const inhalt = document.getElementById('kommentar-inhalt-' + taskId).value.trim();
+    if (!inhalt) return;
+
+    fetch(`{{ url_for('projektverwaltung_api.index') }}tasks/${taskId}/kommentare`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ typ: typ, inhalt: inhalt })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        openTaskEditor(taskId); // Reload task editor
+    });
+}
+
+function toggleKommentarErledigt(kommentarId, taskId) {
+    fetch(`{{ url_for('projektverwaltung_api.index') }}kommentare/${kommentarId}/toggle-erledigt`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        openTaskEditor(taskId); // Reload task editor
+    });
+}
+
+function deleteKommentar(kommentarId, taskId) {
+    if (!confirm('Kommentar wirklich löschen?')) return;
+
+    fetch(`{{ url_for('projektverwaltung_api.index') }}kommentare/${kommentarId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            openTaskEditor(taskId); // Reload task editor
+        }
+    });
+}
+
+function moveTask(taskId) {
+    const komponenteId = document.getElementById('moveTaskKomponente').value;
+    if (!komponenteId) return;
+
+    fetch(`{{ url_for('projektverwaltung_api.index') }}tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ komponente_id: parseInt(komponenteId) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        location.reload();
+    });
+}
+
+async function copyReviewPrompt(taskId) {
+    try {
+        const response = await fetch(`{{ url_for('projektverwaltung_api.index') }}tasks/${taskId}/review-prompt`);
+        if (!response.ok) throw new Error('API-Fehler');
+        const data = await response.json();
+        await navigator.clipboard.writeText(data.prompt);
+        alert(`Review-Prompt für ${data.task_nummer} kopiert`);
+    } catch (error) {
+        console.error('Fehler beim Kopieren:', error);
+        alert('Kopieren fehlgeschlagen');
+    }
+}
+</script>

@@ -1,0 +1,57 @@
+{# Media grid partial - used by HTMX for dynamic updates #}
+
+{% if media_items %}
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    {% for media in media_items %}
+    <a href="{{ url_for('media_admin.detail', id=media.id) }}"
+       class="card bg-base-100 shadow hover:shadow-lg transition-shadow group">
+        <figure class="relative aspect-square bg-base-200 overflow-hidden">
+            {% if media.is_image %}
+            <img src="{{ media.get_url('thumbnail') }}"
+                 alt="{{ media.alt_text or media.filename }}"
+                 class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                 loading="lazy">
+            {% else %}
+            <div class="flex items-center justify-center w-full h-full">
+                <i class="ti ti-file text-4xl text-base-content/30"></i>
+            </div>
+            {% endif %}
+
+            {# Source Badge #}
+            {% if media.source != 'upload' %}
+            <div class="absolute top-2 left-2">
+                {% if media.source == 'pexels' %}
+                <span class="badge badge-sm badge-accent">Pexels</span>
+                {% elif media.source == 'unsplash' %}
+                <span class="badge badge-sm badge-info">Unsplash</span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {# Hover Overlay #}
+            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span class="btn btn-circle btn-sm btn-ghost text-white">
+                    <i class="ti ti-eye"></i>
+                </span>
+            </div>
+        </figure>
+        <div class="card-body p-2">
+            <p class="text-xs truncate" title="{{ media.original_filename }}">
+                {{ media.original_filename|truncate(20) }}
+            </p>
+            {% if media.width and media.height %}
+            <p class="text-xs text-base-content/50">{{ media.width }}x{{ media.height }}</p>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-12 text-base-content/60">
+    <i class="ti ti-photo-off text-4xl mb-2"></i>
+    <p>Keine Medien gefunden.</p>
+    <a href="{{ url_for('media_admin.upload') }}" class="btn btn-primary btn-sm mt-4">
+        <i class="ti ti-upload mr-1"></i> Erste Datei hochladen
+    </a>
+</div>
+{% endif %}

@@ -1,0 +1,73 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Datenschutz - Versionshistorie{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-shield-check mr-1"></i>Rechtliches</li>
+        <li><a href="{{ url_for('datenschutz_admin.editor') }}">Datenschutz</a></li>
+        <li>Versionshistorie</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-history text-primary mr-2"></i>Versionshistorie
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('datenschutz_admin.editor') }}" class="btn btn-outline btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zurück
+        </a>
+        <span class="badge badge-primary">
+            Aktuelle Version: {{ config.version }}
+        </span>
+    </div>
+</div>
+
+    {% if versions %}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Version</th>
+                        <th>Datum</th>
+                        <th>Geändert von</th>
+                        <th>Bausteine</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for version in versions %}
+                    <tr>
+                        <td>
+                            <span class="badge badge-ghost">v{{ version.version }}</span>
+                        </td>
+                        <td>
+                            {{ version.created_at.strftime('%d.%m.%Y %H:%M') }}
+                        </td>
+                        <td>
+                            {{ version.changed_by or 'Unbekannt' }}
+                        </td>
+                        <td>
+                            {% set bausteine = version.snapshot.get('aktivierte_bausteine', []) %}
+                            <span class="text-base-content/60 text-sm">
+                                {{ bausteine|length }} Baustein{% if bausteine|length != 1 %}e{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="ti ti-info-circle mr-2"></i>
+        Noch keine Versionen vorhanden. Versionen werden beim Speichern automatisch erstellt.
+    </div>
+    {% endif %}
+{% endblock %}

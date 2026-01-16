@@ -1,83 +1,75 @@
-{% extends "v_flask/base.html" %}
+{% extends "admin/base.html" %}
 
 {% block title %}Kontaktanfrage von {{ anfrage.name }}{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="{{ url_for('kontakt_admin.list_anfragen') }}">
-                    <i class="ti ti-mail me-1"></i>Kontaktanfragen
-                </a>
-            </li>
-            <li class="breadcrumb-item active">{{ anfrage.name }}</li>
-        </ol>
-    </nav>
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-messages mr-1"></i>Kommunikation</li>
+        <li><a href="{{ url_for('kontakt_admin.list_anfragen') }}">Kontaktanfragen</a></li>
+        <li>{{ anfrage.name }}</li>
+    </ul>
+</div>
+{% endblock %}
 
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="ti ti-mail me-2"></i>
-                        Nachricht von {{ anfrage.name }}
-                    </h5>
-                    <span class="badge {% if anfrage.gelesen %}bg-secondary{% else %}bg-primary{% endif %}">
-                        {% if anfrage.gelesen %}Gelesen{% else %}Ungelesen{% endif %}
-                    </span>
-                </div>
-                <div class="card-body">
-                    <div class="mb-4">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-muted small">Name</label>
-                                <p class="mb-0 fw-medium">{{ anfrage.name }}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted small">E-Mail</label>
-                                <p class="mb-0">
-                                    <a href="mailto:{{ anfrage.email }}">{{ anfrage.email }}</a>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-muted small">Eingegangen am</label>
-                                <p class="mb-0">{{ anfrage.created_at.strftime('%d.%m.%Y um %H:%M Uhr') }}</p>
-                            </div>
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-mail text-primary mr-2"></i>{{ anfrage.name }}
+        <span class="badge {% if anfrage.gelesen %}badge-ghost{% else %}badge-primary{% endif %} ml-2">
+            {% if anfrage.gelesen %}Gelesen{% else %}Ungelesen{% endif %}
+        </span>
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('kontakt_admin.list_anfragen') }}" class="btn btn-outline btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zurück
+        </a>
+        <a href="mailto:{{ anfrage.email }}?subject=Re: Kontaktanfrage" class="btn btn-primary btn-sm">
+            <i class="ti ti-mail-forward mr-1"></i> Antworten
+        </a>
+        <form action="{{ url_for('kontakt_admin.delete', anfrage_id=anfrage.id) }}"
+              method="POST"
+              class="inline"
+              onsubmit="return confirm('Anfrage wirklich löschen?');">
+            <button type="submit" class="btn btn-error btn-outline btn-sm">
+                <i class="ti ti-trash mr-1"></i> Löschen
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <p class="text-base-content/60 text-sm">Name</p>
+                            <p class="font-medium">{{ anfrage.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-base-content/60 text-sm">E-Mail</p>
+                            <p>
+                                <a href="mailto:{{ anfrage.email }}" class="link link-primary">{{ anfrage.email }}</a>
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-base-content/60 text-sm">Eingegangen am</p>
+                            <p>{{ anfrage.created_at.strftime('%d.%m.%Y um %H:%M Uhr') }}</p>
                         </div>
                     </div>
 
-                    <hr>
+                    <div class="divider"></div>
 
                     <div>
-                        <label class="form-label text-muted small">Nachricht</label>
-                        <div class="bg-light rounded p-3">
+                        <p class="text-base-content/60 text-sm mb-2">Nachricht</p>
+                        <div class="bg-base-200 rounded-lg p-4">
                             {{ anfrage.nachricht|nl2br }}
                         </div>
                     </div>
-                </div>
-                <div class="card-footer">
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('kontakt_admin.list_anfragen') }}"
-                           class="btn btn-outline-secondary">
-                            <i class="ti ti-arrow-left me-1"></i>Zurück zur Liste
-                        </a>
-                        <div class="btn-group">
-                            <a href="mailto:{{ anfrage.email }}?subject=Re: Kontaktanfrage"
-                               class="btn btn-primary">
-                                <i class="ti ti-mail-forward me-1"></i>Antworten
-                            </a>
-                            <form action="{{ url_for('kontakt_admin.delete', anfrage_id=anfrage.id) }}"
-                                  method="POST"
-                                  class="d-inline"
-                                  onsubmit="return confirm('Anfrage wirklich löschen?');">
-                                <button type="submit" class="btn btn-outline-danger">
-                                    <i class="ti ti-trash me-1"></i>Löschen
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+
             </div>
         </div>
     </div>

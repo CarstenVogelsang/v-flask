@@ -1,0 +1,156 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Changelog - {{ komponente.name }} - Projektverwaltung{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-article mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('projektverwaltung_admin.index') }}">Projektverwaltung</a></li>
+        <li><a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id) }}">{{ projekt.name }}</a></li>
+        <li>Changelog</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex flex-wrap justify-between items-center mb-6 gap-2">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-history text-secondary mr-2"></i>
+        Changelog:
+        {% if komponente.prd_nummer %}PRD-{{ komponente.prd_nummer }} -{% endif %}
+        {{ komponente.name }}
+    </h1>
+    <a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id, komponente=komponente.id) }}"
+       class="btn btn-outline btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Zurück zum Board
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# New Entry Form #}
+    <div class="lg:col-span-1">
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg">
+                    <i class="ti ti-plus mr-1"></i> Neuer Eintrag
+                </h2>
+                <form method="post" action="{{ url_for('projektverwaltung_admin.changelog_neu', komponente_id=komponente.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="form-control mb-3">
+                        <label class="label">
+                            <span class="label-text">Version</span>
+                        </label>
+                        <input type="text" name="version" class="input input-bordered input-sm"
+                               value="{{ komponente.aktuelle_phase }}" placeholder="z.B. POC, MVP, V1">
+                    </div>
+
+                    <div class="form-control mb-3">
+                        <label class="label">
+                            <span class="label-text">Kategorie</span>
+                        </label>
+                        <select name="kategorie" class="select select-bordered select-sm">
+                            {% for value, label in kategorien %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-control mb-3">
+                        <label class="label">
+                            <span class="label-text">Beschreibung *</span>
+                        </label>
+                        <textarea name="beschreibung" class="textarea textarea-bordered textarea-sm"
+                                  rows="3" required placeholder="Was wurde geändert?"></textarea>
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text">Sichtbarkeit</span>
+                        </label>
+                        <select name="sichtbarkeit" class="select select-bordered select-sm">
+                            <option value="intern">Intern (nur Mitarbeiter)</option>
+                            <option value="oeffentlich">Öffentlich (auch Kunden)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-full">
+                        <i class="ti ti-plus mr-1"></i> Eintrag hinzufügen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# Changelog List #}
+    <div class="lg:col-span-2">
+        <div class="card bg-base-100 shadow">
+            <div class="card-body p-0">
+                <div class="flex justify-between items-center px-4 py-3 border-b border-base-300">
+                    <span class="font-semibold">
+                        <i class="ti ti-list mr-1"></i> Änderungshistorie
+                    </span>
+                    <span class="badge badge-ghost">{{ eintraege|length }} Einträge</span>
+                </div>
+
+                {% if eintraege %}
+                <div class="divide-y divide-base-200">
+                    {% set current_version = namespace(value=None) %}
+                    {% for eintrag in eintraege %}
+                        {% if eintrag.version != current_version.value %}
+                            {% set current_version.value = eintrag.version %}
+                            <div class="px-4 py-2 bg-base-200 font-semibold text-sm">
+                                <i class="ti ti-tag mr-1"></i>
+                                {{ eintrag.version|upper }}
+                            </div>
+                        {% endif %}
+                        <div class="px-4 py-3">
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="flex-grow">
+                                    <span class="badge mr-2
+                                        {% if eintrag.kategorie == 'added' %}badge-success
+                                        {% elif eintrag.kategorie == 'changed' %}badge-primary
+                                        {% elif eintrag.kategorie == 'fixed' %}badge-warning
+                                        {% elif eintrag.kategorie == 'removed' %}badge-error
+                                        {% elif eintrag.kategorie == 'deprecated' %}badge-ghost
+                                        {% elif eintrag.kategorie == 'security' %}badge-neutral
+                                        {% endif %}">
+                                        {{ eintrag.kategorie|upper }}
+                                    </span>
+                                    {{ eintrag.beschreibung }}
+                                    {% if eintrag.task %}
+                                    <div class="mt-1">
+                                        <small class="text-base-content/60">
+                                            <i class="ti ti-subtask mr-1"></i>
+                                            Aus Task: {{ eintrag.task.titel }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right text-nowrap">
+                                    <small class="text-base-content/60">
+                                        {{ eintrag.erstellt_am.strftime('%d.%m.%Y') }}
+                                    </small>
+                                    {% if eintrag.sichtbarkeit == 'intern' %}
+                                    <br><span class="badge badge-ghost badge-xs">intern</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12 text-base-content/50">
+                    <i class="ti ti-history text-5xl"></i>
+                    <p class="mt-2">Noch keine Changelog-Einträge.</p>
+                    <p class="text-sm">Einträge werden automatisch erstellt, wenn Tasks als erledigt markiert werden.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

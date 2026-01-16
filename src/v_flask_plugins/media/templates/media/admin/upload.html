@@ -1,0 +1,250 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Datei hochladen{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('media_admin.library') }}">Media-Library</a></li>
+        <li>Hochladen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-upload text-primary"></i>
+        <span>Datei hochladen</span>
+    </h1>
+    <a href="{{ url_for('media_admin.library') }}" class="btn btn-ghost btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Abbrechen
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {# Upload Form #}
+    <div>
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="ti ti-cloud-upload"></i>
+                    Datei auswahlen
+                </h2>
+
+                <form method="post"
+                      enctype="multipart/form-data"
+                      id="upload-form"
+                      hx-post="{{ url_for('media_admin.upload') }}"
+                      hx-target="#upload-result"
+                      hx-encoding="multipart/form-data">
+
+                    {# Dropzone #}
+                    <div id="dropzone"
+                         class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-base-200/50 transition-colors mb-4"
+                         onclick="document.getElementById('file-input').click()">
+                        <i class="ti ti-cloud-upload text-4xl text-base-content/30 mb-2"></i>
+                        <p class="text-base-content/70 mb-1">Datei hier ablegen oder klicken</p>
+                        <p class="text-xs text-base-content/50">JPG, PNG, GIF, WebP, PDF (max. 10MB)</p>
+                        <input type="file"
+                               id="file-input"
+                               name="file"
+                               class="hidden"
+                               accept="image/*,.pdf"
+                               onchange="handleFileSelect(this)">
+                    </div>
+
+                    {# File Preview #}
+                    <div id="file-preview" class="hidden mb-4">
+                        <div class="flex items-center gap-4 p-4 bg-base-200 rounded-lg">
+                            <div id="preview-image" class="w-20 h-20 bg-base-300 rounded overflow-hidden flex items-center justify-center">
+                                <i class="ti ti-file text-2xl text-base-content/30"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p id="preview-name" class="font-medium truncate"></p>
+                                <p id="preview-size" class="text-sm text-base-content/60"></p>
+                            </div>
+                            <button type="button" class="btn btn-ghost btn-sm btn-circle" onclick="clearFile()">
+                                <i class="ti ti-x"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {# Metadata #}
+                    <div class="form-control mb-4">
+                        <label class="label" for="alt_text">
+                            <span class="label-text">Alt-Text (SEO)</span>
+                        </label>
+                        <input type="text"
+                               class="input input-bordered w-full"
+                               id="alt_text"
+                               name="alt_text"
+                               placeholder="Beschreibung des Bildes...">
+                        <label class="label">
+                            <span class="label-text-alt">Wichtig fur Barrierefreiheit und SEO</span>
+                        </label>
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label" for="title">
+                            <span class="label-text">Titel (optional)</span>
+                        </label>
+                        <input type="text"
+                               class="input input-bordered w-full"
+                               id="title"
+                               name="title"
+                               placeholder="Anzeige-Titel...">
+                    </div>
+
+                    <button type="submit"
+                            id="submit-btn"
+                            class="btn btn-primary w-full"
+                            disabled>
+                        <i class="ti ti-upload mr-1"></i>
+                        Hochladen
+                    </button>
+                </form>
+
+                <div id="upload-result" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    {# Info Panel #}
+    <div>
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="ti ti-info-circle"></i>
+                    Hinweise
+                </h2>
+
+                <div class="space-y-4">
+                    <div class="flex gap-3">
+                        <i class="ti ti-photo text-primary text-xl"></i>
+                        <div>
+                            <p class="font-medium">Automatische Optimierung</p>
+                            <p class="text-sm text-base-content/70">
+                                Bilder werden automatisch in 4 Grossen generiert:
+                                Thumbnail (150px), Small (400px), Medium (800px), Large (1200px)
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <i class="ti ti-folder text-primary text-xl"></i>
+                        <div>
+                            <p class="font-medium">Ordner-Struktur</p>
+                            <p class="text-sm text-base-content/70">
+                                Dateien werden nach Jahr/Monat organisiert (YYYY/MM/)
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <i class="ti ti-camera text-primary text-xl"></i>
+                        <div>
+                            <p class="font-medium">Stock-Fotos</p>
+                            <p class="text-sm text-base-content/70">
+                                Alternativ konnen Sie auch
+                                <a href="{{ url_for('media_admin.stock_search') }}" class="link link-primary">
+                                    kostenlose Stock-Fotos
+                                </a>
+                                von Pexels oder Unsplash importieren.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dropzone drag & drop
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, () => {
+        dropzone.classList.add('border-primary', 'bg-base-200/50');
+    });
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, () => {
+        dropzone.classList.remove('border-primary', 'bg-base-200/50');
+    });
+});
+
+dropzone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect(fileInput);
+    }
+});
+
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const preview = document.getElementById('file-preview');
+    const previewImage = document.getElementById('preview-image');
+    const previewName = document.getElementById('preview-name');
+    const previewSize = document.getElementById('preview-size');
+    const submitBtn = document.getElementById('submit-btn');
+    const dropzoneEl = document.getElementById('dropzone');
+
+    // Show preview
+    previewName.textContent = file.name;
+    previewSize.textContent = formatFileSize(file.size);
+
+    // Show image preview if image
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImage.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        previewImage.innerHTML = '<i class="ti ti-file text-2xl text-base-content/30"></i>';
+    }
+
+    preview.classList.remove('hidden');
+    dropzoneEl.classList.add('hidden');
+    submitBtn.disabled = false;
+}
+
+function clearFile() {
+    const fileInput = document.getElementById('file-input');
+    const preview = document.getElementById('file-preview');
+    const dropzoneEl = document.getElementById('dropzone');
+    const submitBtn = document.getElementById('submit-btn');
+
+    fileInput.value = '';
+    preview.classList.add('hidden');
+    dropzoneEl.classList.remove('hidden');
+    submitBtn.disabled = true;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>
+{% endblock %}

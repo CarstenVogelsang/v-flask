@@ -1,0 +1,107 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Einstellungen - Projektverwaltung{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-article mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('projektverwaltung_admin.index') }}">Projektverwaltung</a></li>
+        <li>Einstellungen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-settings text-secondary mr-2"></i>
+        Projektverwaltung - Einstellungen
+    </h1>
+    <a href="{{ url_for('projektverwaltung_admin.index') }}" class="btn btn-outline btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Zurück
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Settings Form #}
+    <div class="lg:col-span-2">
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="card bg-base-100 shadow">
+                <div class="card-body">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="card-title">
+                            <i class="ti ti-robot mr-1"></i>
+                            KI-Prompt Einstellungen
+                        </h2>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="ti ti-device-floppy mr-1"></i> Speichern
+                        </button>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Arbeitsanweisungen (Prompt-Suffix)</span>
+                        </label>
+                        <textarea name="ki_prompt_suffix" class="textarea textarea-bordered font-mono text-sm"
+                                  rows="12"
+                                  placeholder="Diese Anweisungen werden an jeden generierten KI-Prompt angehängt...">{{ ki_prompt_suffix }}</textarea>
+                        <label class="label">
+                            <span class="label-text-alt">
+                                <i class="ti ti-info-circle mr-1"></i>
+                                Dieser Text wird an jeden Task-Prompt angehängt, der mit dem
+                                <i class="ti ti-clipboard-copy"></i>-Button kopiert wird.
+                            </span>
+                        </label>
+                        <label class="label">
+                            <span class="label-text-alt">
+                                <strong>Verfügbare Platzhalter:</strong> <code class="bg-base-200 px-1 rounded">{task_id}</code> wird durch die Task-ID ersetzt.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {# Help Card #}
+    <div class="lg:col-span-1">
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg">
+                    <i class="ti ti-help mr-1"></i> Hinweise
+                </h2>
+
+                <div class="divider my-2"></div>
+
+                <h3 class="font-semibold text-sm">Prompt-Format</h3>
+                <p class="text-sm text-base-content/70 mb-2">
+                    Der generierte Prompt enthält:
+                </p>
+                <ul class="text-sm text-base-content/70 list-disc list-inside mb-4">
+                    <li>Task-Nummer (z.B. PRD011-T032)</li>
+                    <li>Typ mit Beschreibung</li>
+                    <li>Priorität und Phase</li>
+                    <li>Task-Beschreibung</li>
+                    <li>Arbeitsanweisungen (dieser Suffix)</li>
+                </ul>
+
+                <div class="divider my-2"></div>
+
+                <h3 class="font-semibold text-sm">Beispiel-Anweisungen</h3>
+                <div class="mockup-code text-xs mt-2">
+                    <pre><code>Bei Unklarheiten Rückfragen stellen.
+
+Nach Erledigung Task auf "Review" setzen:
+curl -X PATCH .../api/tasks/{task_id}
+  -d '{"status": "review"}'</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

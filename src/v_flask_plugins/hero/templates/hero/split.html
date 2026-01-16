@@ -1,0 +1,47 @@
+{# Hero Section: Split - Bild links, Text rechts #}
+{#
+   Variables:
+   - hero: HeroSection model instance
+   - title: Rendered title string
+   - subtitle: Rendered subtitle string
+#}
+
+<div class="hero bg-base-200 rounded-box mb-8 py-8">
+    <div class="hero-content flex-col lg:flex-row gap-8">
+        {# Left: Image #}
+        <div class="lg:w-1/2">
+            {% if hero.image_path %}
+            <img src="{{ url_for('static', filename=hero.image_path.lstrip('/')) }}"
+                 alt="{{ title }}"
+                 class="rounded-lg shadow-2xl w-full h-64 lg:h-80 object-cover">
+            {% else %}
+            <div class="rounded-lg shadow-2xl w-full h-64 lg:h-80 flex items-center justify-center"
+                 style="background: linear-gradient(135deg, oklch(var(--p)), oklch(var(--a)));">
+                <i class="ti ti-photo text-8xl text-white/50"></i>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Right: Text #}
+        <div class="lg:w-1/2 text-center lg:text-left">
+            {% if title %}
+            <h1 class="text-4xl lg:text-5xl font-bold">
+                {{ title }}
+            </h1>
+            {% endif %}
+
+            {% if subtitle %}
+            <p class="py-6 text-lg text-base-content/80">
+                {{ subtitle }}
+            </p>
+            {% endif %}
+
+            {% if hero.cta_text and hero.cta_link %}
+            <a href="{{ hero.cta_link }}"
+               class="btn btn-primary btn-lg">
+                {{ hero.cta_text }}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>

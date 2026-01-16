@@ -1,0 +1,141 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Auswertung - {{ fragebogen.titel }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('fragebogen_admin.index') }}">Fragebögen</a></li>
+        <li><a href="{{ url_for('fragebogen_admin.detail', fragebogen_id=fragebogen.id) }}">{{ fragebogen.titel }}</a></li>
+        <li>Auswertung</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-chart-bar text-primary mr-2"></i>Auswertung
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('fragebogen_admin.export_xlsx', fragebogen_id=fragebogen.id) }}"
+           class="btn btn-outline btn-sm">
+            <i class="ti ti-download mr-1"></i> XLSX Export
+        </a>
+    </div>
+</div>
+
+{# Overview Stats #}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-title">Teilnehmer gesamt</div>
+        <div class="stat-value text-primary">{{ stats.teilnehmer_gesamt }}</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-title">Abgeschlossen</div>
+        <div class="stat-value text-success">{{ stats.teilnehmer_abgeschlossen }}</div>
+        <div class="stat-desc">
+            {% if stats.teilnehmer_gesamt > 0 %}
+            {{ ((stats.teilnehmer_abgeschlossen / stats.teilnehmer_gesamt) * 100)|round|int }}% Abschlussrate
+            {% endif %}
+        </div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-title">Fragen</div>
+        <div class="stat-value">{{ stats.fragen|length }}</div>
+    </div>
+</div>
+
+{# Per-Question Statistics #}
+<div class="space-y-4">
+    {% for frage_stats in stats.fragen %}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h3 class="font-medium text-lg">
+                {{ frage_stats.frage }}
+                <span class="badge badge-ghost badge-sm ml-2">{{ frage_stats.typ }}</span>
+            </h3>
+            <p class="text-sm text-base-content/60 mb-4">
+                {{ frage_stats.antworten_count }} Antworten
+            </p>
+
+            {% if frage_stats.statistik %}
+            {# Distribution chart for choice questions #}
+            {% if frage_stats.statistik.typ == 'verteilung' %}
+            <div class="space-y-2">
+                {% for option, count in frage_stats.statistik.werte.items() %}
+                {% set percent = (count / frage_stats.antworten_count * 100)|round|int if frage_stats.antworten_count > 0 else 0 %}
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>{{ option }}</span>
+                        <span>{{ count }} ({{ percent }}%)</span>
+                    </div>
+                    <progress class="progress progress-primary w-full" value="{{ percent }}" max="100"></progress>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% elif frage_stats.statistik.typ == 'verteilung_mehrfach' %}
+            <div class="space-y-2">
+                {% for option, count in frage_stats.statistik.werte.items() %}
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>{{ option }}</span>
+                        <span>{{ count }}x gewählt</span>
+                    </div>
+                    <progress class="progress progress-secondary w-full"
+                              value="{{ count }}"
+                              max="{{ frage_stats.antworten_count }}"></progress>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% elif frage_stats.statistik.typ == 'skala' %}
+            <div class="flex items-center gap-4 mb-4">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-primary">
+                        {{ frage_stats.statistik.durchschnitt|round(1) }}
+                    </div>
+                    <div class="text-sm text-base-content/60">Durchschnitt</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xl">{{ frage_stats.statistik.min }}</div>
+                    <div class="text-sm text-base-content/60">Min</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xl">{{ frage_stats.statistik.max }}</div>
+                    <div class="text-sm text-base-content/60">Max</div>
+                </div>
+            </div>
+            <div class="space-y-1">
+                {% for value, count in frage_stats.statistik.verteilung.items()|sort %}
+                <div class="flex items-center gap-2">
+                    <span class="w-8 text-right">{{ value }}</span>
+                    <progress class="progress progress-primary flex-1"
+                              value="{{ count }}"
+                              max="{{ frage_stats.antworten_count }}"></progress>
+                    <span class="w-8 text-base-content/60">{{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% elif frage_stats.statistik.typ == 'text' %}
+            <div class="max-h-60 overflow-y-auto space-y-2">
+                {% for antwort in frage_stats.statistik.antworten %}
+                <div class="p-2 bg-base-200 rounded text-sm">
+                    {{ antwort }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="text-base-content/40 italic">Keine Statistik verfügbar</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

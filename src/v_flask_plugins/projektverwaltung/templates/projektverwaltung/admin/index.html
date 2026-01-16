@@ -1,0 +1,139 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Projektverwaltung{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-article mr-1"></i>Inhalte</li>
+        <li>Projektverwaltung</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-folder text-primary mr-2"></i>Projektverwaltung
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('projektverwaltung_admin.projekt_neu') }}" class="btn btn-primary btn-sm">
+            <i class="ti ti-plus mr-1"></i> Neues Projekt
+        </a>
+        <a href="{{ url_for('projektverwaltung_admin.einstellungen') }}" class="btn btn-outline btn-sm">
+            <i class="ti ti-settings"></i>
+        </a>
+    </div>
+</div>
+
+{# Stats Cards #}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-primary">
+            <i class="ti ti-folder text-3xl"></i>
+        </div>
+        <div class="stat-title">Interne Projekte</div>
+        <div class="stat-value text-primary">{{ stats.projekte_intern }}</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-secondary">
+            <i class="ti ti-users text-3xl"></i>
+        </div>
+        <div class="stat-title">Kundenprojekte</div>
+        <div class="stat-value text-secondary">{{ stats.projekte_kunde }}</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-info">
+            <i class="ti ti-package text-3xl"></i>
+        </div>
+        <div class="stat-title">Komponenten</div>
+        <div class="stat-value text-info">{{ stats.komponenten_total }}</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-warning">
+            <i class="ti ti-list-check text-3xl"></i>
+        </div>
+        <div class="stat-title">Tasks in Arbeit</div>
+        <div class="stat-value text-warning">{{ stats.tasks_in_arbeit }}</div>
+        <div class="stat-desc">{{ stats.tasks_offen }} offen gesamt</div>
+    </div>
+</div>
+
+{# Project List #}
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        <h2 class="card-title mb-4">
+            <i class="ti ti-list mr-2"></i>Projekte
+        </h2>
+
+        {% if projekte %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Projekt</th>
+                        <th>Typ</th>
+                        <th>Komponenten</th>
+                        <th>Status</th>
+                        <th class="text-right">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for projekt in projekte %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id) }}"
+                               class="font-medium hover:text-primary">
+                                {{ projekt.name }}
+                            </a>
+                            {% if projekt.beschreibung %}
+                            <p class="text-sm text-base-content/60 max-w-md truncate">
+                                {{ projekt.beschreibung }}
+                            </p>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if projekt.ist_kundenprojekt %}
+                            <span class="badge badge-secondary">Kunde</span>
+                            {% else %}
+                            <span class="badge badge-ghost">Intern</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-outline">{{ projekt.anzahl_komponenten }}</span>
+                        </td>
+                        <td>
+                            {% if projekt.aktiv %}
+                            <span class="badge badge-success badge-sm">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-ghost badge-sm">Inaktiv</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex gap-1 justify-end">
+                                <a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id) }}"
+                                   class="btn btn-ghost btn-xs" title="Kanban-Board">
+                                    <i class="ti ti-layout-kanban"></i>
+                                </a>
+                                <a href="{{ url_for('projektverwaltung_admin.projekt_bearbeiten', id=projekt.id) }}"
+                                   class="btn btn-ghost btn-xs" title="Bearbeiten">
+                                    <i class="ti ti-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert">
+            <i class="ti ti-info-circle"></i>
+            <span>Noch keine Projekte vorhanden. Erstelle dein erstes Projekt!</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

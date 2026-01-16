@@ -1,0 +1,57 @@
+{# Admin Base Layout (Fallback)
+
+This is a minimal admin base layout for testing and standalone use.
+Host applications (like Frühstückenclick) should provide their own
+admin/base.html with the actual sidebar and navigation.
+
+Blocks:
+    - title: Page title
+    - breadcrumbs: Breadcrumb navigation
+    - admin_content: Main page content
+#}
+<!DOCTYPE html>
+<html lang="de" data-theme="{{ theme|default('light') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin{% endblock %}</title>
+
+    {# DaisyUI + Tailwind CSS #}
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    {# Tabler Icons #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css" />
+
+    {# CSRF Token für AJAX requests #}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-base-100">
+    <div class="container mx-auto px-4 py-6">
+        {# Breadcrumbs #}
+        <div class="mb-4">
+            {% block breadcrumbs %}{% endblock %}
+        </div>
+
+        {# Flash Messages #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="mb-4 space-y-2">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category if category in ['success', 'warning', 'error', 'info'] else 'info' }} shadow-sm">
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        {# Page Content #}
+        {% block admin_content %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

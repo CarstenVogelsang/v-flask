@@ -43,6 +43,7 @@ from v_flask.models.lookup_wert import LookupWert
 from v_flask.models.modul import Modul
 from v_flask.models.plugin_activation import PluginActivation
 from v_flask.models.system_status import SystemStatus
+from v_flask.models.help_text import HelpText
 
 __all__ = [
     # Core user system
@@ -62,4 +63,6 @@ __all__ = [
     # Plugin management
     'PluginActivation',
     'SystemStatus',
+    # Help system
+    'HelpText',
 ]

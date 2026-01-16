@@ -1,0 +1,164 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}
+{% if is_new %}Neues Unternehmen{% else %}{{ unternehmen.kurzname }} bearbeiten{% endif %} - CRM
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('crm_udo_admin.index') }}">CRM</a></li>
+        <li><a href="{{ url_for('crm_udo_admin.unternehmen_list') }}">Unternehmen</a></li>
+        {% if is_new %}
+        <li>Neu</li>
+        {% else %}
+        <li><a href="{{ url_for('crm_udo_admin.unternehmen_detail', unternehmen_id=unternehmen.id) }}">{{ unternehmen.kurzname }}</a></li>
+        <li>Bearbeiten</li>
+        {% endif %}
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-building mr-2"></i>
+        {% if is_new %}
+        Neues Unternehmen
+        {% else %}
+        {{ unternehmen.kurzname }} bearbeiten
+        {% endif %}
+    </h1>
+    <div class="flex gap-2">
+        {% if is_new %}
+        <a href="{{ url_for('crm_udo_admin.unternehmen_list') }}" class="btn btn-ghost">
+            <i class="ti ti-x mr-2"></i>
+            Abbrechen
+        </a>
+        {% else %}
+        <a href="{{ url_for('crm_udo_admin.unternehmen_detail', unternehmen_id=unternehmen.id) }}"
+           class="btn btn-ghost">
+            <i class="ti ti-x mr-2"></i>
+            Abbrechen
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<form method="post" class="space-y-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {# Basic Info Card #}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title text-lg mb-4">
+                <i class="ti ti-info-circle mr-2"></i>
+                Stammdaten
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Kurzname *</span>
+                    </label>
+                    <input type="text" name="kurzname"
+                           value="{{ unternehmen.kurzname or '' }}"
+                           class="input input-bordered"
+                           placeholder="z.B. ACME GmbH"
+                           required>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            Kurze Bezeichnung für Listen und Übersichten
+                        </span>
+                    </label>
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Firmierung</span>
+                    </label>
+                    <input type="text" name="firmierung"
+                           value="{{ unternehmen.firmierung or '' }}"
+                           class="input input-bordered"
+                           placeholder="z.B. ACME Gesellschaft mit beschränkter Haftung">
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            Vollständiger Firmenname laut Handelsregister
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Address Card #}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title text-lg mb-4">
+                <i class="ti ti-map-pin mr-2"></i>
+                Adresse
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Straße</span>
+                    </label>
+                    <input type="text" name="strasse"
+                           value="{{ unternehmen.strasse or '' }}"
+                           class="input input-bordered"
+                           placeholder="z.B. Musterstraße">
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Hausnummer</span>
+                    </label>
+                    <input type="text" name="strasse_hausnr"
+                           value="{{ unternehmen.strasse_hausnr or '' }}"
+                           class="input input-bordered"
+                           placeholder="z.B. 123a">
+                </div>
+
+                {# Geo Selection - Simple text input for POC #}
+                {# TODO: Replace with cascading dropdowns or autocomplete #}
+                <div class="form-control md:col-span-2">
+                    <label class="label">
+                        <span class="label-text">Ort (Geo-ID)</span>
+                    </label>
+                    <input type="text" name="geo_ort_id"
+                           value="{{ unternehmen.geo_ort_id or '' }}"
+                           class="input input-bordered"
+                           placeholder="UUID des Ortes eingeben">
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            {% if unternehmen.geo_ort %}
+                            Aktuell: {{ unternehmen.geo_ort.name }}
+                            {% if unternehmen.geo_ort.kreis %}({{ unternehmen.geo_ort.kreis.name }}){% endif %}
+                            {% else %}
+                            Geo-Auswahl wird in der nächsten Version erweitert
+                            {% endif %}
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Form Actions #}
+    <div class="flex justify-end gap-4">
+        {% if is_new %}
+        <a href="{{ url_for('crm_udo_admin.unternehmen_list') }}" class="btn btn-ghost">
+            Abbrechen
+        </a>
+        {% else %}
+        <a href="{{ url_for('crm_udo_admin.unternehmen_detail', unternehmen_id=unternehmen.id) }}"
+           class="btn btn-ghost">
+            Abbrechen
+        </a>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">
+            <i class="ti ti-check mr-2"></i>
+            {% if is_new %}Erstellen{% else %}Speichern{% endif %}
+        </button>
+    </div>
+</form>
+{% endblock %}

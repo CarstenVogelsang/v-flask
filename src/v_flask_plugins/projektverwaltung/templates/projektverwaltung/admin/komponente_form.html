@@ -1,0 +1,196 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if komponente %}Komponente bearbeiten{% else %}Neue Komponente{% endif %} - Projektverwaltung{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-article mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('projektverwaltung_admin.index') }}">Projektverwaltung</a></li>
+        <li><a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id) }}">{{ projekt.name }}</a></li>
+        <li>{% if komponente %}{{ komponente.name }}{% else %}Neue Komponente{% endif %}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-{% if komponente %}edit{% else %}plus{% endif %} text-primary mr-2"></i>
+        {% if komponente %}Komponente bearbeiten{% else %}Neue Komponente{% endif %}
+    </h1>
+</div>
+
+<div class="max-w-2xl mx-auto">
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                {# Name + PRD-Nummer #}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="form-control md:col-span-2">
+                        <label class="label">
+                            <span class="label-text font-medium">Name *</span>
+                        </label>
+                        <input type="text" name="name" class="input input-bordered"
+                               value="{{ komponente.name if komponente else request.form.get('name', '') }}"
+                               placeholder="Komponentenname" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">PRD-Nummer</span>
+                        </label>
+                        <label class="input-group">
+                            <span class="bg-base-200">PRD-</span>
+                            <input type="text" name="prd_nummer" class="input input-bordered w-full"
+                                   value="{{ komponente.prd_nummer if komponente else (request.form.get('prd_nummer') or naechste_prd_nummer|default('')) }}"
+                                   placeholder="011">
+                        </label>
+                    </div>
+                </div>
+
+                {# Typ + Phase #}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Typ</span>
+                        </label>
+                        <select name="typ" id="typ" class="select select-bordered">
+                            {% for value, label in komponente_typen %}
+                            <option value="{{ value }}" {% if (komponente and komponente.typ == value) or request.form.get('typ') == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Aktuelle Phase</span>
+                        </label>
+                        <select name="aktuelle_phase" class="select select-bordered">
+                            {% for value, label in komponente_phasen %}
+                            <option value="{{ value }}" {% if (komponente and komponente.aktuelle_phase == value) or request.form.get('aktuelle_phase') == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                {# Modul-Verknüpfung (optional - für V-Flask Module) #}
+                {% if module %}
+                <div class="form-control mb-4" id="modul-container" style="display: none;">
+                    <label class="label">
+                        <span class="label-text font-medium">
+                            <i class="ti ti-layout-grid text-info mr-1"></i> V-Flask Modul
+                        </span>
+                    </label>
+                    <select name="modul_id" class="select select-bordered">
+                        <option value="">-- Kein Modul --</option>
+                        {% for modul in module %}
+                        <option value="{{ modul.id }}" {% if komponente and komponente.modul_id == modul.id %}selected{% endif %}>
+                            {{ modul.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">Für rollenbasierte Sichtbarkeit</span>
+                    </label>
+                </div>
+                {% endif %}
+
+                {# Status + Icon (nur bei Edit) #}
+                {% if komponente %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Status</span>
+                        </label>
+                        <select name="status" class="select select-bordered">
+                            {% for value, label in komponente_status %}
+                            <option value="{{ value }}" {% if komponente.status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Icon</span>
+                        </label>
+                        <label class="input-group">
+                            <span class="bg-base-200">
+                                <i class="ti {{ komponente.icon if komponente else 'ti-package' }}" id="icon-preview"></i>
+                            </span>
+                            <input type="text" name="icon" id="icon" class="input input-bordered w-full"
+                                   value="{{ komponente.icon if komponente else 'ti-package' }}">
+                        </label>
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/60">z.B. ti-package, ti-school</span>
+                        </label>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# PRD-Inhalt (nur bei Neu) #}
+                {% if not komponente %}
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text font-medium">PRD-Inhalt (Markdown)</span>
+                    </label>
+                    <textarea name="prd_inhalt" class="textarea textarea-bordered font-mono text-sm"
+                              rows="10" placeholder="# PRD-XXX - Name
+
+## Übersicht
+
+## Features
+
+## Datenmodell
+">{{ request.form.get('prd_inhalt', '') }}</textarea>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card-actions justify-between p-4 border-t border-base-300">
+                <a href="{{ url_for('projektverwaltung_admin.projekt_detail', id=projekt.id) }}" class="btn btn-ghost">
+                    <i class="ti ti-arrow-left mr-1"></i> Abbrechen
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-device-floppy mr-1"></i> Speichern
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typSelect = document.getElementById('typ');
+    const modulContainer = document.getElementById('modul-container');
+
+    function toggleModulSelect() {
+        if (modulContainer) {
+            // Show modul select for 'modul' type
+            modulContainer.style.display = typSelect.value === 'modul' ? 'block' : 'none';
+        }
+    }
+
+    typSelect.addEventListener('change', toggleModulSelect);
+    toggleModulSelect();
+
+    // Icon preview
+    const iconInput = document.getElementById('icon');
+    const iconPreview = document.getElementById('icon-preview');
+    if (iconInput && iconPreview) {
+        iconInput.addEventListener('input', function() {
+            iconPreview.className = 'ti ' + this.value;
+        });
+    }
+});
+</script>
+{% endblock %}

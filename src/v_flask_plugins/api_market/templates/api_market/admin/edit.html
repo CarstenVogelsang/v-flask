@@ -1,0 +1,111 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{{ api.name }} bearbeiten{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="text-sm breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('api_market_admin.dashboard') }}">API Marketplace</a></li>
+                <li>{{ api.name }}</li>
+            </ul>
+        </div>
+        <h1 class="text-2xl font-bold mt-2">{{ api.name }} bearbeiten</h1>
+    </div>
+
+    <!-- Form -->
+    <div class="card bg-base-100 shadow max-w-2xl">
+        <div class="card-body">
+            <form method="POST">
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Name *</span>
+                    </label>
+                    <input type="text" name="name" value="{{ api.name }}"
+                           class="input input-bordered" required>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Slug</span>
+                    </label>
+                    <input type="text" value="{{ api.slug }}"
+                           class="input input-bordered" disabled>
+                    <label class="label">
+                        <span class="label-text-alt">Slug kann nicht geändert werden</span>
+                    </label>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">OpenAPI Spec URL *</span>
+                    </label>
+                    <input type="url" name="spec_url" value="{{ api.spec_url }}"
+                           class="input input-bordered" required>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Basis-URL</span>
+                    </label>
+                    <input type="url" name="base_url" value="{{ api.base_url or '' }}"
+                           class="input input-bordered">
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Status</span>
+                    </label>
+                    <select name="status" class="select select-bordered">
+                        <option value="active" {% if api.status == 'active' %}selected{% endif %}>Aktiv</option>
+                        <option value="inactive" {% if api.status == 'inactive' %}selected{% endif %}>Inaktiv</option>
+                        <option value="maintenance" {% if api.status == 'maintenance' %}selected{% endif %}>Wartung</option>
+                    </select>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Icon URL</span>
+                    </label>
+                    <input type="url" name="icon_url" value="{{ api.icon_url or '' }}"
+                           class="input input-bordered"
+                           placeholder="https://example.com/icon.png">
+                </div>
+
+                <div class="form-control mb-6">
+                    <label class="label">
+                        <span class="label-text">Beschreibung</span>
+                    </label>
+                    <textarea name="description" class="textarea textarea-bordered"
+                              rows="3">{{ api.description or '' }}</textarea>
+                </div>
+
+                <!-- Info -->
+                <div class="bg-base-200 rounded-lg p-4 mb-6">
+                    <h3 class="font-bold mb-2">Spec-Cache Info</h3>
+                    <dl class="grid grid-cols-2 gap-2 text-sm">
+                        <dt class="text-gray-500">Zuletzt gecacht:</dt>
+                        <dd>{{ api.spec_cached_at.strftime('%d.%m.%Y %H:%M') if api.spec_cached_at else 'Nie' }}</dd>
+                        <dt class="text-gray-500">Erstellt:</dt>
+                        <dd>{{ api.created_at.strftime('%d.%m.%Y %H:%M') }}</dd>
+                        <dt class="text-gray-500">Aktualisiert:</dt>
+                        <dd>{{ api.updated_at.strftime('%d.%m.%Y %H:%M') if api.updated_at else '-' }}</dd>
+                    </dl>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-device-floppy mr-2"></i>
+                        Speichern
+                    </button>
+                    <a href="{{ url_for('api_market_admin.dashboard') }}" class="btn btn-ghost">
+                        Abbrechen
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

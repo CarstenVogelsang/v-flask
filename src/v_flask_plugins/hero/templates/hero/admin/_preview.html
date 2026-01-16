@@ -1,0 +1,22 @@
+{# Hero Section Preview Partial #}
+{% if preview_html %}
+{{ preview_html|safe }}
+{% elif hero %}
+<div class="min-h-[200px] flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 p-6">
+    <div class="text-center">
+        {% if hero.title %}
+        <h3 class="text-xl font-bold mb-2">{{ hero.title }}</h3>
+        {% endif %}
+        {% if hero.subtitle %}
+        <p class="text-base-content/70 mb-4">{{ hero.subtitle }}</p>
+        {% endif %}
+        {% if hero.cta_text and hero.cta_link %}
+        <span class="btn btn-primary btn-sm">{{ hero.cta_text }}</span>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="min-h-[200px] flex items-center justify-center bg-base-200">
+    <p class="text-base-content/50 text-sm">Keine Hero Section konfiguriert</p>
+</div>
+{% endif %}

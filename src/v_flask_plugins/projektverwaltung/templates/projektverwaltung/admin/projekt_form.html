@@ -1,0 +1,128 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if projekt %}Projekt bearbeiten{% else %}Neues Projekt{% endif %} - Projektverwaltung{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-article mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('projektverwaltung_admin.index') }}">Projektverwaltung</a></li>
+        <li>{% if projekt %}{{ projekt.name }}{% else %}Neues Projekt{% endif %}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-{% if projekt %}edit{% else %}plus{% endif %} text-primary mr-2"></i>
+        {% if projekt %}Projekt bearbeiten{% else %}Neues Projekt{% endif %}
+    </h1>
+</div>
+
+<div class="max-w-2xl mx-auto">
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                {# Name #}
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text font-medium">Name *</span>
+                    </label>
+                    <input type="text" name="name" class="input input-bordered"
+                           value="{{ projekt.name if projekt else request.form.get('name', '') }}"
+                           placeholder="Projektname" required>
+                </div>
+
+                {# Beschreibung #}
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text font-medium">Beschreibung</span>
+                    </label>
+                    <textarea name="beschreibung" class="textarea textarea-bordered" rows="3"
+                              placeholder="Kurze Projektbeschreibung...">{{ projekt.beschreibung if projekt else request.form.get('beschreibung', '') }}</textarea>
+                </div>
+
+                {# Typ + Kunde #}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Typ</span>
+                        </label>
+                        <select name="typ" id="typ" class="select select-bordered">
+                            {% for value, label in projekt_typen %}
+                            <option value="{{ value }}" {% if (projekt and projekt.typ == value) or request.form.get('typ') == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-control" id="kunde-container" style="display: none;">
+                        <label class="label">
+                            <span class="label-text font-medium">Kunde</span>
+                        </label>
+                        {% if kunden %}
+                        <select name="kunde_id" class="select select-bordered">
+                            <option value="">-- Kein Kunde --</option>
+                            {% for kunde in kunden %}
+                            <option value="{{ kunde.id }}" {% if projekt and projekt.kunde_id == kunde.id %}selected{% endif %}>
+                                {{ kunde.name if kunde.name else kunde.id }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <input type="number" name="kunde_id" class="input input-bordered"
+                               value="{{ projekt.kunde_id if projekt else '' }}"
+                               placeholder="Kunden-ID (optional)">
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/60">Kunden-ID aus Host-Anwendung</span>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# Status (nur bei Edit) #}
+                {% if projekt %}
+                <div class="form-control mb-4">
+                    <label class="label cursor-pointer justify-start gap-3">
+                        <input type="checkbox" name="aktiv" class="checkbox checkbox-primary"
+                               {% if projekt.aktiv %}checked{% endif %}>
+                        <span class="label-text">Projekt aktiv</span>
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card-actions justify-between p-4 border-t border-base-300">
+                <a href="{{ url_for('projektverwaltung_admin.index') }}" class="btn btn-ghost">
+                    <i class="ti ti-arrow-left mr-1"></i> Abbrechen
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-device-floppy mr-1"></i> Speichern
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typSelect = document.getElementById('typ');
+    const kundeContainer = document.getElementById('kunde-container');
+
+    function toggleKundeSelect() {
+        kundeContainer.style.display = typSelect.value === 'kunde' ? 'block' : 'none';
+    }
+
+    typSelect.addEventListener('change', toggleKundeSelect);
+    toggleKundeSelect();
+});
+</script>
+{% endblock %}

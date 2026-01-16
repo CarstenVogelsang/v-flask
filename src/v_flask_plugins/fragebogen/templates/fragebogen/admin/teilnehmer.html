@@ -1,0 +1,162 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Teilnehmer - {{ fragebogen.titel }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('fragebogen_admin.index') }}">Fragebögen</a></li>
+        <li><a href="{{ url_for('fragebogen_admin.detail', fragebogen_id=fragebogen.id) }}">{{ fragebogen.titel }}</a></li>
+        <li>Teilnehmer</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-users text-primary mr-2"></i>Teilnehmer
+    </h1>
+    <div class="flex gap-2">
+        {% if fragebogen.is_aktiv and teilnahmen %}
+        <form action="{{ url_for('fragebogen_admin.send_einladungen', fragebogen_id=fragebogen.id) }}"
+              method="post" id="send-form">
+            <button type="submit" class="btn btn-primary btn-sm"
+                    {% if not fragebogen.teilnehmer_ohne_einladung %}disabled{% endif %}>
+                <i class="ti ti-send mr-1"></i>
+                Einladungen senden
+                {% if fragebogen.teilnehmer_ohne_einladung > 0 %}
+                ({{ fragebogen.teilnehmer_ohne_einladung }})
+                {% endif %}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{# Status Badge #}
+<div class="mb-6">
+    <span class="badge badge-lg">{{ fragebogen.titel }}</span>
+    {% if fragebogen.status == 'aktiv' %}
+    <span class="badge badge-success badge-lg ml-2">Aktiv</span>
+    {% else %}
+    <span class="badge badge-secondary badge-lg ml-2">{{ fragebogen.status|capitalize }}</span>
+    {% endif %}
+</div>
+
+{# Participants Table #}
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        {% if teilnahmen %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>
+                            <label>
+                                <input type="checkbox" class="checkbox checkbox-sm" id="select-all">
+                            </label>
+                        </th>
+                        <th>Teilnehmer</th>
+                        <th>Typ</th>
+                        <th>Status</th>
+                        <th>Einladung</th>
+                        <th>Abgeschlossen</th>
+                        <th class="text-right">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in teilnahmen %}
+                    <tr>
+                        <td>
+                            <label>
+                                <input type="checkbox" class="checkbox checkbox-sm teilnahme-checkbox"
+                                       name="teilnahme_ids" value="{{ t.id }}" form="send-form"
+                                       {% if t.einladung_gesendet_am %}disabled{% endif %}>
+                            </label>
+                        </td>
+                        <td>
+                            <div class="font-medium">{{ t.display_name }}</div>
+                            {% if t.kontakt_email %}
+                            <div class="text-sm text-base-content/60">{{ t.kontakt_email }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if t.is_anonym %}
+                            <span class="badge badge-ghost">Anonym</span>
+                            {% else %}
+                            <span class="badge badge-outline">{{ t.teilnehmer_typ or '-' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if t.is_eingeladen %}
+                            <span class="badge badge-warning">Eingeladen</span>
+                            {% elif t.is_gestartet %}
+                            <span class="badge badge-info">Gestartet</span>
+                            {% else %}
+                            <span class="badge badge-success">Abgeschlossen</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if t.einladung_gesendet_am %}
+                            <span class="text-success">
+                                <i class="ti ti-check"></i>
+                                {{ t.einladung_gesendet_am.strftime('%d.%m.%Y %H:%M') }}
+                            </span>
+                            {% else %}
+                            <span class="text-base-content/40">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if t.abgeschlossen_am %}
+                            {{ t.abgeschlossen_am.strftime('%d.%m.%Y %H:%M') }}
+                            {% else %}
+                            <span class="text-base-content/40">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex gap-1 justify-end">
+                                {% if t.is_abgeschlossen %}
+                                <button class="btn btn-ghost btn-xs" title="Antworten anzeigen">
+                                    <i class="ti ti-eye"></i>
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-ghost btn-xs"
+                                        onclick="copyLink('{{ url_for('fragebogen_public.wizard', token=t.token, _external=True) }}')"
+                                        title="Magic-Link kopieren">
+                                    <i class="ti ti-link"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert">
+            <i class="ti ti-info-circle"></i>
+            <span>Noch keine Teilnehmer hinzugefügt.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Select all checkbox
+document.getElementById('select-all')?.addEventListener('change', function() {
+    document.querySelectorAll('.teilnahme-checkbox:not([disabled])').forEach(cb => {
+        cb.checked = this.checked;
+    });
+});
+
+// Copy link function
+function copyLink(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        // Optional: Show toast
+    });
+}
+</script>
+{% endblock %}

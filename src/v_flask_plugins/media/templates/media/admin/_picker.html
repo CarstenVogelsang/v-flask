@@ -1,0 +1,167 @@
+{# Media Picker Modal Content - Used by other plugins to select media #}
+
+<div class="p-4">
+    {# Search #}
+    <div class="form-control mb-4">
+        <div class="input-group">
+            <input type="text"
+                   name="q"
+                   placeholder="Medien suchen..."
+                   class="input input-bordered input-sm w-full"
+                   value="{{ search_query or '' }}"
+                   hx-get="{{ url_for('media_admin.picker', field=field_name, accept=accept) }}"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#picker-grid">
+            <button class="btn btn-sm btn-square">
+                <i class="ti ti-search"></i>
+            </button>
+        </div>
+    </div>
+
+    {# Tabs for Upload vs Browse #}
+    <div class="tabs tabs-boxed mb-4">
+        <a class="tab tab-active" onclick="showPickerTab('browse')">
+            <i class="ti ti-photo mr-1"></i> Bibliothek
+        </a>
+        <a class="tab" onclick="showPickerTab('upload')">
+            <i class="ti ti-upload mr-1"></i> Hochladen
+        </a>
+        <a class="tab" onclick="showPickerTab('stock')">
+            <i class="ti ti-camera mr-1"></i> Stock-Fotos
+        </a>
+    </div>
+
+    {# Browse Tab #}
+    <div id="picker-tab-browse">
+        <div id="picker-grid">
+            {% if media_items %}
+            <div class="grid grid-cols-4 gap-2">
+                {% for media in media_items %}
+                <div class="aspect-square bg-base-200 rounded overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all picker-item"
+                     onclick="selectMedia({{ media.id }}, '{{ media.get_url('medium') }}', '{{ media.alt_text or media.filename }}', '{{ field_name }}')"
+                     title="{{ media.original_filename }}">
+                    {% if media.is_image %}
+                    <img src="{{ media.get_url('thumbnail') }}"
+                         alt="{{ media.alt_text or '' }}"
+                         class="w-full h-full object-cover"
+                         loading="lazy">
+                    {% else %}
+                    <div class="flex items-center justify-center w-full h-full">
+                        <i class="ti ti-file text-2xl text-base-content/30"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-base-content/60">
+                <i class="ti ti-photo-off text-3xl mb-2"></i>
+                <p class="text-sm">Keine Medien gefunden</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Upload Tab #}
+    <div id="picker-tab-upload" class="hidden">
+        <form id="picker-upload-form"
+              hx-post="{{ url_for('media_admin.upload') }}"
+              hx-encoding="multipart/form-data"
+              hx-target="#picker-upload-result">
+
+            <div id="picker-dropzone"
+                 class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+                 onclick="document.getElementById('picker-file-input').click()">
+                <i class="ti ti-cloud-upload text-3xl text-base-content/30 mb-2"></i>
+                <p class="text-sm text-base-content/70">Datei hier ablegen oder klicken</p>
+                <input type="file"
+                       id="picker-file-input"
+                       name="file"
+                       class="hidden"
+                       accept="{{ accept }}"
+                       onchange="handlePickerUpload(this, '{{ field_name }}')">
+            </div>
+        </form>
+        <div id="picker-upload-result" class="mt-4"></div>
+    </div>
+
+    {# Stock Tab #}
+    <div id="picker-tab-stock" class="hidden">
+        <div class="text-center py-8">
+            <p class="text-sm text-base-content/70 mb-4">
+                Stock-Fotos von Pexels und Unsplash durchsuchen
+            </p>
+            <a href="{{ url_for('media_admin.stock_search') }}"
+               target="_blank"
+               class="btn btn-primary btn-sm">
+                <i class="ti ti-external-link mr-1"></i>
+                Stock-Suche offnen
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPickerTab(tab) {
+    // Hide all tabs
+    document.getElementById('picker-tab-browse').classList.add('hidden');
+    document.getElementById('picker-tab-upload').classList.add('hidden');
+    document.getElementById('picker-tab-stock').classList.add('hidden');
+
+    // Show selected tab
+    document.getElementById('picker-tab-' + tab).classList.remove('hidden');
+
+    // Update tab buttons
+    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('tab-active'));
+    event.target.classList.add('tab-active');
+}
+
+function selectMedia(mediaId, url, altText, fieldName) {
+    // Update hidden input
+    const input = document.querySelector(`input[name="${fieldName}"]`);
+    if (input) input.value = mediaId;
+
+    // Update preview if exists
+    const preview = document.getElementById(`${fieldName}-preview`);
+    if (preview) {
+        preview.innerHTML = `<img src="${url}" alt="${altText}" class="w-full h-full object-cover">`;
+    }
+
+    // Close modal
+    const modal = document.getElementById('media-picker-modal');
+    if (modal) modal.close();
+
+    // Trigger change event
+    if (input) input.dispatchEvent(new Event('change'));
+}
+
+function handlePickerUpload(input, fieldName) {
+    if (!input.files.length) return;
+
+    const form = document.getElementById('picker-upload-form');
+    const formData = new FormData(form);
+
+    fetch('{{ url_for('media_admin.upload') }}', {
+        method: 'POST',
+        headers: {
+            'HX-Request': 'true',
+            'Accept': 'application/json'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.media) {
+            selectMedia(
+                data.media.id,
+                data.media.url_medium || data.media.url,
+                data.media.alt_text || data.media.filename,
+                fieldName
+            );
+        }
+    })
+    .catch(error => {
+        console.error('Upload failed:', error);
+    });
+}
+</script>

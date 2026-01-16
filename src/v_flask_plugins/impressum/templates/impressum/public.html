@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Impressum{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <article class="impressum-content">
+                {{ impressum_html|safe }}
+            </article>
+        </div>
+    </div>
+</div>
+
+<style>
+.impressum-content {
+    line-height: 1.7;
+}
+.impressum-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--v-primary, #3b82f6);
+}
+.impressum-content h3 {
+    font-size: 1.1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #374151;
+}
+.impressum-content p {
+    margin-bottom: 1rem;
+}
+.impressum-content a {
+    color: var(--v-primary, #3b82f6);
+}
+.impressum-content a:hover {
+    text-decoration: underline;
+}
+</style>
+{% endblock %}

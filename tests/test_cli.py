@@ -101,10 +101,10 @@ class TestSeedCommand:
         assert result1.exit_code == 0
         assert result2.exit_code == 0
 
-        # Should still have exactly 3 roles
+        # Should still have exactly 4 roles (admin, betreiber, mitarbeiter, kunde)
         with app.app_context():
             roles = Rolle.query.all()
-            assert len(roles) == 3
+            assert len(roles) == 4
 
     def test_seed_does_not_duplicate_betreiber(self, app, runner):
         """seed should not create a second Betreiber if one exists."""

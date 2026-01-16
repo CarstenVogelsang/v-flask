@@ -1,0 +1,149 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if fragebogen %}{{ fragebogen.titel }} bearbeiten{% else %}Neuer Fragebogen{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('fragebogen_admin.index') }}">Fragebögen</a></li>
+        {% if fragebogen %}
+        <li><a href="{{ url_for('fragebogen_admin.detail', fragebogen_id=fragebogen.id) }}">{{ fragebogen.titel }}</a></li>
+        <li>Bearbeiten</li>
+        {% else %}
+        <li>Neu</li>
+        {% endif %}
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-clipboard-list text-primary mr-2"></i>
+        {% if fragebogen %}Fragebogen bearbeiten{% else %}Neuer Fragebogen{% endif %}
+    </h1>
+</div>
+
+<form method="post" id="fragebogen-form">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {# Left Column: Basic Info #}
+        <div class="space-y-6">
+            <div class="card bg-base-100 shadow">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Grundeinstellungen</h2>
+
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text">Titel *</span>
+                        </label>
+                        <input type="text" name="titel" value="{{ titel }}"
+                               class="input input-bordered w-full" required
+                               placeholder="z.B. Kundenzufriedenheit 2024">
+                    </div>
+
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text">Beschreibung</span>
+                        </label>
+                        <textarea name="beschreibung" class="textarea textarea-bordered h-24"
+                                  placeholder="Optionale Beschreibung des Fragebogens">{{ beschreibung }}</textarea>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label cursor-pointer">
+                            <span class="label-text">Anonyme Teilnahme erlauben</span>
+                            <input type="checkbox" name="erlaubt_anonym"
+                                   class="toggle toggle-primary"
+                                   {% if erlaubt_anonym %}checked{% endif %}>
+                        </label>
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/60">
+                                Bei anonymer Teilnahme werden Kontaktdaten am Ende erfasst.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {# Quick Reference #}
+            <div class="card bg-base-200">
+                <div class="card-body">
+                    <h3 class="font-medium mb-2">Fragetypen-Referenz</h3>
+                    <div class="text-sm space-y-1">
+                        <div><code class="badge badge-ghost">text</code> Freitext/Textarea</div>
+                        <div><code class="badge badge-ghost">single_choice</code> Radio Buttons</div>
+                        <div><code class="badge badge-ghost">multiple_choice</code> Checkboxen</div>
+                        <div><code class="badge badge-ghost">dropdown</code> Dropdown mit Freifeld</div>
+                        <div><code class="badge badge-ghost">skala</code> Bewertungsskala</div>
+                        <div><code class="badge badge-ghost">ja_nein</code> Ja/Nein Buttons</div>
+                        <div><code class="badge badge-ghost">date</code> Datumseingabe</div>
+                        <div><code class="badge badge-ghost">number</code> Zahleneingabe</div>
+                        <div><code class="badge badge-ghost">url</code> URL-Eingabe</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Right Column: JSON Editor #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    Fragebogen-Definition (JSON)
+                    <div class="badge badge-ghost">V2 Schema</div>
+                </h2>
+
+                <div class="form-control w-full">
+                    <textarea name="definition_json"
+                              id="definition-editor"
+                              class="textarea textarea-bordered font-mono text-sm"
+                              style="min-height: 500px;"
+                              spellcheck="false">{{ definition_json }}</textarea>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            JSON-Struktur mit Seiten und Fragen
+                        </span>
+                        <span class="label-text-alt">
+                            <button type="button" class="btn btn-ghost btn-xs" onclick="formatJSON()">
+                                <i class="ti ti-code"></i> Formatieren
+                            </button>
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Action Buttons #}
+    <div class="flex justify-end gap-4 mt-6">
+        {% if fragebogen %}
+        <a href="{{ url_for('fragebogen_admin.detail', fragebogen_id=fragebogen.id) }}"
+           class="btn btn-ghost">Abbrechen</a>
+        {% else %}
+        <a href="{{ url_for('fragebogen_admin.index') }}" class="btn btn-ghost">Abbrechen</a>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">
+            <i class="ti ti-device-floppy mr-1"></i>
+            {% if fragebogen %}Speichern{% else %}Erstellen{% endif %}
+        </button>
+    </div>
+</form>
+
+<script>
+function formatJSON() {
+    const textarea = document.getElementById('definition-editor');
+    try {
+        const obj = JSON.parse(textarea.value);
+        textarea.value = JSON.stringify(obj, null, 2);
+    } catch (e) {
+        alert('Ungültiges JSON: ' + e.message);
+    }
+}
+
+// Auto-format on load
+document.addEventListener('DOMContentLoaded', function() {
+    formatJSON();
+});
+</script>
+{% endblock %}

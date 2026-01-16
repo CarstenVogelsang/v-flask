@@ -1,0 +1,373 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Datenschutzerklärung Editor{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-shield-check mr-1"></i>Rechtliches</li>
+        <li>Datenschutz</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar with Help Icon #}
+<div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-shield-lock text-primary"></i>
+        <span>Datenschutzerklärung</span>
+        {# Help Icon #}
+        {% set help = get_help_text('datenschutz.editor') %}
+        {% if help and help.aktiv %}
+        <button type="button" class="btn btn-ghost btn-sm btn-circle" onclick="help_modal_datenschutz.showModal()" title="Hilfe anzeigen">
+            <i class="ti ti-help text-base-content/60 text-lg"></i>
+        </button>
+        {% endif %}
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('datenschutz_admin.versions') }}" class="btn btn-outline btn-sm">
+            <i class="ti ti-history mr-1"></i> Versionen
+        </a>
+        <a href="{{ url_for('datenschutz.public') }}" target="_blank" class="btn btn-outline btn-sm">
+            <i class="ti ti-external-link mr-1"></i> Vorschau
+        </a>
+        <button type="submit" form="datenschutz-form" class="btn btn-primary btn-sm">
+            <i class="ti ti-device-floppy mr-1"></i> Speichern
+        </button>
+    </div>
+</div>
+
+{# Consolidated Status Line #}
+<div class="flex items-center gap-4 mb-6 p-3 bg-base-200 rounded-lg">
+    <div class="flex items-center gap-2">
+        <span class="text-sm font-medium">Vollständigkeit:</span>
+        <progress class="progress progress-primary w-32" value="{{ completeness }}" max="100"></progress>
+        <span class="badge {% if completeness >= 80 %}badge-success{% elif completeness >= 50 %}badge-warning{% else %}badge-error{% endif %}">
+            {{ completeness }}%
+        </span>
+    </div>
+    {% if completeness == 100 %}
+    <span class="text-success text-sm flex items-center"><i class="ti ti-check mr-1"></i>Alle Pflichtangaben vorhanden</span>
+    {% else %}
+    <span class="text-warning text-sm flex items-center"><i class="ti ti-alert-triangle mr-1"></i>Pflichtangaben fehlen</span>
+    {% endif %}
+</div>
+
+{# Help Modal (DaisyUI) #}
+{% if help and help.aktiv %}
+<dialog id="help_modal_datenschutz" class="modal">
+    <div class="modal-box max-w-2xl">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <h3 class="font-bold text-lg flex items-center gap-2 mb-4">
+            <i class="ti ti-help-circle text-info"></i>
+            {{ help.titel or 'Hilfe zur Datenschutzerklärung' }}
+        </h3>
+        <div class="prose prose-sm max-w-none">
+            {{ help.inhalt_markdown|markdown|safe }}
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+{% endif %}
+
+    {# Validation Messages #}
+    {% if validation and not validation.is_valid %}
+    <div class="alert alert-error mb-4" role="alert">
+        <div>
+            <h3 class="font-bold">
+                <i class="ti ti-alert-circle mr-2"></i>Fehlende Pflichtangaben
+            </h3>
+            <ul class="list-disc list-inside mt-2">
+                {% for error in validation.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if validation and validation.has_warnings %}
+    <div class="alert alert-warning mb-4" role="alert">
+        <div>
+            <h3 class="font-bold">
+                <i class="ti ti-alert-triangle mr-2"></i>Empfehlungen
+            </h3>
+            <ul class="list-disc list-inside mt-2">
+                {% for warning in validation.warnings %}
+                <li>{{ warning }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if validation and validation.has_unconfigured %}
+    <div class="alert alert-info mb-4" role="alert">
+        <div>
+            <h3 class="font-bold">
+                <i class="ti ti-radar mr-2"></i>Erkannte Dienste (nicht konfiguriert)
+            </h3>
+            <p class="mt-2">Folgende Dienste wurden automatisch erkannt, sind aber noch nicht in der Datenschutzerklärung aktiviert:</p>
+            <ul class="list-disc list-inside mt-2">
+                {% for service in validation.unconfigured_services %}
+                <li>{{ service }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {# Form Column #}
+        <div>
+            <form method="post" action="{{ url_for('datenschutz_admin.save') }}" id="datenschutz-form">
+                {# Verantwortlicher Card #}
+                <div class="card bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title mb-4">
+                            <i class="ti ti-user mr-2"></i>Verantwortlicher
+                        </h2>
+
+                        {% if betreiber %}
+                        <div class="mb-4">
+                            <button type="button" class="btn btn-outline btn-sm"
+                                    onclick="document.getElementById('import-form').submit();">
+                                <i class="ti ti-download mr-1"></i>Aus Impressum übernehmen
+                            </button>
+                        </div>
+                        {% endif %}
+
+                        <div class="form-control mb-4">
+                            <label class="label" for="verantwortlicher_name">
+                                <span class="label-text">Name / Firma <span class="text-error">*</span></span>
+                            </label>
+                            <input type="text" class="input input-bordered w-full" id="verantwortlicher_name" name="verantwortlicher_name"
+                                   value="{{ config.verantwortlicher_name or '' }}" required>
+                        </div>
+                        <div class="form-control mb-4">
+                            <label class="label" for="verantwortlicher_strasse">
+                                <span class="label-text">Straße <span class="text-error">*</span></span>
+                            </label>
+                            <input type="text" class="input input-bordered w-full" id="verantwortlicher_strasse" name="verantwortlicher_strasse"
+                                   value="{{ config.verantwortlicher_strasse or '' }}">
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="form-control">
+                                <label class="label" for="verantwortlicher_plz">
+                                    <span class="label-text">PLZ <span class="text-error">*</span></span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="verantwortlicher_plz" name="verantwortlicher_plz"
+                                       value="{{ config.verantwortlicher_plz or '' }}">
+                            </div>
+                            <div class="form-control col-span-2">
+                                <label class="label" for="verantwortlicher_ort">
+                                    <span class="label-text">Ort <span class="text-error">*</span></span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="verantwortlicher_ort" name="verantwortlicher_ort"
+                                       value="{{ config.verantwortlicher_ort or '' }}">
+                            </div>
+                        </div>
+                        <div class="form-control mt-4">
+                            <label class="label" for="verantwortlicher_land">
+                                <span class="label-text">Land</span>
+                            </label>
+                            <input type="text" class="input input-bordered w-full" id="verantwortlicher_land" name="verantwortlicher_land"
+                                   value="{{ config.verantwortlicher_land or 'Deutschland' }}">
+                        </div>
+                        <div class="form-control mt-4">
+                            <label class="label" for="verantwortlicher_email">
+                                <span class="label-text">E-Mail <span class="text-error">*</span></span>
+                            </label>
+                            <input type="email" class="input input-bordered w-full" id="verantwortlicher_email" name="verantwortlicher_email"
+                                   value="{{ config.verantwortlicher_email or '' }}" required>
+                        </div>
+                        <div class="form-control mt-4">
+                            <label class="label" for="verantwortlicher_telefon">
+                                <span class="label-text">Telefon</span>
+                            </label>
+                            <input type="text" class="input input-bordered w-full" id="verantwortlicher_telefon" name="verantwortlicher_telefon"
+                                   value="{{ config.verantwortlicher_telefon or '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                {# Datenschutzbeauftragter Card #}
+                <div class="card bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title mb-4">
+                            <i class="ti ti-user-shield mr-2"></i>Datenschutzbeauftragter
+                        </h2>
+
+                        <div class="form-control mb-4">
+                            <label class="label cursor-pointer justify-start gap-4">
+                                <input class="toggle toggle-primary" type="checkbox" id="dsb_vorhanden" name="dsb_vorhanden"
+                                       {{ 'checked' if config.dsb_vorhanden else '' }}>
+                                <span class="label-text font-medium">Datenschutzbeauftragter vorhanden</span>
+                            </label>
+                        </div>
+
+                        <div id="dsb-fields" class="ml-14" style="{{ '' if config.dsb_vorhanden else 'display: none;' }}">
+                            <div class="form-control mb-4">
+                                <label class="label cursor-pointer justify-start gap-4">
+                                    <input class="checkbox checkbox-primary" type="checkbox" id="dsb_extern" name="dsb_extern"
+                                           {{ 'checked' if config.dsb_extern else '' }}>
+                                    <span class="label-text">Externer Datenschutzbeauftragter</span>
+                                </label>
+                            </div>
+                            <div class="form-control mb-4">
+                                <label class="label" for="dsb_name">
+                                    <span class="label-text">Name</span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="dsb_name" name="dsb_name"
+                                       value="{{ config.dsb_name or '' }}">
+                            </div>
+                            <div class="form-control mb-4">
+                                <label class="label" for="dsb_email">
+                                    <span class="label-text">E-Mail</span>
+                                </label>
+                                <input type="email" class="input input-bordered w-full" id="dsb_email" name="dsb_email"
+                                       value="{{ config.dsb_email or '' }}">
+                            </div>
+                            <div class="form-control mb-4">
+                                <label class="label" for="dsb_telefon">
+                                    <span class="label-text">Telefon</span>
+                                </label>
+                                <input type="text" class="input input-bordered w-full" id="dsb_telefon" name="dsb_telefon"
+                                       value="{{ config.dsb_telefon or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Bausteine Cards by Category #}
+                {% for kategorie_id, kategorie_info in kategorien %}
+                {% set bausteine = bausteine_by_kategorie.get(kategorie_id, []) %}
+                {% if bausteine %}
+                <div class="card bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title mb-2">
+                            <i class="ti ti-puzzle mr-2"></i>{{ kategorie_info.name }}
+                        </h2>
+                        <p class="text-sm text-base-content/60 mb-4">{{ kategorie_info.beschreibung }}</p>
+
+                        {% for baustein in bausteine %}
+                        <div class="form-control mb-3">
+                            <label class="label cursor-pointer justify-start gap-4">
+                                {# Pflichtbausteine: immer checked, nicht änderbar #}
+                                {% if not baustein.optional %}
+                                <input class="checkbox checkbox-primary baustein-check cursor-not-allowed" type="checkbox"
+                                       id="baustein_{{ baustein.id }}" name="bausteine" value="{{ baustein.id }}"
+                                       checked onclick="return false;">
+                                {% else %}
+                                <input class="checkbox checkbox-primary baustein-check" type="checkbox"
+                                       id="baustein_{{ baustein.id }}" name="bausteine" value="{{ baustein.id }}"
+                                       {{ 'checked' if baustein.id in (config.aktivierte_bausteine or []) else '' }}>
+                                {% endif %}
+                                <div class="flex-1">
+                                    <span class="label-text font-medium">
+                                        {{ baustein.name }}
+                                        {% if baustein.id in detected_ids %}
+                                        <span class="badge badge-info badge-sm ml-1" title="Automatisch erkannt">
+                                            <i class="ti ti-radar text-xs"></i>
+                                        </span>
+                                        {% endif %}
+                                        {% if not baustein.optional %}
+                                        <i class="ti ti-lock text-base-content/60 ml-1" title="Pflichtbaustein - kann nicht deaktiviert werden"></i>
+                                        {% endif %}
+                                    </span>
+                                    <p class="text-xs text-base-content/60">{{ baustein.beschreibung }}</p>
+                                </div>
+                            </label>
+
+                            {# Pflichtfelder for this Baustein #}
+                            {% if baustein.pflichtfelder %}
+                            <div class="ml-10 mt-2 baustein-config" id="config_{{ baustein.id }}"
+                                 style="{{ '' if baustein.id in (config.aktivierte_bausteine or []) else 'display: none;' }}">
+                                {% for feld in baustein.pflichtfelder %}
+                                <div class="form-control mb-2">
+                                    <label class="label py-1" for="baustein_{{ baustein.id }}_{{ feld }}">
+                                        <span class="label-text text-sm">{{ feld|replace('_', ' ')|title }}</span>
+                                    </label>
+                                    <input type="text" class="input input-bordered input-sm w-full"
+                                           id="baustein_{{ baustein.id }}_{{ feld }}"
+                                           name="baustein_{{ baustein.id }}_{{ feld }}"
+                                           value="{{ config.get_baustein_config(baustein.id).get(feld, '') }}">
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+            </form>
+
+            {# Hidden form for import #}
+            <form id="import-form" method="post" action="{{ url_for('datenschutz_admin.import_from_impressum') }}"></form>
+        </div>
+
+        {# Preview Column #}
+        <div>
+            <div class="card bg-base-100 shadow-xl sticky top-4">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-eye mr-2"></i>Vorschau
+                    </h2>
+                    <div class="datenschutz-preview" id="preview-container">
+                        {{ preview_html|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Toggle DSB fields
+document.getElementById('dsb_vorhanden').addEventListener('change', function() {
+    document.getElementById('dsb-fields').style.display = this.checked ? '' : 'none';
+});
+
+// Toggle Baustein config fields
+document.querySelectorAll('.baustein-check').forEach(function(checkbox) {
+    checkbox.addEventListener('change', function() {
+        var configDiv = document.getElementById('config_' + this.value);
+        if (configDiv) {
+            configDiv.style.display = this.checked ? '' : 'none';
+        }
+    });
+});
+</script>
+
+<style>
+.datenschutz-preview {
+    line-height: 1.6;
+    max-height: 70vh;
+    overflow-y: auto;
+    font-size: 0.9rem;
+}
+.datenschutz-preview h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid oklch(var(--p));
+}
+.datenschutz-preview h3 {
+    font-size: 0.95rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+.datenschutz-preview p {
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+</style>
+{% endblock %}

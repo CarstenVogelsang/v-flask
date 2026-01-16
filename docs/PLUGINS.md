@@ -253,6 +253,37 @@ plugin = MeinPlugin()
 plugin.validate()  # Wirft ValueError bei fehlenden Pflichtfeldern
 ```
 
+### 5. CSRF-Schutz
+
+**Alle POST-Formulare MÜSSEN ein CSRF-Token enthalten.** Die Host-App aktiviert Flask-WTF CSRFProtect, daher müssen Plugin-Templates das Token senden.
+
+#### In HTML-Formularen
+
+```html
+<form action="{{ url_for('mein_admin.aktion') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <!-- Formular-Felder -->
+    <button type="submit">Speichern</button>
+</form>
+```
+
+#### In AJAX-Requests
+
+Das CSRF-Token ist im Meta-Tag der Basis-Templates verfügbar:
+
+```javascript
+fetch(url, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify(data)
+});
+```
+
+**Fehler bei fehlendem Token:** `400 Bad Request: CSRF token is missing`
+
 ## API-Referenz
 
 ### PluginManifest

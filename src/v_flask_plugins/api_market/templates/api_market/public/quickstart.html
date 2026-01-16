@@ -1,0 +1,88 @@
+{% extends "v_flask/public/base.html" %}
+
+{% block title %}{{ api.name }} - Quickstart{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumb -->
+    <div class="text-sm breadcrumbs mb-6">
+        <ul>
+            <li><a href="{{ url_for('api_market.list_apis') }}">API Marketplace</a></li>
+            <li>{{ api.name }}</li>
+        </ul>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Main content -->
+        <div class="flex-1">
+            {% if api.documentation_html %}
+                {{ api.documentation_html|safe }}
+            {% else %}
+                <h1 class="text-3xl font-bold mb-4">{{ api.name }}</h1>
+                {% if api.description %}
+                <p class="text-gray-600 mb-6">{{ api.description }}</p>
+                {% endif %}
+
+                <div class="alert alert-warning">
+                    <i class="ti ti-alert-triangle"></i>
+                    <span>Dokumentation wird geladen...</span>
+                </div>
+            {% endif %}
+
+            <div class="mt-8">
+                <a href="{{ url_for('api_market.api_docs', slug=api.slug) }}" class="btn btn-outline">
+                    <i class="ti ti-book mr-2"></i>
+                    Vollständige Dokumentation
+                </a>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:w-80">
+            <div class="card bg-base-200 shadow">
+                <div class="card-body">
+                    <h3 class="font-bold mb-4">Schnellinfo</h3>
+                    <dl class="space-y-2">
+                        <div>
+                            <dt class="text-sm text-gray-500">Basis-URL</dt>
+                            <dd class="font-mono text-sm break-all">{{ api.base_url or 'N/A' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Auth-Header</dt>
+                            <dd class="font-mono text-sm">{{ api.auth_header_name }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Status</dt>
+                            <dd>
+                                {% if api.status == 'active' %}
+                                <span class="badge badge-success">Aktiv</span>
+                                {% elif api.status == 'maintenance' %}
+                                <span class="badge badge-warning">Wartung</span>
+                                {% else %}
+                                <span class="badge badge-ghost">{{ api.status }}</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+
+                    {% if current_user.is_authenticated %}
+                    <div class="mt-6">
+                        <a href="{{ url_for('api_market.my_keys') }}" class="btn btn-primary btn-block">
+                            <i class="ti ti-key mr-2"></i>
+                            Meine API-Keys
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="mt-6">
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-block">
+                            <i class="ti ti-login mr-2"></i>
+                            Anmelden für API-Key
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
