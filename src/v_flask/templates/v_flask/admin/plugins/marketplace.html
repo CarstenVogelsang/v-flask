@@ -1,0 +1,192 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Plugin Marketplace{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('plugins_admin.list_plugins') }}">Plugins</a></li>
+        <li>Marketplace</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-building-store mr-2"></i>Plugin Marketplace
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('plugins_admin.list_plugins') }}" class="btn btn-sm btn-ghost">
+            <i class="ti ti-puzzle mr-1"></i>Lokale Plugins
+        </a>
+        <form action="{{ url_for('plugins_admin.refresh_marketplace') }}" method="post" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline">
+                <i class="ti ti-refresh mr-1"></i>Aktualisieren
+            </button>
+        </form>
+    </div>
+</div>
+
+{# Project Info Card #}
+{% if project_info %}
+<div class="alert alert-info mb-6">
+    <i class="ti ti-id-badge text-xl"></i>
+    <div>
+        <span class="font-semibold">Projekt:</span> {{ project_info.name }}
+        <span class="text-sm opacity-70 ml-2">({{ project_info.slug }})</span>
+    </div>
+</div>
+{% endif %}
+
+{# Stats #}
+<div class="stats shadow mb-6 w-full">
+    <div class="stat">
+        <div class="stat-figure text-primary">
+            <i class="ti ti-package text-3xl"></i>
+        </div>
+        <div class="stat-title">Verfügbar</div>
+        <div class="stat-value text-primary">{{ plugins | length }}</div>
+        <div class="stat-desc">Plugins im Marketplace</div>
+    </div>
+    <div class="stat">
+        <div class="stat-figure text-success">
+            <i class="ti ti-download text-3xl"></i>
+        </div>
+        <div class="stat-title">Installiert</div>
+        <div class="stat-value text-success">{{ plugins | selectattr('is_installed') | list | length }}</div>
+        <div class="stat-desc">Lokal vorhanden</div>
+    </div>
+    <div class="stat">
+        <div class="stat-figure text-warning">
+            <i class="ti ti-license text-3xl"></i>
+        </div>
+        <div class="stat-title">Lizenziert</div>
+        <div class="stat-value text-warning">{{ plugins | selectattr('is_licensed') | list | length }}</div>
+        <div class="stat-desc">Für dieses Projekt</div>
+    </div>
+</div>
+
+{# Plugin Grid #}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for plugin in plugins %}
+    <div class="card bg-base-100 shadow-xl {{ 'border-2 border-success' if plugin.is_installed else '' }}">
+        <div class="card-body">
+            {# Header #}
+            <div class="flex justify-between items-start">
+                <h2 class="card-title">
+                    {{ plugin.display_name or plugin.name }}
+                </h2>
+                <div class="flex gap-1">
+                    {% if plugin.is_installed %}
+                    <span class="badge badge-success" title="Lokal installiert">
+                        <i class="ti ti-check"></i>
+                    </span>
+                    {% endif %}
+                    {% if plugin.is_free %}
+                    <span class="badge badge-info">Kostenlos</span>
+                    {% elif plugin.is_licensed %}
+                    <span class="badge badge-warning" title="Lizenziert">
+                        <i class="ti ti-license"></i>
+                    </span>
+                    {% else %}
+                    <span class="badge badge-error badge-outline" title="Nicht lizenziert">
+                        <i class="ti ti-lock"></i>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Version & Price #}
+            <div class="flex justify-between text-sm text-base-content/60">
+                <span>v{{ plugin.version }}</span>
+                {% if not plugin.is_free and plugin.price_cents %}
+                <span class="font-semibold">{{ "%.2f €"|format(plugin.price_cents / 100) }}</span>
+                {% endif %}
+            </div>
+
+            {# Description #}
+            <p class="text-sm">{{ plugin.description }}</p>
+
+            {# Categories #}
+            {% if plugin.categories %}
+            <div class="flex flex-wrap gap-1">
+                {% for category in plugin.categories %}
+                <span class="badge badge-primary badge-outline badge-sm">{{ category }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {# Actions #}
+            <div class="card-actions justify-end mt-4">
+                {% if plugin.is_installed %}
+                    {# Installed: Show Uninstall + Go to Local #}
+                    <a href="{{ url_for('plugins_admin.list_plugins') }}"
+                       class="btn btn-sm btn-ghost">
+                        <i class="ti ti-settings mr-1"></i>Verwalten
+                    </a>
+                    <form action="{{ url_for('plugins_admin.uninstall_plugin', name=plugin.name) }}"
+                          method="post" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline btn-error"
+                                onclick="return confirm('Plugin wirklich deinstallieren?')">
+                            <i class="ti ti-trash mr-1"></i>Deinstallieren
+                        </button>
+                    </form>
+
+                {% elif plugin.is_licensed %}
+                    {# Licensed but not installed: Show Install #}
+                    <form action="{{ url_for('plugins_admin.install_plugin', name=plugin.name) }}"
+                          method="post" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="ti ti-download mr-1"></i>Installieren
+                        </button>
+                    </form>
+
+                {% else %}
+                    {# Not licensed: Show Buy Link (placeholder) #}
+                    <button class="btn btn-sm btn-outline btn-disabled" disabled
+                            title="Lizenz erforderlich">
+                        <i class="ti ti-lock mr-1"></i>Lizenz erforderlich
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-span-full">
+        <div class="alert">
+            <i class="ti ti-info-circle"></i>
+            <span>Keine Plugins im Marketplace verfügbar.</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{# Legend #}
+<div class="mt-8 text-sm text-base-content/60">
+    <h3 class="font-semibold mb-2">Legende:</h3>
+    <div class="flex flex-wrap gap-4">
+        <div class="flex items-center gap-2">
+            <span class="badge badge-success"><i class="ti ti-check"></i></span>
+            <span>Installiert</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="badge badge-info">Kostenlos</span>
+            <span>Gratis nutzbar</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="badge badge-warning"><i class="ti ti-license"></i></span>
+            <span>Lizenziert</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="badge badge-error badge-outline"><i class="ti ti-lock"></i></span>
+            <span>Lizenz erforderlich</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

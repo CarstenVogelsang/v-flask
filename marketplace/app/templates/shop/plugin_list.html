@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V-Flask Plugins | Marketplace</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body class="min-h-screen bg-base-200">
+    {# Header #}
+    <header class="navbar bg-base-100 shadow-lg">
+        <div class="container mx-auto">
+            <div class="flex-1">
+                <a href="{{ url_for('shop.plugin_list') }}" class="btn btn-ghost text-xl">
+                    <i class="ti ti-puzzle text-primary"></i>
+                    V-Flask Plugins
+                </a>
+            </div>
+            <div class="flex-none">
+                <a href="{{ url_for('marketplace_admin.dashboard') }}" class="btn btn-ghost btn-sm">
+                    <i class="ti ti-settings"></i>
+                    Admin
+                </a>
+            </div>
+        </div>
+    </header>
+
+    {# Hero #}
+    <div class="hero bg-gradient-to-br from-primary/10 to-secondary/10 py-12">
+        <div class="hero-content text-center">
+            <div class="max-w-2xl">
+                <h1 class="text-4xl font-bold mb-4">V-Flask Plugin Marketplace</h1>
+                <p class="text-lg text-base-content/70">
+                    Erweitere deine Flask-Anwendung mit professionellen Plugins.
+                    Einfach installieren, aktivieren, fertig.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {# Plugins Grid #}
+    <main class="container mx-auto px-4 py-12">
+        {% if plugins %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for plugin in plugins %}
+            <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                {% if plugin.screenshot_url %}
+                <figure class="h-40 bg-base-200">
+                    <img src="{{ plugin.screenshot_url }}" alt="{{ plugin.display_name }}" class="object-cover">
+                </figure>
+                {% else %}
+                <figure class="h-40 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <i class="ti ti-puzzle text-6xl text-base-content/30"></i>
+                </figure>
+                {% endif %}
+
+                <div class="card-body">
+                    <div class="flex justify-between items-start">
+                        <h2 class="card-title">
+                            {{ plugin.display_name }}
+                            {% if plugin.is_featured %}
+                            <span class="badge badge-warning">
+                                <i class="ti ti-star"></i>
+                            </span>
+                            {% endif %}
+                        </h2>
+                        <div class="text-right">
+                            {% if plugin.is_free %}
+                            <span class="badge badge-success badge-lg">Kostenlos</span>
+                            {% else %}
+                            <span class="text-xl font-bold">{{ plugin.price_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <p class="text-base-content/70">{{ plugin.description or 'Keine Beschreibung verfügbar.' }}</p>
+
+                    <div class="flex items-center gap-2 text-sm text-base-content/60">
+                        <i class="ti ti-tag"></i>
+                        <span>v{{ plugin.version }}</span>
+                    </div>
+
+                    <div class="card-actions justify-end mt-4">
+                        <a href="{{ url_for('shop.plugin_detail', plugin_name=plugin.name) }}"
+                           class="btn btn-primary btn-sm">
+                            Details
+                            <i class="ti ti-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <i class="ti ti-package-off text-6xl text-base-content/30 mb-4"></i>
+            <h2 class="text-2xl font-semibold mb-2">Noch keine Plugins verfügbar</h2>
+            <p class="text-base-content/60">Die Plugin-Datenbank wird gerade aufgebaut.</p>
+        </div>
+        {% endif %}
+    </main>
+
+    {# Footer #}
+    <footer class="footer footer-center p-4 bg-base-300 text-base-content">
+        <div>
+            <p>V-Flask Marketplace &copy; {{ now().year if now is defined else '2025' }}</p>
+        </div>
+    </footer>
+</body>
+</html>

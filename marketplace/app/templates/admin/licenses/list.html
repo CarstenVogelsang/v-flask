@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li>Lizenzen</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-license mr-2"></i>Lizenzen
+    </h1>
+    <a href="{{ url_for('marketplace_admin.license_grant') }}" class="btn btn-primary">
+        <i class="ti ti-plus mr-1"></i>
+        Lizenz vergeben
+    </a>
+</div>
+
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        {% if licenses %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Projekt</th>
+                        <th>Plugin</th>
+                        <th>Erworben</th>
+                        <th>Läuft ab</th>
+                        <th>Status</th>
+                        <th>Notizen</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for license in licenses %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('marketplace_admin.project_detail', project_id=license.project_id) }}"
+                               class="link link-primary">
+                                {{ license.project.name if license.project else '-' }}
+                            </a>
+                        </td>
+                        <td class="font-medium">{{ license.plugin_name }}</td>
+                        <td>{{ license.purchased_at.strftime('%d.%m.%Y') }}</td>
+                        <td>
+                            {% if license.is_perpetual %}
+                            <span class="text-success">Unbegrenzt</span>
+                            {% else %}
+                            {{ license.expires_at.strftime('%d.%m.%Y') }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if license.is_active %}
+                            <span class="badge badge-success">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-error">Abgelaufen</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-sm text-base-content/60">{{ license.notes or '-' }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('marketplace_admin.license_revoke', license_id=license.id) }}"
+                                  onsubmit="return confirm('Lizenz wirklich widerrufen?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-ghost text-error">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-base-content/60">
+            <i class="ti ti-license text-5xl mb-4"></i>
+            <p>Noch keine Lizenzen vergeben.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

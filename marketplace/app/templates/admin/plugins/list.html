@@ -1,0 +1,80 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li>Plugins</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-puzzle mr-2"></i>Plugins verwalten
+    </h1>
+</div>
+
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        {% if plugins %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Version</th>
+                        <th>Preis</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plugin in plugins %}
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                {% if plugin.is_featured %}
+                                <span class="badge badge-warning badge-sm">
+                                    <i class="ti ti-star"></i>
+                                </span>
+                                {% endif %}
+                                <div>
+                                    <span class="font-medium">{{ plugin.display_name }}</span>
+                                    <br>
+                                    <span class="text-xs text-base-content/60 font-mono">{{ plugin.name }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ plugin.version }}</td>
+                        <td>
+                            {% if plugin.is_free %}
+                            <span class="badge badge-success">Kostenlos</span>
+                            {% else %}
+                            <span class="font-medium">{{ plugin.price_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if plugin.is_published %}
+                            <span class="badge badge-success">Veröffentlicht</span>
+                            {% else %}
+                            <span class="badge badge-ghost">Entwurf</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('marketplace_admin.plugin_edit', plugin_id=plugin.id) }}"
+                               class="btn btn-sm btn-ghost">
+                                <i class="ti ti-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-base-content/60">
+            <i class="ti ti-puzzle text-5xl mb-4"></i>
+            <p>Keine Plugins gefunden.</p>
+            <p class="text-sm mt-2">Führe <code>flask init-marketplace</code> aus, um Plugins zu scannen.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li><a href="{{ url_for('marketplace_admin.license_list') }}">Lizenzen</a></li>
+<li>Vergeben</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-license mr-2"></i>Lizenz vergeben
+    </h1>
+</div>
+
+<div class="card bg-base-100 shadow max-w-2xl">
+    <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Projekt *</span>
+                </label>
+                <select name="project_id" class="select select-bordered" required>
+                    <option value="">Projekt auswählen...</option>
+                    {% for project in projects %}
+                    <option value="{{ project.id }}"
+                            {{ 'selected' if request.args.get('project_id', type=int) == project.id else '' }}>
+                        {{ project.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Plugin *</span>
+                </label>
+                <select name="plugin_name" class="select select-bordered" required>
+                    <option value="">Plugin auswählen...</option>
+                    {% for plugin in plugins %}
+                    <option value="{{ plugin.name }}">
+                        {{ plugin.display_name }} ({{ plugin.price_display }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Notizen</span>
+                </label>
+                <textarea name="notes" class="textarea textarea-bordered" rows="2"
+                          placeholder="z.B. Grund für manuelle Vergabe"></textarea>
+            </div>
+
+            <div class="alert alert-info mb-4">
+                <i class="ti ti-info-circle"></i>
+                <span>Manuell vergebene Lizenzen sind unbegrenzt gültig (kein Ablaufdatum).</span>
+            </div>
+
+            <div class="form-control mt-6">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-license mr-1"></i>
+                    Lizenz vergeben
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

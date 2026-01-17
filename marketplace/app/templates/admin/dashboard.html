@@ -1,0 +1,129 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li>Dashboard</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-shopping-cart mr-2"></i>Marketplace Dashboard
+    </h1>
+</div>
+
+{# Stats Cards #}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-primary">
+            <i class="ti ti-building text-3xl"></i>
+        </div>
+        <div class="stat-title">Projekte</div>
+        <div class="stat-value text-primary">{{ projects_count }}</div>
+        <div class="stat-desc">Registrierte Satellitenprojekte</div>
+    </div>
+
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-secondary">
+            <i class="ti ti-license text-3xl"></i>
+        </div>
+        <div class="stat-title">Lizenzen</div>
+        <div class="stat-value text-secondary">{{ licenses_count }}</div>
+        <div class="stat-desc">Aktive Plugin-Lizenzen</div>
+    </div>
+
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-accent">
+            <i class="ti ti-puzzle text-3xl"></i>
+        </div>
+        <div class="stat-title">Plugins</div>
+        <div class="stat-value text-accent">{{ plugins_count }}</div>
+        <div class="stat-desc">Veröffentlichte Plugins</div>
+    </div>
+
+    <div class="stat bg-base-100 shadow rounded-lg">
+        <div class="stat-figure text-success">
+            <i class="ti ti-receipt text-3xl"></i>
+        </div>
+        <div class="stat-title">Bestellungen</div>
+        <div class="stat-value text-success">{{ orders_count }}</div>
+        <div class="stat-desc">Abgeschlossene Käufe</div>
+    </div>
+</div>
+
+{# Quick Actions #}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <a href="{{ url_for('marketplace_admin.project_create') }}" class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+        <div class="card-body">
+            <h2 class="card-title">
+                <i class="ti ti-plus text-primary"></i>
+                Neues Projekt
+            </h2>
+            <p>Satellitenprojekt registrieren und API-Key generieren</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('marketplace_admin.license_grant') }}" class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+        <div class="card-body">
+            <h2 class="card-title">
+                <i class="ti ti-license text-secondary"></i>
+                Lizenz vergeben
+            </h2>
+            <p>Plugin-Lizenz an ein Projekt vergeben</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('marketplace_admin.plugin_list') }}" class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+        <div class="card-body">
+            <h2 class="card-title">
+                <i class="ti ti-settings text-accent"></i>
+                Plugins verwalten
+            </h2>
+            <p>Preise und Beschreibungen bearbeiten</p>
+        </div>
+    </a>
+</div>
+
+{# Recent Orders #}
+{% if recent_orders %}
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        <h2 class="card-title mb-4">
+            <i class="ti ti-history mr-2"></i>
+            Letzte Bestellungen
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Projekt</th>
+                        <th>Plugin</th>
+                        <th>Betrag</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td>{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>{{ order.project.name if order.project else '-' }}</td>
+                        <td>{{ order.plugin_name }}</td>
+                        <td>{{ order.amount_display }}</td>
+                        <td>
+                            {% if order.status == 'completed' %}
+                            <span class="badge badge-success">Abgeschlossen</span>
+                            {% elif order.status == 'pending' %}
+                            <span class="badge badge-warning">Ausstehend</span>
+                            {% else %}
+                            <span class="badge badge-error">{{ order.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

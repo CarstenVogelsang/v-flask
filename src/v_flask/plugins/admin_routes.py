@@ -1,7 +1,14 @@
-"""Admin routes for plugin management."""
+"""Admin routes for plugin management.
+
+Includes:
+- Local plugin activation/deactivation
+- Server restart scheduling
+- Marketplace integration (browse, install, update)
+"""
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, UTC
 from typing import TYPE_CHECKING
 
@@ -19,6 +26,8 @@ from v_flask.plugins.restart import RestartManager
 
 if TYPE_CHECKING:
     from flask import Flask
+
+logger = logging.getLogger(__name__)
 
 # Blueprint for plugin admin routes
 plugins_admin_bp = Blueprint(
@@ -197,6 +206,160 @@ def run_migrations():
         flash(f'Fehler beim Ausführen der Migrationen: {e}', 'error')
 
     return redirect(url_for('plugins_admin.list_plugins'))
+
+
+# ============================================================================
+# Marketplace Routes
+# ============================================================================
+
+
+def get_marketplace_client():
+    """Get the marketplace client if configured."""
+    try:
+        from v_flask.plugins.marketplace_client import get_marketplace_client as get_client
+        client = get_client()
+        if client.is_configured:
+            return client
+    except ImportError:
+        pass
+    return None
+
+
+def get_plugin_downloader():
+    """Get the plugin downloader."""
+    from v_flask.plugins.downloader import get_plugin_downloader as get_downloader
+    return get_downloader()
+
+
+@plugins_admin_bp.route('/marketplace')
+@permission_required('plugins.manage')
+def marketplace():
+    """Display available plugins from the remote marketplace."""
+    client = get_marketplace_client()
+
+    if not client:
+        flash(
+            'Marketplace nicht konfiguriert. '
+            'Setze VFLASK_MARKETPLACE_URL und VFLASK_PROJECT_API_KEY.',
+            'warning'
+        )
+        return redirect(url_for('plugins_admin.list_plugins'))
+
+    try:
+        # Get remote plugins
+        remote_plugins = client.get_available_plugins()
+
+        # Get licenses
+        try:
+            licensed_names = client.get_licensed_plugin_names()
+        except Exception:
+            licensed_names = set()
+
+        # Get local installation status
+        downloader = get_plugin_downloader()
+        installed_names = set(downloader.get_installed_plugins())
+
+        # Enrich plugin data with status
+        plugins = []
+        for plugin in remote_plugins:
+            name = plugin.get('name')
+            is_free = plugin.get('is_free', False) or plugin.get('price_cents', 0) == 0
+            plugins.append({
+                **plugin,
+                'is_installed': name in installed_names,
+                'is_licensed': name in licensed_names or is_free,
+                'is_free': is_free,
+                'can_install': (name in licensed_names or is_free) and name not in installed_names,
+            })
+
+        # Get project info
+        project_info = None
+        try:
+            project_info = client.get_project_info()
+        except Exception:
+            pass
+
+        return render_template(
+            'v_flask/admin/plugins/marketplace.html',
+            plugins=plugins,
+            project_info=project_info,
+            marketplace_configured=True,
+        )
+
+    except Exception as e:
+        logger.error(f"Marketplace error: {e}")
+        flash(f'Fehler beim Laden des Marketplaces: {e}', 'error')
+        return redirect(url_for('plugins_admin.list_plugins'))
+
+
+@plugins_admin_bp.route('/<name>/install', methods=['POST'])
+@permission_required('plugins.manage')
+def install_plugin(name: str):
+    """Install a plugin from the marketplace."""
+    client = get_marketplace_client()
+
+    if not client:
+        flash('Marketplace nicht konfiguriert.', 'error')
+        return redirect(url_for('plugins_admin.list_plugins'))
+
+    downloader = get_plugin_downloader()
+
+    try:
+        # Check if can download (licensed or free)
+        if not client.can_download_plugin(name):
+            flash(f'Plugin "{name}" ist nicht lizenziert.', 'error')
+            return redirect(url_for('plugins_admin.marketplace'))
+
+        # Install the plugin
+        force = request.form.get('force') == '1'
+        downloader.install_plugin(name, force=force)
+
+        flash(f'Plugin "{name}" wurde installiert.', 'success')
+
+    except Exception as e:
+        logger.error(f"Install error for {name}: {e}")
+        flash(f'Fehler beim Installieren von "{name}": {e}', 'error')
+
+    return redirect(url_for('plugins_admin.marketplace'))
+
+
+@plugins_admin_bp.route('/<name>/uninstall', methods=['POST'])
+@permission_required('plugins.manage')
+def uninstall_plugin(name: str):
+    """Uninstall a plugin (remove local files)."""
+    manager = get_plugin_manager()
+    downloader = get_plugin_downloader()
+
+    try:
+        # First deactivate if active
+        manager.deactivate_plugin(name)
+
+        # Then remove files
+        if downloader.uninstall_plugin(name):
+            flash(f'Plugin "{name}" wurde deinstalliert.', 'success')
+        else:
+            flash(f'Plugin "{name}" war nicht installiert.', 'warning')
+
+    except Exception as e:
+        logger.error(f"Uninstall error for {name}: {e}")
+        flash(f'Fehler beim Deinstallieren von "{name}": {e}', 'error')
+
+    return redirect(url_for('plugins_admin.marketplace'))
+
+
+@plugins_admin_bp.route('/marketplace/refresh', methods=['POST'])
+@permission_required('plugins.manage')
+def refresh_marketplace():
+    """Refresh marketplace plugin list."""
+    client = get_marketplace_client()
+
+    if client:
+        client.refresh_cache()
+        flash('Marketplace-Cache aktualisiert.', 'success')
+    else:
+        flash('Marketplace nicht konfiguriert.', 'warning')
+
+    return redirect(url_for('plugins_admin.marketplace'))
 
 
 def register_plugin_admin_routes(app: Flask) -> None:

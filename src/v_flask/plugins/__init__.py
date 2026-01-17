@@ -25,8 +25,25 @@ from v_flask.plugins.registry import PluginRegistry
 from v_flask.plugins.manager import PluginManager, PluginManagerError, PluginNotFoundError, PluginNotInstalledError
 from v_flask.plugins.restart import RestartManager, RestartError
 from v_flask.plugins.slots import PluginSlotManager
+from v_flask.plugins.marketplace_client import (
+    MarketplaceClient,
+    MarketplaceError,
+    MarketplaceConnectionError,
+    MarketplaceAuthError,
+    PluginNotLicensedError,
+    get_marketplace_client,
+    init_marketplace_client,
+)
+from v_flask.plugins.downloader import (
+    PluginDownloader,
+    DownloaderError,
+    PluginAlreadyInstalledError,
+    InvalidPluginArchiveError,
+    get_plugin_downloader,
+)
 
 __all__ = [
+    # Core plugin system
     'PluginManifest',
     'PluginRegistry',
     'PluginManager',
@@ -36,4 +53,18 @@ __all__ = [
     'PluginSlotManager',
     'RestartManager',
     'RestartError',
+    # Marketplace client
+    'MarketplaceClient',
+    'MarketplaceError',
+    'MarketplaceConnectionError',
+    'MarketplaceAuthError',
+    'PluginNotLicensedError',
+    'get_marketplace_client',
+    'init_marketplace_client',
+    # Plugin downloader
+    'PluginDownloader',
+    'DownloaderError',
+    'PluginAlreadyInstalledError',
+    'InvalidPluginArchiveError',
+    'get_plugin_downloader',
 ]

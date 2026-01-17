@@ -18,8 +18,11 @@
     <h1 class="text-2xl font-bold">
         <i class="ti ti-puzzle mr-2"></i>Plugin-Verwaltung
     </h1>
-    {% if restart_required %}
     <div class="flex gap-2">
+        <a href="{{ url_for('plugins_admin.marketplace') }}" class="btn btn-sm btn-outline btn-primary">
+            <i class="ti ti-building-store mr-1"></i>Marketplace
+        </a>
+        {% if restart_required %}
         <button class="btn btn-sm btn-outline" onclick="scheduleModal.showModal()">
             <i class="ti ti-clock mr-1"></i>Planen
         </button>
@@ -30,8 +33,8 @@
                 <i class="ti ti-refresh mr-1"></i>Jetzt neustarten
             </button>
         </form>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
 
 {# Restart Required Banner #}

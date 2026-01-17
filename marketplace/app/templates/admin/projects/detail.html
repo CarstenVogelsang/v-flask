@@ -1,0 +1,158 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li><a href="{{ url_for('marketplace_admin.project_list') }}">Projekte</a></li>
+<li>{{ project.name }}</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-building mr-2"></i>{{ project.name }}
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('marketplace_admin.project_edit', project_id=project.id) }}"
+           class="btn btn-outline">
+            <i class="ti ti-edit mr-1"></i>
+            Bearbeiten
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {# Project Info #}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title mb-4">
+                <i class="ti ti-info-circle mr-2"></i>
+                Projektdetails
+            </h2>
+
+            <dl class="space-y-3">
+                <div class="flex justify-between">
+                    <dt class="text-base-content/60">Slug:</dt>
+                    <dd class="font-mono">{{ project.slug }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-base-content/60">Owner:</dt>
+                    <dd>{{ project.owner_email }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-base-content/60">Status:</dt>
+                    <dd>
+                        {% if project.is_active %}
+                        <span class="badge badge-success">Aktiv</span>
+                        {% else %}
+                        <span class="badge badge-error">Inaktiv</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-base-content/60">Erstellt:</dt>
+                    <dd>{{ project.created_at.strftime('%d.%m.%Y %H:%M') }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    {# API Key #}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title mb-4">
+                <i class="ti ti-key mr-2"></i>
+                API-Key
+            </h2>
+
+            <div class="alert alert-warning mb-4">
+                <i class="ti ti-alert-triangle"></i>
+                <span>Der API-Key wird nur einmal angezeigt. Speichere ihn sicher!</span>
+            </div>
+
+            <div class="form-control">
+                <div class="input-group">
+                    <input type="text" value="{{ project.api_key }}" class="input input-bordered flex-1 font-mono text-sm" readonly>
+                    <button class="btn btn-square" onclick="navigator.clipboard.writeText('{{ project.api_key }}')">
+                        <i class="ti ti-copy"></i>
+                    </button>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('marketplace_admin.project_regenerate_key', project_id=project.id) }}"
+                  class="mt-4" onsubmit="return confirm('API-Key wirklich neu generieren? Der alte Key wird ungültig!')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-warning btn-sm">
+                    <i class="ti ti-refresh mr-1"></i>
+                    Neuen Key generieren
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Licenses #}
+<div class="card bg-base-100 shadow mt-6">
+    <div class="card-body">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="card-title">
+                <i class="ti ti-license mr-2"></i>
+                Lizenzen ({{ project.licenses.count() }})
+            </h2>
+            <a href="{{ url_for('marketplace_admin.license_grant') }}?project_id={{ project.id }}"
+               class="btn btn-sm btn-primary">
+                <i class="ti ti-plus mr-1"></i>
+                Lizenz hinzufügen
+            </a>
+        </div>
+
+        {% set licenses = project.licenses.all() %}
+        {% if licenses %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Plugin</th>
+                        <th>Erworben</th>
+                        <th>Läuft ab</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for license in licenses %}
+                    <tr>
+                        <td class="font-medium">{{ license.plugin_name }}</td>
+                        <td>{{ license.purchased_at.strftime('%d.%m.%Y') }}</td>
+                        <td>
+                            {% if license.is_perpetual %}
+                            <span class="text-success">Unbegrenzt</span>
+                            {% else %}
+                            {{ license.expires_at.strftime('%d.%m.%Y') }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if license.is_active %}
+                            <span class="badge badge-success">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-error">Abgelaufen</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('marketplace_admin.license_revoke', license_id=license.id) }}"
+                                  onsubmit="return confirm('Lizenz wirklich widerrufen?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-ghost text-error">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-base-content/60 text-center py-4">Keine Lizenzen vorhanden.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

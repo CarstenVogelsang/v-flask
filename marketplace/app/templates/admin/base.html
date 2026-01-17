@@ -1,0 +1,12 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{{ title or 'Marketplace Admin' }} | V-Flask Marketplace{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('marketplace_admin.dashboard') }}"><i class="ti ti-home"></i> Marketplace Admin</a></li>
+        {% block breadcrumb_items %}{% endblock %}
+    </ul>
+</div>
+{% endblock %}

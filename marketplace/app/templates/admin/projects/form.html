@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li><a href="{{ url_for('marketplace_admin.project_list') }}">Projekte</a></li>
+<li>{{ 'Bearbeiten' if project else 'Neu' }}</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-building mr-2"></i>
+        {{ 'Projekt bearbeiten' if project else 'Neues Projekt' }}
+    </h1>
+</div>
+
+<div class="card bg-base-100 shadow max-w-2xl">
+    <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Projektname *</span>
+                </label>
+                <input type="text" name="name" value="{{ project.name if project else '' }}"
+                       class="input input-bordered" required
+                       placeholder="z.B. UDO UI">
+                <label class="label">
+                    <span class="label-text-alt">Name des Satellitenprojekts</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Owner E-Mail *</span>
+                </label>
+                <input type="email" name="owner_email" value="{{ project.owner_email if project else '' }}"
+                       class="input input-bordered" required
+                       placeholder="admin@example.com">
+                <label class="label">
+                    <span class="label-text-alt">E-Mail des Projektverantwortlichen</span>
+                </label>
+            </div>
+
+            {% if project %}
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_active" class="checkbox checkbox-primary"
+                           {{ 'checked' if project.is_active else '' }}>
+                    <span class="label-text">Projekt ist aktiv</span>
+                </label>
+            </div>
+            {% endif %}
+
+            <div class="form-control mt-6">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-device-floppy mr-1"></i>
+                    {{ 'Speichern' if project else 'Erstellen' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
