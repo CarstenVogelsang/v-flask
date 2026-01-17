@@ -693,6 +693,48 @@ Jede Admin-Seite **MUSS** diesem Layout-Pattern folgen:
 3. **Styling:** DaisyUI-Themes funktionieren nur mit DaisyUI-Klassen
 4. **Wartbarkeit:** Einheitliche Struktur erleichtert die Fehlersuche
 
+### CSRF-Schutz für Formulare
+
+**WICHTIG:** Alle POST-Formulare MÜSSEN CSRF-Schutz haben!
+
+#### HTMX-Formulare (automatisch geschützt)
+
+Formulare mit `hx-post` senden das CSRF-Token automatisch über den HTTP-Header `X-CSRFToken`, der aus dem Meta-Tag gelesen wird:
+
+```html
+<form hx-post="{{ url_for('mein_plugin_admin.save') }}"
+      hx-target="#result">
+    {# CSRF wird automatisch als Header gesendet #}
+    <input type="text" name="feld" ...>
+    <button type="submit">Speichern</button>
+</form>
+```
+
+#### Normale POST-Formulare (Include erforderlich)
+
+Formulare mit `method="post"` (ohne HTMX) benötigen das CSRF-Token als Hidden-Field:
+
+```html
+<form method="post" action="{{ url_for('mein_plugin_admin.save') }}">
+    {% include 'v_flask/includes/_csrf.html' %}
+    <input type="text" name="feld" ...>
+    <button type="submit">Speichern</button>
+</form>
+```
+
+Das Include `v_flask/includes/_csrf.html` fügt folgendes ein:
+```html
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+```
+
+#### Wann welche Methode?
+
+| Formular-Typ | CSRF-Methode | Beispiel |
+|--------------|--------------|----------|
+| HTMX (`hx-post`) | Automatisch via Header | Admin-Formulare mit Live-Update |
+| Normal (`method="post"`) | Include erforderlich | Stock-Import, öffentliche Formulare |
+| JavaScript/Fetch | Header manuell setzen | `X-CSRFToken: document.querySelector('meta[name="csrf-token"]').content` |
+
 ---
 
 ## UI-Slot-System

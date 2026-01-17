@@ -40,6 +40,7 @@
                       hx-post="{{ url_for('media_admin.upload') }}"
                       hx-target="#upload-result"
                       hx-encoding="multipart/form-data">
+                    {% include 'v_flask/includes/_csrf.html' %}
 
                     {# Dropzone #}
                     <div id="dropzone"

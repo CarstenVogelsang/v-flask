@@ -127,6 +127,7 @@
         {# Form Column #}
         <div>
             <form method="post" action="{{ url_for('datenschutz_admin.save') }}" id="datenschutz-form">
+                {% include 'v_flask/includes/_csrf.html' %}
                 {# Verantwortlicher Card #}
                 <div class="card bg-base-100 shadow-xl mb-6">
                     <div class="card-body">
@@ -312,7 +313,9 @@
             </form>
 
             {# Hidden form for import #}
-            <form id="import-form" method="post" action="{{ url_for('datenschutz_admin.import_from_impressum') }}"></form>
+            <form id="import-form" method="post" action="{{ url_for('datenschutz_admin.import_from_impressum') }}">
+                {% include 'v_flask/includes/_csrf.html' %}
+            </form>
         </div>
 
         {# Preview Column #}

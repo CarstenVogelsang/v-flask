@@ -109,6 +109,7 @@
             {# Import Button Overlay #}
             <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <form action="{{ url_for('media_admin.stock_import') }}" method="post">
+                    {% include 'v_flask/includes/_csrf.html' %}
                     <input type="hidden" name="provider" value="{{ provider }}">
                     <input type="hidden" name="photo_id" value="{{ photo.id }}">
                     {% if provider == 'pexels' %}
@@ -193,6 +194,7 @@
 
             <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <form action="{{ url_for('media_admin.stock_import') }}" method="post">
+                    {% include 'v_flask/includes/_csrf.html' %}
                     <input type="hidden" name="provider" value="{{ provider }}">
                     <input type="hidden" name="photo_id" value="{{ photo.id }}">
                     {% if provider == 'pexels' %}

@@ -1,0 +1,12 @@
+{# CSRF Token Hidden Field
+
+   Include this in all POST forms that don't use hx-post.
+   HTMX forms automatically get CSRF via meta tag + X-CSRFToken header.
+
+   Usage:
+   <form method="post" action="...">
+       {% include 'v_flask/includes/_csrf.html' %}
+       ...
+   </form>
+#}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

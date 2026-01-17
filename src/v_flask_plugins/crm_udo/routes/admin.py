@@ -19,6 +19,9 @@ from v_flask.auth import permission_required
 
 from ..api_client import crm_client
 
+# Note: @udo_api_login_required is no longer needed since UDO UI now uses
+# Unified Login where authentication is handled via Flask-Login.
+
 
 admin_bp = Blueprint(
     'crm_udo_admin',

@@ -17,6 +17,7 @@
                     </p>
 
                     <form method="POST" action="{{ url_for('kontakt.form') }}">
+                        {% include 'v_flask/includes/_csrf.html' %}
                         <div class="form-control mb-4">
                             <label class="label" for="name">
                                 <span class="label-text">Name <span class="text-error">*</span></span>
