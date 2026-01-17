@@ -148,13 +148,11 @@
                             onclick="openMediaPicker()"
                             class="btn btn-outline btn-primary w-full">
                         <i class="ti ti-photo-plus mr-1"></i>
-                        {% if hero.media %}Bild andern{% else %}Bild auswahlen{% endif %}
+                        {% if hero.media %}Bild ändern{% else %}Bild auswählen{% endif %}
                     </button>
                     <label class="label">
-                        <span class="label-text-alt">
-                            <a href="{{ url_for('media_admin.library') }}" class="link">Media-Bibliothek offnen</a>
-                            oder
-                            <a href="{{ url_for('media_admin.stock_search') }}" class="link">Stock-Fotos durchsuchen</a>
+                        <span class="label-text-alt text-base-content/60">
+                            Aus Medienbibliothek wählen, hochladen oder Stock-Fotos durchsuchen
                         </span>
                     </label>
                 </div>

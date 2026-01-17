@@ -91,7 +91,7 @@ UNSPLASH_ACCESS_KEY=xxx     # Optional
     ui_slots = {
         'admin_menu': [
             {
-                'label': 'Media-Library',
+                'label': 'Medienbibliothek',
                 'url': 'media_admin.library',
                 'icon': 'ti ti-photo',
                 'permission': 'admin.*',
