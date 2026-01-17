@@ -150,9 +150,14 @@
                         <i class="ti ti-photo-plus mr-1"></i>
                         {% if hero.media %}Bild ändern{% else %}Bild auswählen{% endif %}
                     </button>
+                    <a href="{{ url_for('media_admin.library', return_to='hero_admin.editor', field='media_id') }}"
+                       class="link link-hover text-sm text-base-content/60 mt-2 block text-center"
+                       onclick="return confirm('Ungespeicherte Änderungen gehen verloren. Fortfahren?')">
+                        <i class="ti ti-external-link mr-1"></i>In Medienbibliothek öffnen
+                    </a>
                     <label class="label">
                         <span class="label-text-alt text-base-content/60">
-                            Aus Medienbibliothek wählen, hochladen oder Stock-Fotos durchsuchen
+                            Schnellauswahl per Modal oder umfangreichere Suche in der Medienbibliothek
                         </span>
                     </label>
                 </div>

@@ -1,10 +1,10 @@
 {# Media grid partial - used by HTMX for dynamic updates #}
+{# In picker_mode: Show "Übernehmen" button instead of link to detail #}
 
 {% if media_items %}
 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
     {% for media in media_items %}
-    <a href="{{ url_for('media_admin.detail', id=media.id) }}"
-       class="card bg-base-100 shadow hover:shadow-lg transition-shadow group">
+    <div class="card bg-base-100 shadow hover:shadow-lg transition-shadow group">
         <figure class="relative aspect-square bg-base-200 overflow-hidden">
             {% if media.is_image %}
             <img src="{{ media.get_url('thumbnail') }}"
@@ -30,9 +30,15 @@
 
             {# Hover Overlay #}
             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                {% if picker_mode %}
+                <span class="btn btn-circle btn-sm btn-primary text-white">
+                    <i class="ti ti-check"></i>
+                </span>
+                {% else %}
                 <span class="btn btn-circle btn-sm btn-ghost text-white">
                     <i class="ti ti-eye"></i>
                 </span>
+                {% endif %}
             </div>
         </figure>
         <div class="card-body p-2">
@@ -42,16 +48,31 @@
             {% if media.width and media.height %}
             <p class="text-xs text-base-content/50">{{ media.width }}x{{ media.height }}</p>
             {% endif %}
+
+            {# Action Button #}
+            {% if picker_mode %}
+            <a href="{{ url_for(return_to, **{field_name: media.id}) }}"
+               class="btn btn-xs btn-primary w-full mt-1">
+                <i class="ti ti-check mr-1"></i>Übernehmen
+            </a>
+            {% else %}
+            <a href="{{ url_for('media_admin.detail', id=media.id) }}"
+               class="btn btn-xs btn-ghost w-full mt-1">
+                <i class="ti ti-eye mr-1"></i>Details
+            </a>
+            {% endif %}
         </div>
-    </a>
+    </div>
     {% endfor %}
 </div>
 {% else %}
 <div class="text-center py-12 text-base-content/60">
     <i class="ti ti-photo-off text-4xl mb-2"></i>
     <p>Keine Medien gefunden.</p>
+    {% if not picker_mode %}
     <a href="{{ url_for('media_admin.upload') }}" class="btn btn-primary btn-sm mt-4">
         <i class="ti ti-upload mr-1"></i> Erste Datei hochladen
     </a>
+    {% endif %}
 </div>
 {% endif %}

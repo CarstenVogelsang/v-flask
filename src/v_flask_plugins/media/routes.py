@@ -38,15 +38,39 @@ media_admin_bp = Blueprint(
 # Library & CRUD Routes
 # ==============================================
 
+# Plugin label mapping for picker mode
+PLUGIN_LABELS = {
+    'hero_admin.editor': 'Hero Editor',
+    'content_admin.edit': 'Content Editor',
+    'admin_content.content_edit': 'Content Editor',
+}
+
+
+def get_return_to_label(endpoint: str) -> str:
+    """Get human-readable label for a plugin endpoint."""
+    return PLUGIN_LABELS.get(endpoint, endpoint.replace('_', ' ').replace('.', ' › ').title())
+
+
 @media_admin_bp.route('/')
 @admin_required
 def library():
-    """Media library browser."""
+    """Media library browser.
+
+    Supports picker mode when called with return_to parameter:
+    - return_to: Flask endpoint to return to after selection (e.g., 'hero_admin.editor')
+    - field: Name of the field to populate with media_id (default: 'media_id')
+    """
     media_type = request.args.get('type')
     source = request.args.get('source')
     search_query = request.args.get('q')
     page = request.args.get('page', 1, type=int)
     per_page = 24
+
+    # Picker mode parameters
+    return_to = request.args.get('return_to')
+    field_name = request.args.get('field', 'media_id')
+    picker_mode = bool(return_to)
+    return_to_label = get_return_to_label(return_to) if return_to else None
 
     if search_query:
         # Search mode
@@ -83,6 +107,11 @@ def library():
         search_query=search_query,
         media_types=MediaType,
         stats=stats,
+        # Picker mode
+        picker_mode=picker_mode,
+        return_to=return_to,
+        return_to_label=return_to_label,
+        field_name=field_name,
     )
 
 

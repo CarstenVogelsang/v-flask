@@ -1,30 +1,51 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Media-Library{% endblock %}
+{% block title %}{% if picker_mode %}Bild auswählen{% else %}Medienbibliothek{% endif %}{% endblock %}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs text-sm">
     <ul>
         <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
         <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
-        <li>Media-Library</li>
+        <li>{% if picker_mode %}Bild auswählen{% else %}Medienbibliothek{% endif %}</li>
     </ul>
 </div>
 {% endblock %}
 
 {% block admin_content %}
+{# Picker Mode Banner #}
+{% if picker_mode %}
+<div class="alert alert-info mb-4 shadow-lg">
+    <i class="ti ti-info-circle text-xl"></i>
+    <div>
+        <h3 class="font-bold">Bild auswählen</h3>
+        <div class="text-sm">Wähle ein Bild zur Übernahme in <strong>{{ return_to_label }}</strong></div>
+    </div>
+    <a href="{{ url_for(return_to) }}" class="btn btn-sm btn-ghost">
+        <i class="ti ti-x mr-1"></i>Abbrechen
+    </a>
+</div>
+{% endif %}
+
 <div class="flex justify-between items-center mb-4">
     <h1 class="text-2xl font-bold flex items-center gap-2">
         <i class="ti ti-photo text-primary"></i>
-        <span>Media-Library</span>
+        <span>{% if picker_mode %}Bild auswählen{% else %}Medienbibliothek{% endif %}</span>
     </h1>
     <div class="flex gap-2">
+        {% if picker_mode %}
+        {# In picker mode: Stock search with return_to params #}
+        <a href="{{ url_for('media_admin.stock_search', return_to=return_to, field=field_name) }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-camera mr-1"></i> Stock-Fotos
+        </a>
+        {% else %}
         <a href="{{ url_for('media_admin.stock_search') }}" class="btn btn-ghost btn-sm">
             <i class="ti ti-camera mr-1"></i> Stock-Fotos
         </a>
         <a href="{{ url_for('media_admin.upload') }}" class="btn btn-primary btn-sm">
             <i class="ti ti-upload mr-1"></i> Hochladen
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -125,7 +146,7 @@
 <div class="flex justify-center mt-6">
     <div class="join">
         {% if pagination.has_prev %}
-        <a href="{{ url_for('media_admin.library', page=pagination.prev_num, type=current_type, source=current_source) }}"
+        <a href="{{ url_for('media_admin.library', page=pagination.prev_num, type=current_type, source=current_source, return_to=return_to, field=field_name if picker_mode else None) }}"
            class="join-item btn btn-sm">
             <i class="ti ti-chevron-left"></i>
         </a>
@@ -133,7 +154,7 @@
 
         {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
             {% if page_num %}
-                <a href="{{ url_for('media_admin.library', page=page_num, type=current_type, source=current_source) }}"
+                <a href="{{ url_for('media_admin.library', page=page_num, type=current_type, source=current_source, return_to=return_to, field=field_name if picker_mode else None) }}"
                    class="join-item btn btn-sm {% if page_num == pagination.page %}btn-active{% endif %}">
                     {{ page_num }}
                 </a>
@@ -143,7 +164,7 @@
         {% endfor %}
 
         {% if pagination.has_next %}
-        <a href="{{ url_for('media_admin.library', page=pagination.next_num, type=current_type, source=current_source) }}"
+        <a href="{{ url_for('media_admin.library', page=pagination.next_num, type=current_type, source=current_source, return_to=return_to, field=field_name if picker_mode else None) }}"
            class="join-item btn btn-sm">
             <i class="ti ti-chevron-right"></i>
         </a>

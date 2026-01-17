@@ -38,6 +38,7 @@ def editor():
     """Hero Section Editor.
 
     Main admin page for configuring the hero section.
+    Supports media_id URL parameter for automatic image adoption from media library.
     """
     # Get or create active hero section
     hero = HeroSection.query.filter_by(active=True).first()
@@ -49,6 +50,14 @@ def editor():
         )
         db.session.add(hero)
         db.session.commit()
+
+    # Handle media adoption from media library picker
+    new_media_id = request.args.get('media_id', type=int)
+    if new_media_id:
+        hero.media_id = new_media_id
+        db.session.commit()
+        flash('Bild übernommen', 'success')
+        return redirect(url_for('hero_admin.editor'))
 
     templates = hero_service.get_all_templates()
 
