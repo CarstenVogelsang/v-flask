@@ -124,6 +124,7 @@
                       hx-post="{{ url_for('media_admin.edit', id=media.id) }}"
                       hx-target="#save-feedback"
                       hx-swap="innerHTML">
+                    {% include 'v_flask/includes/_csrf.html' %}
 
                     <div class="form-control mb-4">
                         <label class="label" for="alt_text">
