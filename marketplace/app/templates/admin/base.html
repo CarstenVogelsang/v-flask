@@ -2,6 +2,49 @@
 
 {% block title %}{{ title or 'Marketplace Admin' }} | V-Flask Marketplace{% endblock %}
 
+{% block sidebar_header %}
+<div class="p-4 border-b border-base-300">
+    <a href="{{ url_for('marketplace_admin.dashboard') }}"
+       class="text-xl font-bold flex items-center gap-2 hover:text-primary transition-colors">
+        <i class="ti ti-layout-dashboard"></i>
+        Admin
+    </a>
+</div>
+{% endblock %}
+
+{% block sidebar_nav_before %}
+<div class="mb-4">
+    <div class="px-3 py-2 text-xs font-semibold uppercase text-base-content/60">
+        <i class="ti ti-package mr-1"></i> Marketplace
+    </div>
+    <ul class="menu menu-sm">
+        <li>
+            <a href="{{ url_for('marketplace_admin.project_list') }}" class="{{ 'active' if request.endpoint and 'project' in request.endpoint else '' }}">
+                <i class="ti ti-building"></i>
+                <span class="sidebar-text">Projekte</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('marketplace_admin.license_list') }}" class="{{ 'active' if request.endpoint and 'license' in request.endpoint else '' }}">
+                <i class="ti ti-license"></i>
+                <span class="sidebar-text">Lizenzen</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('marketplace_admin.plugin_list') }}" class="{{ 'active' if request.endpoint and 'plugin' in request.endpoint else '' }}">
+                <i class="ti ti-puzzle"></i>
+                <span class="sidebar-text">Plugins</span>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="divider my-2"></div>
+{% endblock %}
+
+{% block sidebar_nav_plugins %}
+{# Marketplace doesn't use plugin navigation #}
+{% endblock %}
+
 {% block breadcrumbs %}
 <div class="breadcrumbs text-sm">
     <ul>
@@ -9,4 +52,9 @@
         {% block breadcrumb_items %}{% endblock %}
     </ul>
 </div>
+{% endblock %}
+
+{# Bridge block: v_flask/admin/base.html uses 'content', child templates use 'admin_content' #}
+{% block content %}
+{% block admin_content %}{% endblock %}
 {% endblock %}
