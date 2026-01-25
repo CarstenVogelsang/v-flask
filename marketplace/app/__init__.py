@@ -257,6 +257,7 @@ def _register_cli(app: Flask) -> None:
             'hero': ('content', 'ti ti-photo'),
             'cta': ('content', 'ti ti-click'),
             'katalog': ('content', 'ti ti-book'),
+            'content': ('content', 'ti ti-layout-grid'),
             # Commerce
             'shop': ('commerce', 'ti ti-shopping-cart'),
             'pim': ('commerce', 'ti ti-package'),
@@ -293,3 +294,64 @@ def _register_cli(app: Flask) -> None:
 
             db.session.commit()
             click.echo(f'Done! {updated} plugins updated.')
+
+    @app.cli.command('seed-plugin-prices')
+    def seed_plugin_prices():
+        """Seed default prices for plugins."""
+        from app.models import PluginMeta, PluginPrice, ProjectType
+
+        # Plugins with prices: (plugin_name, price_cents_monthly)
+        plugin_prices = {
+            'content': 99,  # 0,99 €
+            'hero': 99,     # 0,99 €
+        }
+
+        with app.app_context():
+            # Get all non-free project types (excludes 'intern')
+            project_types = ProjectType.query.filter_by(is_free=False).all()
+
+            if not project_types:
+                click.echo('No project types found! Run: flask db upgrade && seed ProjectType.seed_defaults()')
+                return
+
+            for plugin_name, price_cents in plugin_prices.items():
+                plugin = PluginMeta.query.filter_by(name=plugin_name).first()
+                if not plugin:
+                    click.echo(f'  {plugin_name}: Plugin not found')
+                    continue
+
+                # Set base price in PluginMeta
+                plugin.price_cents = price_cents
+                click.echo(f'  {plugin_name}: Base price = {price_cents} Cent')
+
+                # Create PluginPrice entries for each project type
+                for pt in project_types:
+                    for cycle in ['monthly', 'yearly']:
+                        existing = PluginPrice.query.filter_by(
+                            plugin_id=plugin.id,
+                            project_type_id=pt.id,
+                            billing_cycle=cycle
+                        ).first()
+
+                        if cycle == 'yearly':
+                            actual_price = int(price_cents * 12 * 0.9)  # 10% Jahresrabatt
+                        else:
+                            actual_price = price_cents
+
+                        if existing:
+                            existing.price_cents = actual_price
+                            existing.is_active = True
+                        else:
+                            new_price = PluginPrice(
+                                plugin_id=plugin.id,
+                                project_type_id=pt.id,
+                                billing_cycle=cycle,
+                                price_cents=actual_price,
+                                is_active=True,
+                            )
+                            db.session.add(new_price)
+
+                        click.echo(f'    {pt.code}/{cycle}: {actual_price} Cent')
+
+            db.session.commit()
+            click.echo('Done!')

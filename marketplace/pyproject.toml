@@ -15,6 +15,7 @@ dependencies = [
     "v-flask",
     # Stripe for payments (Phase 4)
     # "stripe>=7.0",
+    "pillow>=12.1.0",
 ]
 
 [tool.uv.sources]
