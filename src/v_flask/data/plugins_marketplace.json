@@ -153,5 +153,21 @@
     "dependencies": ["pim", "crm", "pricing"],
     "homepage": "",
     "repository": ""
+  },
+  {
+    "name": "content",
+    "version": "1.0.0",
+    "description": "Template-basierte Inhaltsbausteine für Seitenbereiche",
+    "long_description": "Ein template-basiertes Content-System für allgemeine Seitenbereiche, genannt \"Inhaltsbausteine\" für Endkunden.\n\n**Features:**\n- 3-Schritte-Wizard: Intention → Layout → Inhalte\n- 4 Intentionen: Über uns, Leistungen, Team, Freier Inhalt\n- 4 Layouts: Banner+Text, Bild links, Bild rechts, Nur Text\n- Textbaustein-System mit branchenspezifischen Vorlagen\n- Seitenzuweisung über Content-Slots\n- ~20 vordefinierte Textbausteine\n\n**Konzept:**\nKEIN WYSIWYG-Editor, sondern ein geführter Workflow mit vordefinierten Layouts. Dies garantiert konsistentes Design und einfache Bedienung.\n\n**Slots:**\n- before_content: Vor dem Hauptinhalt\n- after_content: Nach dem Hauptinhalt\n- sidebar: Sidebar-Bereich",
+    "author": "v-flask",
+    "license": "MIT",
+    "categories": ["content", "pages"],
+    "tags": ["content", "bausteine", "templates", "textbausteine", "layouts", "wizard"],
+    "package": "v_flask_plugins.content",
+    "class": "ContentPlugin",
+    "min_v_flask_version": "0.2.0",
+    "dependencies": ["media"],
+    "homepage": "",
+    "repository": ""
   }
 ]

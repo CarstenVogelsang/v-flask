@@ -47,6 +47,9 @@ from v_flask.models.help_text import HelpText
 from v_flask.models.plugin_config import PluginConfig
 from v_flask.models.color_palette import ColorPalette
 
+# Content Slots (for plugins that use PageRoute)
+from v_flask.content_slots.models import PageRoute
+
 __all__ = [
     # Core user system
     'User',
@@ -71,4 +74,6 @@ __all__ = [
     'PluginConfig',
     # Theming
     'ColorPalette',
+    # Content Slots
+    'PageRoute',
 ]
