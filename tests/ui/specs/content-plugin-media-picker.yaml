@@ -1,0 +1,251 @@
+# E2E-Test: Content-Plugin Media-Picker Integration
+# Testet die vollständige Integration von Content-Plugin mit Media-Picker im Satellitenprojekt
+
+meta:
+  name: "Content-Plugin Media-Picker Integration"
+  id: "e2e-content-media-picker"
+  version: "1.0"
+  author: "cvogelsang"
+  created: "2026-01-25"
+  plugins: ["content", "media"]
+  projects: ["v-flask", "vz_fruehstueckenclick"]
+
+prerequisites:
+  servers:
+    - name: "Marketplace"
+      command: "uv run flask run --debug --port 5800"
+      cwd: "/Users/cvogelsang/projektz/v-flask/marketplace"
+      port: 5800
+      health_check: "http://localhost:5800/"
+
+    - name: "Frühstückenclick"
+      command: "uv run flask run --debug --port 5333"
+      cwd: "/Users/cvogelsang/projektz/vz_fruehstueckenclick"
+      port: 5333
+      health_check: "http://localhost:5333/"
+
+  credentials:
+    fruehstueckenclick:
+      email: "admin@fruehstuecken.click"
+      password: "admin123"
+
+  environment:
+    fruehstueckenclick:
+      PEXELS_API_KEY: "required"  # Für Stock-Fotos
+
+steps:
+  - id: 1
+    name: "Login in Frühstückenclick Admin"
+    action: "navigate_and_login"
+    url: "http://localhost:5333/admin/"
+    credentials: "fruehstueckenclick"
+    expect:
+      - "Dashboard wird angezeigt"
+      - "URL enthält /admin/"
+
+  - id: 2
+    name: "Navigiere zu Plugin-Marketplace"
+    action: "navigate"
+    url: "http://localhost:5333/admin/plugins/marketplace"
+    expect:
+      - "Liste verfügbarer Plugins wird angezeigt"
+      - "Content-Plugin ist sichtbar"
+
+  - id: 3
+    name: "Media-Plugin installieren (falls nicht vorhanden)"
+    action: "conditional_click"
+    condition: "Media-Plugin zeigt 'Installieren' Button"
+    target: "Installieren-Button für Media-Plugin"
+    expect:
+      - "Erfolgs-Meldung oder Plugin bereits installiert"
+
+  - id: 4
+    name: "Media-Plugin aktivieren (falls nicht aktiv)"
+    action: "conditional_click"
+    condition: "Media-Plugin zeigt 'Aktivieren' Button"
+    target: "Aktivieren-Button für Media-Plugin"
+    expect:
+      - "Erfolgs-Meldung oder Plugin bereits aktiv"
+
+  - id: 5
+    name: "Content-Plugin installieren"
+    action: "click"
+    target: "Installieren-Button für Content-Plugin"
+    expect:
+      - "Erfolgs-Meldung erscheint"
+      - "Button wechselt zu 'Aktivieren'"
+
+  - id: 6
+    name: "Content-Plugin aktivieren"
+    action: "click"
+    target: "Aktivieren-Button für Content-Plugin"
+    expect:
+      - "Erfolgs-Meldung erscheint"
+      - "Button wechselt zu 'Deaktivieren'"
+
+  - id: 7
+    name: "Server neu starten"
+    action: "restart_server"
+    server: "Frühstückenclick"
+    expect:
+      - "Server startet ohne Fehler"
+      - "Alle Plugins geladen"
+
+  - id: 8
+    name: "Navigiere zu Inhaltsbausteine"
+    action: "navigate"
+    url: "http://localhost:5333/admin/content/"
+    expect:
+      - "Inhaltsbausteine-Liste wird angezeigt"
+      - "'Neuer Baustein' Button sichtbar"
+
+  - id: 9
+    name: "Neuen Baustein erstellen - Wizard starten"
+    action: "click"
+    target: "Neuer Baustein Button"
+    expect:
+      - "Wizard öffnet sich"
+      - "Schritt 1: Intention auswählen"
+
+  - id: 10
+    name: "Intention wählen: Über uns"
+    action: "click"
+    target: "Intention-Karte 'Über uns'"
+    expect:
+      - "Intention ausgewählt"
+      - "Weiter zu Schritt 2"
+
+  - id: 11
+    name: "Layout wählen: Bild links, Text rechts"
+    action: "click"
+    target: "Layout-Karte 'Bild links, Text rechts'"
+    expect:
+      - "Layout ausgewählt"
+      - "Weiter zu Schritt 3"
+
+  - id: 12
+    name: "Inhalte eingeben: Name"
+    action: "fill"
+    target: "Name-Eingabefeld"
+    value: "Willkommen auf Frühstückenclick"
+    expect:
+      - "Name wird übernommen"
+
+  - id: 13
+    name: "Media-Picker öffnen"
+    action: "click"
+    target: "Bild wählen Button"
+    expect:
+      - "Media-Picker Modal öffnet sich"
+      - "Tabs: Bibliothek, Hochladen, Stock-Fotos sichtbar"
+
+  - id: 14
+    name: "Stock-Fotos Tab wählen"
+    action: "click"
+    target: "Tab 'Stock-Fotos' oder 'Pexels'"
+    expect:
+      - "Stock-Fotos Bereich wird angezeigt"
+      - "Suchfeld sichtbar"
+
+  - id: 15
+    name: "Nach Frühstücksbildern suchen"
+    action: "fill_and_submit"
+    target: "Stock-Foto Suchfeld"
+    value: "breakfast"
+    expect:
+      - "Suchergebnisse werden geladen"
+      - "Mehrere Bilder angezeigt"
+
+  - id: 16
+    name: "Bild auswählen"
+    action: "click"
+    target: "Erstes Suchergebnis-Bild"
+    expect:
+      - "Bild wird importiert"
+      - "Modal schließt sich"
+      - "Preview im Formular aktualisiert"
+
+  - id: 17
+    name: "Titel eingeben"
+    action: "fill"
+    target: "Titel-Eingabefeld"
+    value: "Willkommen"
+    expect:
+      - "Titel wird übernommen"
+
+  - id: 18
+    name: "Text eingeben"
+    action: "fill"
+    target: "Text-Eingabefeld (Markdown/Textarea)"
+    value: "Entdecke die besten Frühstückslokale in deiner Nähe."
+    expect:
+      - "Text wird übernommen"
+
+  - id: 19
+    name: "Baustein speichern"
+    action: "click"
+    target: "Speichern Button"
+    expect:
+      - "Erfolgs-Toast erscheint"
+      - "Redirect zu Baustein-Liste"
+      - "Neuer Baustein in Liste sichtbar"
+
+  - id: 20
+    name: "Baustein bearbeiten für Seitenzuweisung"
+    action: "click"
+    target: "Bearbeiten-Link für 'Willkommen auf Frühstückenclick'"
+    expect:
+      - "Bearbeitungsformular öffnet sich"
+
+  - id: 21
+    name: "Seitenzuweisungen öffnen"
+    action: "click"
+    target: "Tab oder Button 'Seitenzuweisungen'"
+    expect:
+      - "Seitenzuweisungs-Bereich sichtbar"
+      - "Seiten-Dropdown oder Liste"
+
+  - id: 22
+    name: "Startseite und Slot auswählen"
+    action: "select"
+    target: "Seiten-Dropdown"
+    value: "Startseite (public.index)"
+    slot: "after_content"
+    expect:
+      - "Startseite ausgewählt"
+      - "Slot konfiguriert"
+
+  - id: 23
+    name: "Zuweisung speichern"
+    action: "click"
+    target: "Zuweisung speichern Button"
+    expect:
+      - "Erfolgs-Meldung"
+      - "Zuweisung in Liste sichtbar"
+
+  - id: 24
+    name: "Startseite öffnen"
+    action: "navigate"
+    url: "http://localhost:5333/"
+    expect:
+      - "Hero-Sektion wird angezeigt"
+      - "Content-Baustein unter Hero sichtbar"
+      - "Bild wird geladen"
+      - "Text 'Entdecke die besten Frühstückslokale' sichtbar"
+
+on_failure:
+  screenshot: true
+  abort_test: true
+  log_console_errors: true
+  save_network_requests: true
+
+cleanup:
+  - "Server stoppen (optional)"
+  - "Test-Baustein löschen (optional)"
+
+verification:
+  final_checks:
+    - "Hero-Sektion vorhanden"
+    - "Content-Baustein mit Bild darunter"
+    - "Bild lädt korrekt (von Pexels)"
+    - "Text ist lesbar"
