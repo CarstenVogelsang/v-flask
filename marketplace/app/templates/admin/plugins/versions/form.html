@@ -1,0 +1,108 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li><a href="{{ url_for('marketplace_admin.plugin_list') }}">Plugins</a></li>
+<li><a href="{{ url_for('marketplace_admin.plugin_version_list', plugin_id=plugin.id) }}">{{ plugin.display_name }}</a></li>
+<li>{{ 'Version bearbeiten' if version else 'Neue Version' }}</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-versions mr-2"></i>
+        {{ 'Version bearbeiten' if version else 'Neue Version' }}: {{ plugin.display_name }}
+    </h1>
+</div>
+
+<div class="card bg-base-100 shadow max-w-2xl">
+    <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Version *</span>
+                </label>
+                <input type="text" name="version" value="{{ version.version if version else '' }}"
+                       class="input input-bordered font-mono" required
+                       placeholder="z.B. 1.2.0"
+                       {{ 'readonly' if version else '' }}>
+                <label class="label">
+                    <span class="label-text-alt">Semantic Versioning (Major.Minor.Patch)</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Changelog</span>
+                </label>
+                <textarea name="changelog" class="textarea textarea-bordered h-32 font-mono text-sm"
+                          placeholder="- Feature A hinzugefügt&#10;- Bug B behoben&#10;- Performance verbessert">{{ version.changelog if version else '' }}</textarea>
+                <label class="label">
+                    <span class="label-text-alt">Technische Änderungsliste (intern)</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Release Notes</span>
+                </label>
+                <textarea name="release_notes" class="textarea textarea-bordered h-24"
+                          placeholder="Öffentliche Beschreibung der neuen Features...">{{ version.release_notes if version else '' }}</textarea>
+                <label class="label">
+                    <span class="label-text-alt">Öffentliche Release-Beschreibung</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Mindest V-Flask Version</span>
+                </label>
+                <input type="text" name="min_v_flask_version"
+                       value="{{ version.min_v_flask_version if version else '' }}"
+                       class="input input-bordered font-mono"
+                       placeholder="z.B. 2.0.0">
+                <label class="label">
+                    <span class="label-text-alt">Minimale Framework-Version (optional)</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_stable" class="checkbox checkbox-success"
+                           {{ 'checked' if version and version.is_stable else '' }}>
+                    <span class="label-text">Stabile Version</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_breaking_change" class="checkbox checkbox-warning"
+                           {{ 'checked' if version and version.is_breaking_change else '' }}>
+                    <span class="label-text">Breaking Change (erfordert Migration)</span>
+                </label>
+            </div>
+
+            {% if not version %}
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_current" class="checkbox checkbox-primary">
+                    <span class="label-text">Als aktuelle Version markieren</span>
+                </label>
+            </div>
+            {% endif %}
+
+            <div class="form-control mt-6 flex flex-row gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-device-floppy mr-1"></i>
+                    {{ 'Speichern' if version else 'Erstellen' }}
+                </button>
+                <a href="{{ url_for('marketplace_admin.plugin_version_list', plugin_id=plugin.id) }}"
+                   class="btn btn-ghost">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

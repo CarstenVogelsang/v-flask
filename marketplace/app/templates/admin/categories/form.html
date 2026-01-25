@@ -1,0 +1,167 @@
+{% extends "admin/base.html" %}
+{% from "v_flask/macros/icon_picker.html" import icon_input, icon_picker_drawer %}
+
+{% block breadcrumb_items %}
+<li><a href="{{ url_for('marketplace_admin.category_list') }}">Plugin-Kategorien</a></li>
+<li>{{ 'Bearbeiten' if category else 'Neu' }}</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-tags mr-2"></i>
+        {{ 'Kategorie bearbeiten' if category else 'Neue Kategorie' }}
+    </h1>
+</div>
+
+<div class="card bg-base-100 shadow max-w-2xl">
+    <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Code *</span>
+                </label>
+                <input type="text" name="code" value="{{ category.code if category else '' }}"
+                       class="input input-bordered font-mono" required
+                       placeholder="z.B. analytics"
+                       {{ 'readonly' if category else '' }}>
+                <label class="label">
+                    <span class="label-text-alt">Interner Code (Slug, nicht änderbar nach Erstellung)</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Name (Deutsch) *</span>
+                </label>
+                <input type="text" name="name_de" value="{{ category.name_de if category else '' }}"
+                       class="input input-bordered" required
+                       placeholder="z.B. Analytik">
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Beschreibung</span>
+                </label>
+                <textarea name="description_de" class="textarea textarea-bordered h-24"
+                          placeholder="Optionale Beschreibung für diese Kategorie">{{ category.description_de if category else '' }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="form-control">
+                    {{ icon_input('icon', category.icon if category else 'ti-tag', label='Icon', required=true) }}
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Farbe *</span>
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="color" name="color_hex"
+                               value="{{ category.color_hex if category else '#6b7280' }}"
+                               class="w-12 h-12 rounded cursor-pointer border-0">
+                        <input type="text" id="color_hex_text"
+                               value="{{ category.color_hex if category else '#6b7280' }}"
+                               class="input input-bordered font-mono flex-1"
+                               placeholder="#6b7280" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Sortierung</span>
+                </label>
+                <input type="number" name="sort_order"
+                       value="{{ category.sort_order if category else 0 }}"
+                       class="input input-bordered w-32" min="0">
+                <label class="label">
+                    <span class="label-text-alt">Reihenfolge in Listen (0 = oben)</span>
+                </label>
+            </div>
+
+            {# Preview #}
+            <div class="divider">Vorschau</div>
+            <div class="flex items-center gap-3 p-4 bg-base-200 rounded-lg" id="preview">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white" id="preview-icon-box"
+                     style="background-color: {{ category.color_hex if category else '#6b7280' }}">
+                    <i class="ti {{ category.icon if category else 'ti-tag' }}" id="preview-icon-i"></i>
+                </div>
+                <div>
+                    <div class="font-medium" id="preview-name">{{ category.name_de if category else 'Kategoriename' }}</div>
+                    <div class="text-sm text-base-content/60" id="preview-desc">{{ category.description_de if category else 'Beschreibung' }}</div>
+                </div>
+            </div>
+
+            <div class="form-control mt-6 flex flex-row gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-device-floppy mr-1"></i>
+                    {{ 'Speichern' if category else 'Erstellen' }}
+                </button>
+                <a href="{{ url_for('marketplace_admin.category_list') }}" class="btn btn-ghost">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Icon Picker Drawer #}
+{{ icon_picker_drawer() }}
+
+{# CSS for Icon Grid #}
+<style>
+#iconGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 4px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const colorInput = document.querySelector('input[name="color_hex"]');
+    const colorText = document.getElementById('color_hex_text');
+    const iconInput = document.querySelector('input[name="icon"]');
+    const nameInput = document.querySelector('input[name="name_de"]');
+    const descInput = document.querySelector('textarea[name="description_de"]');
+    const previewIconBox = document.getElementById('preview-icon-box');
+    const previewIconI = document.getElementById('preview-icon-i');
+    const previewName = document.getElementById('preview-name');
+    const previewDesc = document.getElementById('preview-desc');
+
+    // Update preview icon (works with both manual input and icon picker)
+    function updatePreviewIcon() {
+        let iconClass = iconInput.value.trim();
+        // Normalize: ensure ti- prefix for display
+        if (iconClass && !iconClass.startsWith('ti-')) {
+            iconClass = 'ti-' + iconClass;
+        }
+        previewIconI.className = 'ti ' + (iconClass || 'ti-tag');
+    }
+
+    colorInput.addEventListener('input', function() {
+        colorText.value = this.value;
+        previewIconBox.style.backgroundColor = this.value;
+    });
+
+    // Listen to both input and change events (change is triggered by icon picker)
+    iconInput.addEventListener('input', updatePreviewIcon);
+    iconInput.addEventListener('change', updatePreviewIcon);
+
+    nameInput.addEventListener('input', function() {
+        previewName.textContent = this.value || 'Kategoriename';
+    });
+
+    descInput.addEventListener('input', function() {
+        previewDesc.textContent = this.value || 'Beschreibung';
+    });
+});
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('v_flask_static.static', filename='js/icon-picker.js') }}"></script>
+{% endblock %}

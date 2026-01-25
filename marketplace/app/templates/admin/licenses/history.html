@@ -1,0 +1,161 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li>Lizenz-Historie</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-history mr-2"></i>Lizenz-Historie
+    </h1>
+</div>
+
+{# Filter #}
+<div class="card bg-base-100 shadow mb-6">
+    <div class="card-body py-4">
+        <form method="GET" class="flex flex-wrap gap-4 items-end">
+            <div class="form-control">
+                <label class="label label-text">Aktion</label>
+                <select name="action" class="select select-bordered select-sm">
+                    <option value="">Alle Aktionen</option>
+                    {% for action in actions %}
+                    <option value="{{ action }}" {{ 'selected' if action_filter == action else '' }}>
+                        {{ action }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">
+                <i class="ti ti-filter mr-1"></i>Filtern
+            </button>
+            {% if action_filter %}
+            <a href="{{ url_for('marketplace_admin.license_history_global') }}" class="btn btn-sm btn-ghost">
+                <i class="ti ti-x mr-1"></i>Filter zurücksetzen
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        {% if history %}
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Aktion</th>
+                        <th>Lizenz</th>
+                        <th>Status</th>
+                        <th>Von</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in history %}
+                    <tr>
+                        <td class="text-sm">
+                            {{ h.created_at.strftime('%d.%m.%Y') }}
+                            <br>
+                            <span class="text-base-content/60">{{ h.created_at.strftime('%H:%M') }}</span>
+                        </td>
+                        <td>
+                            {% set action_icons = {
+                                'trial_started': 'ti-player-play',
+                                'trial_converted': 'ti-check',
+                                'trial_expired': 'ti-clock-off',
+                                'renewed': 'ti-refresh',
+                                'suspended': 'ti-player-pause',
+                                'revoked': 'ti-ban',
+                                'status_changed': 'ti-arrows-exchange'
+                            } %}
+                            {% set action_colors = {
+                                'trial_started': 'badge-info',
+                                'trial_converted': 'badge-success',
+                                'trial_expired': 'badge-warning',
+                                'renewed': 'badge-success',
+                                'suspended': 'badge-warning',
+                                'revoked': 'badge-error',
+                                'status_changed': 'badge-ghost'
+                            } %}
+                            <span class="badge {{ action_colors.get(h.action, 'badge-ghost') }}">
+                                <i class="ti {{ action_icons.get(h.action, 'ti-circle') }} mr-1"></i>
+                                {{ h.action }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if h.license %}
+                            <div>
+                                <span class="font-medium">{{ h.license.project.name if h.license.project else 'Unbekannt' }}</span>
+                                <br>
+                                <span class="text-xs text-base-content/60">{{ h.license.plugin_name }}</span>
+                            </div>
+                            {% else %}
+                            <span class="text-base-content/60">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-sm">
+                            {% if h.old_status and h.new_status %}
+                            <span class="text-base-content/60">{{ h.old_status }}</span>
+                            <i class="ti ti-arrow-right mx-1"></i>
+                            <span class="font-medium">{{ h.new_status }}</span>
+                            {% elif h.new_status %}
+                            <span class="font-medium">{{ h.new_status }}</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="text-sm">
+                            <span class="text-base-content/60">{{ h.performed_by or 'system' }}</span>
+                            {% if h.performed_by_type %}
+                            <br>
+                            <span class="badge badge-ghost badge-xs">{{ h.performed_by_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if h.license %}
+                            <a href="{{ url_for('marketplace_admin.license_history_detail', license_id=h.license_id) }}"
+                               class="btn btn-square btn-xs btn-ghost bg-base-200 hover:bg-base-300 tooltip" data-tip="Details anzeigen">
+                                <i class="ti ti-eye text-lg"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Pagination #}
+        {% if total > per_page %}
+        <div class="flex justify-center mt-6">
+            <div class="join">
+                {% if page > 1 %}
+                <a href="{{ url_for('marketplace_admin.license_history_global', page=page-1, action=action_filter) }}"
+                   class="join-item btn btn-sm">«</a>
+                {% endif %}
+                <span class="join-item btn btn-sm btn-disabled">Seite {{ page }}</span>
+                {% if page * per_page < total %}
+                <a href="{{ url_for('marketplace_admin.license_history_global', page=page+1, action=action_filter) }}"
+                   class="join-item btn btn-sm">»</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-8 text-base-content/60">
+            <i class="ti ti-history text-5xl mb-4"></i>
+            <p>Keine Historie-Einträge gefunden.</p>
+            {% if action_filter %}
+            <a href="{{ url_for('marketplace_admin.license_history_global') }}" class="btn btn-ghost mt-4">
+                Filter zurücksetzen
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

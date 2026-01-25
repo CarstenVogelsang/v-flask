@@ -1,0 +1,143 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li><a href="{{ url_for('marketplace_admin.license_list') }}">Lizenzen</a></li>
+<li><a href="{{ url_for('marketplace_admin.license_history_global') }}">Historie</a></li>
+<li>{{ license.project.name if license.project else 'Unbekannt' }} / {{ license.plugin_name }}</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="text-2xl font-bold">
+            <i class="ti ti-history mr-2"></i>Lizenz-Historie
+        </h1>
+        <p class="text-base-content/60 mt-1">
+            {{ license.project.name if license.project else 'Unbekanntes Projekt' }} /
+            <span class="font-mono">{{ license.plugin_name }}</span>
+        </p>
+    </div>
+    <a href="{{ url_for('marketplace_admin.license_history_global') }}" class="btn btn-ghost">
+        <i class="ti ti-arrow-left mr-1"></i>Zurück
+    </a>
+</div>
+
+{# License Info Card #}
+<div class="card bg-base-100 shadow mb-6">
+    <div class="card-body">
+        <h2 class="card-title text-lg mb-4">
+            <i class="ti ti-license mr-1"></i>Lizenz-Details
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <span class="text-sm text-base-content/60">Status</span>
+                <p class="font-medium">
+                    {% if license.status == 'active' %}
+                    <span class="badge badge-success">Aktiv</span>
+                    {% elif license.status == 'trial' %}
+                    <span class="badge badge-info">Trial</span>
+                    {% elif license.status == 'expired' %}
+                    <span class="badge badge-warning">Abgelaufen</span>
+                    {% else %}
+                    <span class="badge badge-ghost">{{ license.status }}</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <span class="text-sm text-base-content/60">Abrechnungszyklus</span>
+                <p class="font-medium">{{ license.billing_cycle or 'Einmalig' }}</p>
+            </div>
+            <div>
+                <span class="text-sm text-base-content/60">Gekauft am</span>
+                <p class="font-medium">{{ license.purchased_at.strftime('%d.%m.%Y') if license.purchased_at else '-' }}</p>
+            </div>
+            <div>
+                <span class="text-sm text-base-content/60">Läuft ab</span>
+                <p class="font-medium">{{ license.expires_at.strftime('%d.%m.%Y') if license.expires_at else 'Unbegrenzt' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Timeline #}
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        <h2 class="card-title text-lg mb-6">
+            <i class="ti ti-list-timeline mr-1"></i>Verlauf
+        </h2>
+
+        {% if history %}
+        <ul class="timeline timeline-vertical timeline-compact">
+            {% for h in history %}
+            <li>
+                {% if not loop.first %}
+                <hr>
+                {% endif %}
+                <div class="timeline-start text-sm text-base-content/60">
+                    {{ h.created_at.strftime('%d.%m.%Y') }}
+                    <br>
+                    {{ h.created_at.strftime('%H:%M:%S') }}
+                </div>
+                <div class="timeline-middle">
+                    {% set action_icons = {
+                        'trial_started': 'ti-player-play text-info',
+                        'trial_converted': 'ti-check text-success',
+                        'trial_expired': 'ti-clock-off text-warning',
+                        'renewed': 'ti-refresh text-success',
+                        'suspended': 'ti-player-pause text-warning',
+                        'revoked': 'ti-ban text-error',
+                        'status_changed': 'ti-arrows-exchange'
+                    } %}
+                    <i class="ti {{ action_icons.get(h.action, 'ti-circle') }} text-xl"></i>
+                </div>
+                <div class="timeline-end timeline-box">
+                    <div class="font-medium">{{ h.action | replace('_', ' ') | title }}</div>
+
+                    {% if h.old_status or h.new_status %}
+                    <div class="text-sm mt-1">
+                        Status:
+                        {% if h.old_status %}
+                        <span class="text-base-content/60">{{ h.old_status }}</span>
+                        <i class="ti ti-arrow-right mx-1"></i>
+                        {% endif %}
+                        <span class="font-medium">{{ h.new_status or '-' }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if h.old_expires_at or h.new_expires_at %}
+                    <div class="text-sm">
+                        Ablauf:
+                        {% if h.old_expires_at %}
+                        <span class="text-base-content/60">{{ h.old_expires_at.strftime('%d.%m.%Y') }}</span>
+                        <i class="ti ti-arrow-right mx-1"></i>
+                        {% endif %}
+                        <span class="font-medium">{{ h.new_expires_at.strftime('%d.%m.%Y') if h.new_expires_at else 'Unbegrenzt' }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if h.reason %}
+                    <div class="text-sm text-base-content/60 mt-1">
+                        <i class="ti ti-message-circle mr-1"></i>{{ h.reason }}
+                    </div>
+                    {% endif %}
+
+                    <div class="text-xs text-base-content/60 mt-2">
+                        von: {{ h.performed_by or 'system' }}
+                        <span class="badge badge-ghost badge-xs ml-1">{{ h.performed_by_type }}</span>
+                    </div>
+                </div>
+                {% if not loop.last %}
+                <hr>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-center py-8 text-base-content/60">
+            <i class="ti ti-history text-5xl mb-4"></i>
+            <p>Keine Historie-Einträge für diese Lizenz.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

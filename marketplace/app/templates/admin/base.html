@@ -19,21 +19,39 @@
     </div>
     <ul class="menu menu-sm">
         <li>
-            <a href="{{ url_for('marketplace_admin.project_list') }}" class="{{ 'active' if request.endpoint and 'project' in request.endpoint else '' }}">
+            <a href="{{ url_for('marketplace_admin.project_list') }}" class="{{ 'active' if request.endpoint and 'project' in request.endpoint and 'type' not in request.endpoint else '' }}">
                 <i class="ti ti-building"></i>
                 <span class="sidebar-text">Projekte</span>
             </a>
         </li>
         <li>
-            <a href="{{ url_for('marketplace_admin.license_list') }}" class="{{ 'active' if request.endpoint and 'license' in request.endpoint else '' }}">
+            <a href="{{ url_for('marketplace_admin.license_list') }}" class="{{ 'active' if request.endpoint and 'license' in request.endpoint and 'history' not in request.endpoint else '' }}">
                 <i class="ti ti-license"></i>
                 <span class="sidebar-text">Lizenzen</span>
             </a>
         </li>
         <li>
-            <a href="{{ url_for('marketplace_admin.plugin_list') }}" class="{{ 'active' if request.endpoint and 'plugin' in request.endpoint else '' }}">
+            <a href="{{ url_for('marketplace_admin.plugin_list') }}" class="{{ 'active' if request.endpoint and 'plugin' in request.endpoint and 'category' not in request.endpoint else '' }}">
                 <i class="ti ti-puzzle"></i>
                 <span class="sidebar-text">Plugins</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('marketplace_admin.category_list') }}" class="{{ 'active' if request.endpoint and 'category' in request.endpoint else '' }}">
+                <i class="ti ti-tags"></i>
+                <span class="sidebar-text">Plugin-Kategorien</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('marketplace_admin.project_type_list') }}" class="{{ 'active' if request.endpoint and 'project_type' in request.endpoint else '' }}">
+                <i class="ti ti-category"></i>
+                <span class="sidebar-text">Projekttypen</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('marketplace_admin.license_history_global') }}" class="{{ 'active' if request.endpoint and 'history' in request.endpoint else '' }}">
+                <i class="ti ti-history"></i>
+                <span class="sidebar-text">Lizenz-Historie</span>
             </a>
         </li>
     </ul>

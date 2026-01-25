@@ -51,15 +51,95 @@
 
             <div class="form-control mb-4">
                 <label class="label">
-                    <span class="label-text">Preis (€)</span>
+                    <span class="label-text">Kategorie</span>
                 </label>
-                <input type="text" name="price" value="{{ '%.2f' % (plugin.price_cents / 100) if plugin.price_cents else '0' }}"
-                       class="input input-bordered"
-                       placeholder="0 = Kostenlos, z.B. 99,00">
-                <label class="label">
-                    <span class="label-text-alt">0 oder leer = Kostenlos</span>
-                </label>
+
+                <!-- Hidden input für Form-Submission -->
+                <input type="hidden" name="category_id" id="category-input"
+                       value="{{ plugin.category_id or '' }}">
+
+                <!-- Custom Dropdown mit Icons -->
+                <div class="dropdown w-full" id="category-dropdown">
+                    <div tabindex="0" role="button"
+                         class="select select-bordered w-full flex items-center gap-2 cursor-pointer"
+                         id="category-trigger">
+                        {% if plugin.category_rel %}
+                        <i class="{{ plugin.category_rel.icon }}"></i>
+                        <span>{{ plugin.category_rel.name_de }}</span>
+                        {% else %}
+                        <span class="text-base-content/60">-- Keine Kategorie --</span>
+                        {% endif %}
+                    </div>
+
+                    <ul tabindex="0"
+                        class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-full max-h-60 overflow-y-auto">
+                        <li>
+                            <a data-value="" class="flex items-center gap-2">
+                                <span class="text-base-content/60">-- Keine Kategorie --</span>
+                            </a>
+                        </li>
+                        {% for cat in categories %}
+                        <li>
+                            <a data-value="{{ cat.id }}"
+                               data-icon="{{ cat.icon }}"
+                               data-name="{{ cat.name_de }}"
+                               class="flex items-center gap-2 {{ 'active' if plugin.category_id == cat.id }}">
+                                <i class="{{ cat.icon }}"></i>
+                                <span>{{ cat.name_de }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
+
+            {% if base_type %}
+            <div class="card bg-base-200 mb-4">
+                <div class="card-body py-4">
+                    <h3 class="card-title text-sm">
+                        <i class="ti ti-currency-euro mr-1"></i>
+                        Basispreise ({{ base_type.name }})
+                    </h3>
+                    <div class="grid grid-cols-3 gap-4 mt-2">
+                        <div>
+                            <span class="text-xs text-base-content/60">Einmalig</span>
+                            <p class="font-semibold">
+                                {% if base_prices.get('once') %}
+                                {{ '%.2f'|format(base_prices['once']) }} €
+                                {% else %}
+                                —
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <span class="text-xs text-base-content/60">Monatlich</span>
+                            <p class="font-semibold">
+                                {% if base_prices.get('monthly') %}
+                                {{ '%.2f'|format(base_prices['monthly']) }} €
+                                {% else %}
+                                —
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <span class="text-xs text-base-content/60">Jährlich</span>
+                            <p class="font-semibold">
+                                {% if base_prices.get('yearly') %}
+                                {{ '%.2f'|format(base_prices['yearly']) }} €
+                                {% else %}
+                                —
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('marketplace_admin.plugin_prices', plugin_id=plugin.id) }}"
+                       class="btn btn-sm btn-outline mt-3">
+                        <i class="ti ti-currency-euro mr-1"></i>
+                        Preise bearbeiten
+                    </a>
+                </div>
+            </div>
+            {% endif %}
 
             <div class="divider"></div>
 
@@ -87,6 +167,20 @@
                 </label>
             </div>
 
+            <div class="divider">Abrechnungsoptionen</div>
+
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="allow_one_time_purchase" class="checkbox checkbox-secondary"
+                           {{ 'checked' if plugin.allow_one_time_purchase else '' }}>
+                    <div>
+                        <span class="label-text font-medium">Einmalzahlung erlauben</span>
+                        <br>
+                        <span class="label-text-alt">Plugin kann einmalig gekauft werden (neben Abo-Optionen)</span>
+                    </div>
+                </label>
+            </div>
+
             <div class="form-control mt-6">
                 <button type="submit" class="btn btn-primary">
                     <i class="ti ti-device-floppy mr-1"></i>
@@ -96,4 +190,40 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdown = document.getElementById('category-dropdown');
+    const trigger = document.getElementById('category-trigger');
+    const input = document.getElementById('category-input');
+    const menuItems = dropdown.querySelectorAll('.dropdown-content a');
+
+    menuItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const value = this.dataset.value;
+            const icon = this.dataset.icon;
+            const name = this.dataset.name;
+
+            // Update hidden input
+            input.value = value;
+
+            // Update trigger display
+            if (value && icon) {
+                trigger.innerHTML = `<i class="${icon}"></i><span>${name}</span>`;
+            } else {
+                trigger.innerHTML = '<span class="text-base-content/60">-- Keine Kategorie --</span>';
+            }
+
+            // Update active state
+            menuItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+
+            // Close dropdown
+            document.activeElement.blur();
+        });
+    });
+});
+</script>
 {% endblock %}

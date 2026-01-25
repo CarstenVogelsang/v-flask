@@ -1,0 +1,123 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li><a href="{{ url_for('marketplace_admin.project_type_list') }}">Projekttypen</a></li>
+<li>{{ 'Bearbeiten' if project_type else 'Neu' }}</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-category mr-2"></i>
+        {{ 'Projekttyp bearbeiten' if project_type else 'Neuer Projekttyp' }}
+    </h1>
+</div>
+
+<div class="card bg-base-100 shadow max-w-2xl">
+    <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Code *</span>
+                </label>
+                <input type="text" name="code" value="{{ project_type.code if project_type else '' }}"
+                       class="input input-bordered font-mono" required
+                       placeholder="z.B. einzelkunde"
+                       {{ 'readonly' if project_type else '' }}>
+                <label class="label">
+                    <span class="label-text-alt">Interner Code (Slug, nicht änderbar nach Erstellung)</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Name *</span>
+                </label>
+                <input type="text" name="name" value="{{ project_type.name if project_type else '' }}"
+                       class="input input-bordered" required
+                       placeholder="z.B. Einzelkunde">
+                <label class="label">
+                    <span class="label-text-alt">Anzeigename</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Beschreibung</span>
+                </label>
+                <textarea name="description" class="textarea textarea-bordered h-24"
+                          placeholder="Optionale Beschreibung">{{ project_type.description if project_type else '' }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Trial-Tage *</span>
+                    </label>
+                    <input type="number" name="trial_days"
+                           value="{{ project_type.trial_days if project_type else 14 }}"
+                           class="input input-bordered" required min="0">
+                    <label class="label">
+                        <span class="label-text-alt">0 = kein Trial</span>
+                    </label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Sortierung</span>
+                    </label>
+                    <input type="number" name="sort_order"
+                           value="{{ project_type.sort_order if project_type else 0 }}"
+                           class="input input-bordered" min="0">
+                    <label class="label">
+                        <span class="label-text-alt">Reihenfolge in Listen</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_free" class="checkbox checkbox-success"
+                           {{ 'checked' if project_type and project_type.is_free else '' }}>
+                    <span class="label-text">Kostenloser Projekttyp</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_active" class="checkbox checkbox-primary"
+                           {{ 'checked' if (project_type and project_type.is_active) or not project_type else '' }}>
+                    <span class="label-text">Projekttyp ist aktiv</span>
+                </label>
+            </div>
+
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_base_type" class="checkbox checkbox-warning"
+                           {{ 'checked' if project_type and project_type.is_base_type else '' }}>
+                    <div>
+                        <span class="label-text font-medium">Basisprojekttyp</span>
+                        <br>
+                        <span class="label-text-alt text-warning">
+                            Nur ein Projekttyp kann als Basis markiert sein.
+                            Neue Plugins erhalten automatisch Preise für diesen Typ.
+                        </span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="form-control mt-6 flex flex-row gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-device-floppy mr-1"></i>
+                    {{ 'Speichern' if project_type else 'Erstellen' }}
+                </button>
+                <a href="{{ url_for('marketplace_admin.project_type_list') }}" class="btn btn-ghost">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
