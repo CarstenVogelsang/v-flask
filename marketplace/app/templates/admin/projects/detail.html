@@ -107,7 +107,7 @@
         {% set licenses = project.licenses.all() %}
         {% if licenses %}
         <div class="overflow-x-auto">
-            <table class="table table-zebra">
+            <table class="table [&_tr:nth-child(even)]:bg-base-200/30">
                 <thead>
                     <tr>
                         <th>Plugin</th>

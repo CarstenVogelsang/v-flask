@@ -15,7 +15,7 @@
     <div class="card-body">
         {% if plugins %}
         <div class="overflow-x-auto">
-            <table class="table table-zebra">
+            <table class="table [&_tr:nth-child(even)]:bg-base-200/30">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -58,10 +58,20 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{{ url_for('marketplace_admin.plugin_edit', plugin_id=plugin.id) }}"
-                               class="btn btn-sm btn-ghost">
-                                <i class="ti ti-edit"></i>
-                            </a>
+                            <div class="flex gap-1">
+                                <a href="{{ url_for('marketplace_admin.plugin_edit', plugin_id=plugin.id) }}"
+                                   class="btn btn-square btn-sm btn-ghost bg-base-200 hover:bg-base-300 tooltip" data-tip="Bearbeiten">
+                                    <i class="ti ti-edit text-xl"></i>
+                                </a>
+                                <a href="{{ url_for('marketplace_admin.plugin_prices', plugin_id=plugin.id) }}"
+                                   class="btn btn-square btn-sm btn-ghost bg-base-200 hover:bg-base-300 tooltip" data-tip="Preise">
+                                    <i class="ti ti-currency-euro text-xl"></i>
+                                </a>
+                                <a href="{{ url_for('marketplace_admin.plugin_version_list', plugin_id=plugin.id) }}"
+                                   class="btn btn-square btn-sm btn-ghost bg-base-200 hover:bg-base-300 tooltip" data-tip="Versionen">
+                                    <i class="ti ti-versions text-xl"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

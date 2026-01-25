@@ -19,7 +19,7 @@
     <div class="card-body">
         {% if licenses %}
         <div class="overflow-x-auto">
-            <table class="table table-zebra">
+            <table class="table [&_tr:nth-child(even)]:bg-base-200/30">
                 <thead>
                     <tr>
                         <th>Projekt</th>
@@ -61,8 +61,8 @@
                             <form method="POST" action="{{ url_for('marketplace_admin.license_revoke', license_id=license.id) }}"
                                   onsubmit="return confirm('Lizenz wirklich widerrufen?')">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-ghost text-error">
-                                    <i class="ti ti-trash"></i>
+                                <button type="submit" class="btn btn-square btn-sm btn-ghost bg-error/10 text-error hover:bg-error/20 tooltip" data-tip="Widerrufen">
+                                    <i class="ti ti-trash text-xl"></i>
                                 </button>
                             </form>
                         </td>

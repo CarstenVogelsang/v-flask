@@ -1,0 +1,95 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li>Projekttypen</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-category mr-2"></i>Projekttypen
+    </h1>
+    <a href="{{ url_for('marketplace_admin.project_type_create') }}" class="btn btn-primary">
+        <i class="ti ti-plus mr-1"></i>Neu
+    </a>
+</div>
+
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        {% if project_types %}
+        <div class="overflow-x-auto">
+            <table class="table [&_tr:nth-child(even)]:bg-base-200/30">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Trial-Tage</th>
+                        <th>Typ</th>
+                        <th>Status</th>
+                        <th>Basis</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pt in project_types %}
+                    <tr>
+                        <td>
+                            <span class="font-mono text-sm">{{ pt.code }}</span>
+                        </td>
+                        <td>
+                            <span class="font-medium">{{ pt.name }}</span>
+                            {% if pt.description %}
+                            <br>
+                            <span class="text-xs text-base-content/60">{{ pt.description[:50] }}{% if pt.description|length > 50 %}...{% endif %}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ pt.trial_days }}</td>
+                        <td>
+                            {% if pt.is_free %}
+                            <span class="badge badge-success">Kostenlos</span>
+                            {% else %}
+                            <span class="badge badge-info">Bezahlt</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div hx-post="{{ url_for('marketplace_admin.project_type_toggle', type_id=pt.id) }}"
+                                 hx-swap="innerHTML"
+                                 hx-trigger="click"
+                                 class="cursor-pointer">
+                                {% if pt.is_active %}
+                                <span class="badge badge-success">Aktiv</span>
+                                {% else %}
+                                <span class="badge badge-ghost">Inaktiv</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if pt.is_base_type %}
+                            <span class="badge badge-primary">
+                                <i class="ti ti-star-filled mr-1"></i>Basis
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('marketplace_admin.project_type_edit', type_id=pt.id) }}"
+                               class="btn btn-square btn-sm btn-ghost bg-base-200 hover:bg-base-300 tooltip" data-tip="Bearbeiten">
+                                <i class="ti ti-edit text-xl"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-base-content/60">
+            <i class="ti ti-category text-5xl mb-4"></i>
+            <p>Keine Projekttypen gefunden.</p>
+            <a href="{{ url_for('marketplace_admin.project_type_create') }}" class="btn btn-primary mt-4">
+                <i class="ti ti-plus mr-1"></i>Ersten Projekttyp erstellen
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "admin/base.html" %}
+
+{% block breadcrumb_items %}
+<li>Plugin-Kategorien</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-tags mr-2"></i>Plugin-Kategorien
+    </h1>
+    <a href="{{ url_for('marketplace_admin.category_create') }}" class="btn btn-primary">
+        <i class="ti ti-plus mr-1"></i>Neu
+    </a>
+</div>
+
+<div class="card bg-base-100 shadow">
+    <div class="card-body">
+        {% if categories %}
+        <div class="overflow-x-auto">
+            <table class="table [&_tr:nth-child(even)]:bg-base-200/30">
+                <thead>
+                    <tr>
+                        <th>Icon</th>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Plugins</th>
+                        <th>Sortierung</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in categories %}
+                    <tr>
+                        <td>
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white"
+                                 style="background-color: {{ cat.color_hex }}">
+                                <i class="{{ cat.icon }}"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="font-mono text-sm">{{ cat.code }}</span>
+                        </td>
+                        <td>
+                            <span class="font-medium">{{ cat.name_de }}</span>
+                            {% if cat.description_de %}
+                            <br>
+                            <span class="text-xs text-base-content/60">{{ cat.description_de[:60] }}{% if cat.description_de|length > 60 %}...{% endif %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-ghost">{{ cat.plugins|length }}</span>
+                        </td>
+                        <td>{{ cat.sort_order }}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('marketplace_admin.category_edit', category_id=cat.id) }}"
+                                   class="btn btn-square btn-sm btn-ghost bg-base-200 hover:bg-base-300 tooltip" data-tip="Bearbeiten">
+                                    <i class="ti ti-edit text-xl"></i>
+                                </a>
+                                {% if cat.plugins|length == 0 %}
+                                <form method="POST" action="{{ url_for('marketplace_admin.category_delete', category_id=cat.id) }}"
+                                      onsubmit="return confirm('Kategorie wirklich löschen?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-square btn-sm btn-ghost bg-error/10 text-error hover:bg-error/20 tooltip" data-tip="Löschen">
+                                        <i class="ti ti-trash text-xl"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-base-content/60">
+            <i class="ti ti-tags text-5xl mb-4"></i>
+            <p>Keine Kategorien gefunden.</p>
+            <a href="{{ url_for('marketplace_admin.category_create') }}" class="btn btn-primary mt-4">
+                <i class="ti ti-plus mr-1"></i>Erste Kategorie erstellen
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

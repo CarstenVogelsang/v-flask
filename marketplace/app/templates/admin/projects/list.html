@@ -19,7 +19,7 @@
     <div class="card-body">
         {% if projects %}
         <div class="overflow-x-auto">
-            <table class="table table-zebra">
+            <table class="table [&_tr:nth-child(even)]:bg-base-200/30">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -55,8 +55,8 @@
                         <td>{{ project.created_at.strftime('%d.%m.%Y') }}</td>
                         <td>
                             <a href="{{ url_for('marketplace_admin.project_detail', project_id=project.id) }}"
-                               class="btn btn-sm btn-ghost">
-                                <i class="ti ti-eye"></i>
+                               class="btn btn-square btn-sm btn-ghost bg-base-200 hover:bg-base-300 tooltip" data-tip="Details anzeigen">
+                                <i class="ti ti-eye text-xl"></i>
                             </a>
                         </td>
                     </tr>
