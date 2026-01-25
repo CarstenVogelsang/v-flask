@@ -1,0 +1,127 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Hersteller - PIM{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li>Hersteller</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-building-factory text-primary"></i>
+        <span>Hersteller & Marken</span>
+    </h1>
+
+    <div class="flex gap-2">
+        <label class="label cursor-pointer gap-2">
+            <input type="checkbox" class="checkbox checkbox-sm"
+                   onchange="window.location.href='?show_inactive=' + (this.checked ? '1' : '0')"
+                   {% if show_inactive %}checked{% endif %}>
+            <span class="label-text text-sm">Inaktive zeigen</span>
+        </label>
+
+        <a href="{{ url_for('pim_admin.new_manufacturer') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-2"></i>
+            Neuer Hersteller
+        </a>
+    </div>
+</div>
+
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        {% if manufacturers %}
+        <div class="space-y-4">
+            {% for mfr in manufacturers %}
+            <div class="collapse collapse-arrow bg-base-200 {% if not mfr.is_active %}opacity-50{% endif %}">
+                <input type="checkbox" {% if loop.first %}checked{% endif %}>
+                <div class="collapse-title font-medium flex items-center gap-3">
+                    {% if mfr.logo_url %}
+                    <img src="{{ mfr.logo_url }}" alt="{{ mfr.name }}" class="h-8 w-auto">
+                    {% else %}
+                    <i class="ti ti-building-factory text-2xl text-gray-400"></i>
+                    {% endif %}
+                    <span>{{ mfr.name }}</span>
+                    {% if not mfr.is_active %}
+                    <span class="badge badge-ghost badge-sm">Inaktiv</span>
+                    {% endif %}
+                    <span class="badge badge-outline badge-sm ml-auto">
+                        {{ mfr.brands.count() }} Marke(n)
+                    </span>
+                </div>
+                <div class="collapse-content">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            {% if mfr.description %}
+                            <p class="text-sm text-gray-500">{{ mfr.description }}</p>
+                            {% endif %}
+                            {% if mfr.website %}
+                            <a href="{{ mfr.website }}" target="_blank" class="text-sm link link-primary">
+                                <i class="ti ti-external-link mr-1"></i>{{ mfr.website }}
+                            </a>
+                            {% endif %}
+                        </div>
+                        <div class="flex gap-1">
+                            <a href="{{ url_for('pim_admin.edit_manufacturer', manufacturer_id=mfr.id) }}"
+                               class="btn btn-ghost btn-sm"
+                               title="Bearbeiten">
+                                <i class="ti ti-edit"></i>
+                            </a>
+                            <form action="{{ url_for('pim_admin.delete_manufacturer', manufacturer_id=mfr.id) }}"
+                                  method="post" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit"
+                                        class="btn btn-ghost btn-sm text-error"
+                                        onclick="return confirm('Hersteller wirklich deaktivieren?')">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {# Brands list #}
+                    {% set brands = mfr.brands.all() %}
+                    {% if brands %}
+                    <div class="divider text-xs">Marken</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {% for brand in brands %}
+                        <div class="flex items-center justify-between p-2 bg-base-100 rounded {% if not brand.is_active %}opacity-50{% endif %}">
+                            <div class="flex items-center gap-2">
+                                {% if brand.logo_url %}
+                                <img src="{{ brand.logo_url }}" alt="{{ brand.name }}" class="h-6 w-auto">
+                                {% else %}
+                                <i class="ti ti-tag text-gray-400"></i>
+                                {% endif %}
+                                <span class="text-sm">{{ brand.name }}</span>
+                            </div>
+                            <span class="badge badge-ghost badge-xs">
+                                {{ brand.series.count() }} Serie(n)
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-500 italic">Keine Marken angelegt</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-gray-500 py-8">
+            <i class="ti ti-building-factory-off text-4xl mb-2"></i>
+            <p>Keine Hersteller vorhanden.</p>
+            <a href="{{ url_for('pim_admin.new_manufacturer') }}" class="btn btn-primary btn-sm mt-4">
+                <i class="ti ti-plus mr-1"></i>
+                Ersten Hersteller anlegen
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

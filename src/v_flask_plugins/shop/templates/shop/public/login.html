@@ -1,0 +1,50 @@
+{% extends "shop/public/base.html" %}
+
+{% block title %}Login - Shop{% endblock %}
+
+{% block content %}
+<div class="flex justify-center items-center min-h-[60vh]">
+    <div class="card w-full max-w-md bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">
+                <i class="ti ti-login text-primary"></i>
+                Anmelden
+            </h2>
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">E-Mail</span>
+                    </label>
+                    <input type="email"
+                           name="email"
+                           class="input input-bordered"
+                           placeholder="ihre@email.de"
+                           required
+                           autofocus>
+                </div>
+
+                <div class="form-control mb-6">
+                    <label class="label">
+                        <span class="label-text">Passwort</span>
+                    </label>
+                    <input type="password"
+                           name="password"
+                           class="input input-bordered"
+                           placeholder="••••••••"
+                           required>
+                </div>
+
+                <div class="form-control">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-login mr-1"></i>
+                        Anmelden
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

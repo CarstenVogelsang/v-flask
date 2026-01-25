@@ -1,0 +1,73 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Verzeichnistypen - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Verzeichnistypen</h1>
+        <a href="{{ url_for('business_directory_admin_types.create_type') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-2"></i>
+            Neuer Typ
+        </a>
+    </div>
+
+    {% if types %}
+    <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Slug</th>
+                    <th>Icon</th>
+                    <th>Einträge</th>
+                    <th>Status</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for type in types %}
+                <tr>
+                    <td>
+                        <div class="font-medium">{{ type.name }}</div>
+                        <div class="text-sm text-base-content/60">{{ type.name_singular }} / {{ type.name_plural }}</div>
+                    </td>
+                    <td><code class="text-sm">{{ type.slug }}</code></td>
+                    <td><i class="ti {{ type.icon }} text-xl"></i></td>
+                    <td>{{ type.entries.count() }}</td>
+                    <td>
+                        {% if type.active %}
+                        <span class="badge badge-success">Aktiv</span>
+                        {% else %}
+                        <span class="badge badge-ghost">Inaktiv</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('business_directory_admin_types.edit_type', type_id=type.id) }}"
+                               class="btn btn-ghost btn-sm" title="Bearbeiten">
+                                <i class="ti ti-edit"></i>
+                            </a>
+                            <a href="{{ url_for('business_directory_admin_types.edit_schema', type_id=type.id) }}"
+                               class="btn btn-ghost btn-sm" title="Feld-Schema">
+                                <i class="ti ti-schema"></i>
+                            </a>
+                            <a href="{{ url_for('business_directory_admin_types.edit_registration', type_id=type.id) }}"
+                               class="btn btn-ghost btn-sm" title="Registrierung">
+                                <i class="ti ti-forms"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="ti ti-info-circle"></i>
+        <span>Noch keine Verzeichnistypen vorhanden. Erstellen Sie den ersten Typ.</span>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

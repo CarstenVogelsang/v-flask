@@ -1,0 +1,131 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Shop-Bestellungen{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Dashboard</a></li>
+        <li>Shop-Bestellungen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Bar #}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-shopping-cart text-primary"></i>
+        <span>Shop-Bestellungen</span>
+        <span class="badge badge-neutral ml-2">{{ orders|length }}</span>
+    </h1>
+
+    {# Status Filter #}
+    <div class="flex gap-2">
+        <select class="select select-bordered select-sm"
+                onchange="window.location.href='{{ url_for('shop_admin.orders_list') }}' + (this.value ? '?status=' + this.value : '')">
+            <option value="">Alle Status</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+{% if orders %}
+<div class="card bg-base-100 shadow">
+    <div class="overflow-x-auto">
+        <table class="table table-zebra">
+            <thead>
+                <tr>
+                    <th>Bestellnummer</th>
+                    <th>Datum</th>
+                    <th>Kunde</th>
+                    <th>Artikel</th>
+                    <th>Betrag</th>
+                    <th>Status</th>
+                    <th class="text-right">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr class="hover">
+                    <td>
+                        <a href="{{ url_for('shop_admin.order_detail', order_id=order.id) }}"
+                           class="font-mono font-medium hover:text-primary">
+                            {{ order.order_number }}
+                        </a>
+                    </td>
+                    <td>
+                        <div>{{ order.created_at.strftime('%d.%m.%Y') }}</div>
+                        <div class="text-xs text-base-content/60">{{ order.created_at.strftime('%H:%M') }} Uhr</div>
+                    </td>
+                    <td>
+                        {% if order.shipping_address %}
+                        <div class="font-medium">{{ order.shipping_address.company_name }}</div>
+                        <div class="text-sm text-base-content/60">{{ order.shipping_address.city }}</div>
+                        {% else %}
+                        <span class="text-base-content/40">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-ghost">{{ order.item_count }}</span>
+                    </td>
+                    <td>
+                        <div class="font-medium">{{ "%.2f"|format(order.total) }} EUR</div>
+                        <div class="text-xs text-base-content/60">inkl. MwSt.</div>
+                    </td>
+                    <td>
+                        {% if order.status == 'new' %}
+                        <span class="badge badge-info">{{ order.status_label }}</span>
+                        {% elif order.status == 'confirmed' %}
+                        <span class="badge badge-primary">{{ order.status_label }}</span>
+                        {% elif order.status == 'processing' %}
+                        <span class="badge badge-warning">{{ order.status_label }}</span>
+                        {% elif order.status == 'shipped' %}
+                        <span class="badge badge-secondary">{{ order.status_label }}</span>
+                        {% elif order.status == 'completed' %}
+                        <span class="badge badge-success">{{ order.status_label }}</span>
+                        {% elif order.status == 'cancelled' %}
+                        <span class="badge badge-error">{{ order.status_label }}</span>
+                        {% else %}
+                        <span class="badge badge-ghost">{{ order.status_label }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        <a href="{{ url_for('shop_admin.order_detail', order_id=order.id) }}"
+                           class="btn btn-ghost btn-sm btn-square"
+                           title="Details">
+                            <i class="ti ti-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+{# Empty State #}
+<div class="card bg-base-100 shadow">
+    <div class="card-body items-center text-center py-12">
+        <i class="ti ti-shopping-cart-off text-6xl text-base-content/30 mb-4"></i>
+        <h2 class="card-title text-base-content/60">Keine Bestellungen vorhanden</h2>
+        <p class="text-base-content/50">
+            {% if status_filter %}
+            Keine Bestellungen mit Status "{{ dict(status_choices).get(status_filter, status_filter) }}" gefunden.
+            {% else %}
+            Es wurden noch keine Bestellungen aufgegeben.
+            {% endif %}
+        </p>
+        {% if status_filter %}
+        <a href="{{ url_for('shop_admin.orders_list') }}" class="btn btn-primary mt-4">
+            Alle Bestellungen anzeigen
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

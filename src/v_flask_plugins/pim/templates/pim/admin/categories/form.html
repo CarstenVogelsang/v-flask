@@ -1,0 +1,102 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}
+{{ 'Kategorie bearbeiten' if category else 'Neue Kategorie' }} - PIM
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('pim_admin.list_categories') }}">Kategorien</a></li>
+        <li>{{ 'Bearbeiten' if category else 'Neu' }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl max-w-2xl">
+    <div class="card-body">
+        <h2 class="card-title mb-4">
+            {% if category %}
+            <i class="ti ti-edit text-primary mr-2"></i>
+            {{ category.name }}
+            {% else %}
+            <i class="ti ti-plus text-primary mr-2"></i>
+            Neue Kategorie
+            {% endif %}
+        </h2>
+
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            {# Name #}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Name *</span>
+                </label>
+                <input type="text" name="name"
+                       value="{{ category.name if category else '' }}"
+                       class="input input-bordered" required>
+            </div>
+
+            {# Slug #}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Slug (URL)</span>
+                </label>
+                <input type="text" name="slug"
+                       value="{{ category.slug if category else '' }}"
+                       class="input input-bordered font-mono"
+                       placeholder="wird automatisch generiert">
+            </div>
+
+            {# Parent category #}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Übergeordnete Kategorie</span>
+                </label>
+                <select name="parent_id" class="select select-bordered">
+                    <option value="">Keine (Hauptkategorie)</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}"
+                            {% if category and category.parent_id == cat.id %}selected{% endif %}>
+                        {{ cat.full_path }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Description #}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Beschreibung</span>
+                </label>
+                <textarea name="description" rows="3"
+                          class="textarea textarea-bordered">{{ category.description if category else '' }}</textarea>
+            </div>
+
+            {# Active #}
+            <div class="form-control mb-6">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_active"
+                           class="checkbox checkbox-success"
+                           {% if not category or category.is_active %}checked{% endif %}>
+                    <span class="label-text">Aktiv</span>
+                </label>
+            </div>
+
+            {# Buttons #}
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-check mr-2"></i>
+                    {{ 'Speichern' if category else 'Erstellen' }}
+                </button>
+                <a href="{{ url_for('pim_admin.list_categories') }}" class="btn btn-ghost">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

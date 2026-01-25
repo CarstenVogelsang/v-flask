@@ -1,0 +1,403 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}
+{{ 'Produkt bearbeiten' if product else 'Neues Produkt' }} - PIM
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('pim_admin.list_products') }}">Produkte</a></li>
+        <li>{{ 'Bearbeiten' if product else 'Neu' }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        {% if product %}
+        <i class="ti ti-edit text-primary mr-2"></i>
+        {{ product.name }}
+        {% else %}
+        <i class="ti ti-plus text-primary mr-2"></i>
+        Neues Produkt
+        {% endif %}
+    </h1>
+</div>
+
+<form method="post" class="space-y-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {# Left column: Main data #}
+        <div class="lg:col-span-2 space-y-6">
+            {# Basic info card #}
+            <div class="card bg-base-100 shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-info-circle"></i>
+                        Stammdaten
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {# Name #}
+                        <div class="form-control md:col-span-2">
+                            <label class="label">
+                                <span class="label-text">Produktname *</span>
+                            </label>
+                            <input type="text" name="name"
+                                   value="{{ product.name if product else '' }}"
+                                   class="input input-bordered" required>
+                        </div>
+
+                        {# SKU #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Artikelnummer (SKU) *</span>
+                            </label>
+                            <input type="text" name="sku"
+                                   value="{{ product.sku if product else '' }}"
+                                   class="input input-bordered font-mono" required>
+                        </div>
+
+                        {# Barcode #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Barcode (GTIN/EAN/UPC)</span>
+                            </label>
+                            <input type="text" name="barcode"
+                                   value="{{ product.barcode if product else '' }}"
+                                   class="input input-bordered font-mono"
+                                   placeholder="z.B. 4006381333931">
+                            {% if product and product.barcode_type %}
+                            <label class="label">
+                                <span class="label-text-alt text-success">
+                                    <i class="ti ti-check"></i> {{ product.barcode_type }}
+                                </span>
+                            </label>
+                            {% endif %}
+                        </div>
+
+                        {# Short description #}
+                        <div class="form-control md:col-span-2">
+                            <label class="label">
+                                <span class="label-text">Kurzbeschreibung</span>
+                            </label>
+                            <input type="text" name="description_short"
+                                   value="{{ product.description_short if product else '' }}"
+                                   class="input input-bordered"
+                                   maxlength="500">
+                        </div>
+
+                        {# Long description #}
+                        <div class="form-control md:col-span-2">
+                            <label class="label">
+                                <span class="label-text">Beschreibung</span>
+                            </label>
+                            <textarea name="description_long" rows="4"
+                                      class="textarea textarea-bordered">{{ product.description_long if product else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Pricing card #}
+            <div class="card bg-base-100 shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-currency-euro"></i>
+                        Preise
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {# Net price #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Netto-Preis *</span>
+                            </label>
+                            <label class="input-group">
+                                <input type="text" name="price_net"
+                                       value="{{ '%.2f'|format(product.price_net) if product else '0,00' }}"
+                                       class="input input-bordered w-full font-mono text-right" required>
+                                <span>€</span>
+                            </label>
+                        </div>
+
+                        {# Tax rate #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Steuersatz</span>
+                            </label>
+                            <select name="tax_rate_id" class="select select-bordered">
+                                <option value="">Kein Steuersatz</option>
+                                {% for rate in tax_rates %}
+                                <option value="{{ rate.id }}"
+                                        {% if product and product.tax_rate_id == rate.id %}selected{% endif %}
+                                        {% if rate.is_default and not product %}selected{% endif %}>
+                                    {{ rate.name }} ({{ rate.rate }}%)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        {# Gross price #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Brutto-Preis</span>
+                            </label>
+                            <label class="input-group">
+                                <input type="text" name="price_gross"
+                                       value="{{ '%.2f'|format(product.price_gross) if product else '0,00' }}"
+                                       class="input input-bordered w-full font-mono text-right">
+                                <span>€</span>
+                            </label>
+                        </div>
+
+                        {# Cost price #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Einkaufspreis</span>
+                            </label>
+                            <label class="input-group">
+                                <input type="text" name="cost_price"
+                                       value="{{ '%.2f'|format(product.cost_price) if product and product.cost_price else '' }}"
+                                       class="input input-bordered w-full font-mono text-right"
+                                       placeholder="optional">
+                                <span>€</span>
+                            </label>
+                        </div>
+
+                        {# Margin display #}
+                        {% if product and product.margin is not none %}
+                        <div class="form-control md:col-span-2">
+                            <label class="label">
+                                <span class="label-text">Marge</span>
+                            </label>
+                            <div class="flex gap-2">
+                                <span class="badge badge-lg badge-success">
+                                    {{ '%.2f'|format(product.margin) }} €
+                                </span>
+                                <span class="badge badge-lg badge-ghost">
+                                    {{ '%.1f'|format(product.margin_percent) }}%
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# Inventory card #}
+            <div class="card bg-base-100 shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-packages"></i>
+                        Lagerbestand
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {# Stock quantity #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Bestand</span>
+                            </label>
+                            <input type="text" name="stock_quantity"
+                                   value="{{ product.stock_quantity|int if product else '0' }}"
+                                   class="input input-bordered font-mono text-right">
+                        </div>
+
+                        {# Stock unit #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Einheit</span>
+                            </label>
+                            <select name="stock_unit" class="select select-bordered">
+                                {% for unit in ['Stück', 'kg', 'l', 'm'] %}
+                                <option value="{{ unit }}"
+                                        {% if product and product.stock_unit == unit %}selected{% endif %}>
+                                    {{ unit }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        {# Min stock #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Mindestbestand</span>
+                            </label>
+                            <input type="text" name="min_stock"
+                                   value="{{ product.min_stock|int if product else '0' }}"
+                                   class="input input-bordered font-mono text-right">
+                        </div>
+                    </div>
+
+                    {% if product and product.is_low_stock %}
+                    <div class="alert alert-warning mt-4">
+                        <i class="ti ti-alert-triangle"></i>
+                        <span>Bestand liegt unter dem Mindestbestand!</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Right column: Classification #}
+        <div class="space-y-6">
+            {# Category & Classification #}
+            <div class="card bg-base-100 shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-category"></i>
+                        Zuordnung
+                    </h2>
+
+                    {# Category #}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text">Kategorie</span>
+                        </label>
+                        <select name="category_id" class="select select-bordered">
+                            <option value="">Keine Kategorie</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}"
+                                    {% if product and product.category_id == cat.id %}selected{% endif %}>
+                                {{ cat.full_path }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {# Manufacturer #}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text">Hersteller</span>
+                        </label>
+                        <select name="manufacturer_id" id="manufacturer_id"
+                                class="select select-bordered"
+                                hx-get="{{ url_for('pim_admin.api_get_brands', manufacturer_id='__ID__') }}"
+                                hx-trigger="change"
+                                hx-target="#brand_id">
+                            <option value="">Kein Hersteller</option>
+                            {% for mfr in manufacturers %}
+                            <option value="{{ mfr.id }}"
+                                    {% if product and product.manufacturer_id == mfr.id %}selected{% endif %}>
+                                {{ mfr.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {# Brand (cascading) #}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text">Marke</span>
+                        </label>
+                        <select name="brand_id" id="brand_id" class="select select-bordered">
+                            <option value="">Keine Marke</option>
+                            {# Will be populated via HTMX #}
+                            {% if product and product.brand %}
+                            <option value="{{ product.brand_id }}" selected>{{ product.brand.name }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    {# Series (cascading) #}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text">Serie</span>
+                        </label>
+                        <select name="series_id" id="series_id" class="select select-bordered">
+                            <option value="">Keine Serie</option>
+                            {% if product and product.series %}
+                            <option value="{{ product.series_id }}" selected>{{ product.series.name }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    {# Product Group #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Warengruppe</span>
+                        </label>
+                        <select name="product_group_id" class="select select-bordered">
+                            <option value="">Keine Warengruppe</option>
+                            {% for group in product_groups %}
+                            <option value="{{ group.id }}"
+                                    {% if product and product.product_group_id == group.id %}selected{% endif %}>
+                                {{ group.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {# Status #}
+            <div class="card bg-base-100 shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-toggle-left"></i>
+                        Status
+                    </h2>
+
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-4">
+                            <input type="checkbox" name="is_active"
+                                   class="checkbox checkbox-success"
+                                   {% if not product or product.is_active %}checked{% endif %}>
+                            <span class="label-text">Aktiv</span>
+                        </label>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-4">
+                            <input type="checkbox" name="is_featured"
+                                   class="checkbox checkbox-warning"
+                                   {% if product and product.is_featured %}checked{% endif %}>
+                            <span class="label-text">Hervorgehoben (Featured)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {# Price Tags #}
+            {% if price_tags %}
+            <div class="card bg-base-100 shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-tags"></i>
+                        Preis-Tags
+                    </h2>
+
+                    <div class="flex flex-wrap gap-2">
+                        {% for tag in price_tags %}
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="price_tag_{{ tag.id }}" class="hidden peer">
+                            <span class="badge badge-lg peer-checked:badge-primary"
+                                  {% if tag.color %}style="background-color: {{ tag.color }}"{% endif %}>
+                                {{ tag.name }}
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Action buttons #}
+    <div class="flex gap-2 justify-end">
+        <a href="{{ url_for('pim_admin.list_products') }}" class="btn btn-ghost">
+            Abbrechen
+        </a>
+        <button type="submit" class="btn btn-primary">
+            <i class="ti ti-check mr-2"></i>
+            {{ 'Speichern' if product else 'Erstellen' }}
+        </button>
+    </div>
+</form>
+{% endblock %}

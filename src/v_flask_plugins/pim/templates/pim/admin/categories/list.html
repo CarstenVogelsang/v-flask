@@ -1,0 +1,97 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Kategorien - PIM{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li>Kategorien</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-category text-primary"></i>
+        <span>Kategorien</span>
+    </h1>
+
+    <div class="flex gap-2">
+        <label class="label cursor-pointer gap-2">
+            <input type="checkbox" class="checkbox checkbox-sm"
+                   onchange="window.location.href='?show_inactive=' + (this.checked ? '1' : '0')"
+                   {% if show_inactive %}checked{% endif %}>
+            <span class="label-text text-sm">Inaktive zeigen</span>
+        </label>
+
+        <a href="{{ url_for('pim_admin.new_category') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-2"></i>
+            Neue Kategorie
+        </a>
+    </div>
+</div>
+
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        {% if category_tree %}
+        <div class="overflow-x-auto">
+            {{ render_category_tree(category_tree) }}
+        </div>
+        {% else %}
+        <div class="text-center text-gray-500 py-8">
+            <i class="ti ti-folder-off text-4xl mb-2"></i>
+            <p>Keine Kategorien vorhanden.</p>
+            <a href="{{ url_for('pim_admin.new_category') }}" class="btn btn-primary btn-sm mt-4">
+                <i class="ti ti-plus mr-1"></i>
+                Erste Kategorie anlegen
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Recursive macro for category tree #}
+{% macro render_category_tree(categories, level=0) %}
+<ul class="{% if level == 0 %}menu bg-base-100{% else %}pl-4{% endif %}">
+    {% for cat in categories %}
+    <li class="{% if not cat.is_active %}opacity-50{% endif %}">
+        <div class="flex justify-between items-center py-2 hover:bg-base-200 rounded px-2">
+            <div class="flex items-center gap-2">
+                {% if cat.children %}
+                <i class="ti ti-folder text-primary"></i>
+                {% else %}
+                <i class="ti ti-file text-gray-400"></i>
+                {% endif %}
+                <span class="{% if level == 0 %}font-medium{% endif %}">{{ cat.name }}</span>
+                {% if not cat.is_active %}
+                <span class="badge badge-ghost badge-xs">Inaktiv</span>
+                {% endif %}
+            </div>
+            <div class="flex gap-1">
+                <a href="{{ url_for('pim_admin.edit_category', category_id=cat.id) }}"
+                   class="btn btn-ghost btn-xs"
+                   title="Bearbeiten">
+                    <i class="ti ti-edit"></i>
+                </a>
+                <form action="{{ url_for('pim_admin.delete_category', category_id=cat.id) }}"
+                      method="post" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit"
+                            class="btn btn-ghost btn-xs text-error"
+                            title="Deaktivieren"
+                            onclick="return confirm('Kategorie wirklich deaktivieren?')">
+                        <i class="ti ti-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% if cat.children %}
+        {{ render_category_tree(cat.children, level + 1) }}
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% endmacro %}
+{% endblock %}

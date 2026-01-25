@@ -1,0 +1,96 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Katalog-Kategorien{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold">Kategorien</h1>
+        <p class="text-base-content/70">{{ categories|length }} Kategorien</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{{ url_for('katalog_admin.list_pdfs') }}" class="btn btn-outline">
+            <i class="ti ti-arrow-left mr-2"></i>Zurück zu Katalogen
+        </a>
+        <a href="{{ url_for('katalog_admin.new_category') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-2"></i>Neue Kategorie
+        </a>
+    </div>
+</div>
+
+{% if categories %}
+<div class="overflow-x-auto">
+    <table class="table table-zebra">
+        <thead>
+            <tr>
+                <th>Icon</th>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Kataloge</th>
+                <th>Sortierung</th>
+                <th>Status</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for kat in categories %}
+            <tr>
+                <td>
+                    <i class="{{ kat.icon }} text-xl text-primary"></i>
+                </td>
+                <td>
+                    <div class="font-medium">{{ kat.name }}</div>
+                    {% if kat.description %}
+                    <div class="text-sm text-base-content/60 truncate max-w-xs">{{ kat.description }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <code class="text-xs">{{ kat.slug }}</code>
+                </td>
+                <td>
+                    <span class="badge badge-ghost">{{ kat.pdf_count }}</span>
+                </td>
+                <td>{{ kat.sort_order }}</td>
+                <td>
+                    {% if kat.is_active %}
+                    <span class="badge badge-success badge-sm">Aktiv</span>
+                    {% else %}
+                    <span class="badge badge-ghost badge-sm">Inaktiv</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="flex gap-1">
+                        <a href="{{ url_for('katalog_admin.edit_category', kategorie_id=kat.id) }}"
+                           class="btn btn-ghost btn-xs"
+                           title="Bearbeiten">
+                            <i class="ti ti-edit"></i>
+                        </a>
+                        <form action="{{ url_for('katalog_admin.delete_category', kategorie_id=kat.id) }}"
+                              method="POST"
+                              class="inline"
+                              onsubmit="return confirm('Kategorie löschen? Kataloge werden nicht gelöscht, nur die Zuordnung.')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-ghost btn-xs text-error" title="Löschen">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-16">
+    <i class="ti ti-category text-6xl text-base-content/20 mb-4"></i>
+    <h2 class="text-xl font-semibold mb-2">Noch keine Kategorien</h2>
+    <p class="text-base-content/70 mb-4">
+        Erstellen Sie Kategorien wie "Hauptkatalog", "Neuheiten" oder "Archiv".
+    </p>
+    <a href="{{ url_for('katalog_admin.new_category') }}" class="btn btn-primary">
+        <i class="ti ti-plus mr-2"></i>Erste Kategorie erstellen
+    </a>
+</div>
+{% endif %}
+{% endblock %}

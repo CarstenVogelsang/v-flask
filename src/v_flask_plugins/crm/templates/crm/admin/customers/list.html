@@ -1,0 +1,194 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kunden{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-briefcase mr-1"></i>Verwaltung</li>
+        <li>Kunden</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-users text-primary"></i>
+        <span>Kunden</span>
+        <span class="badge badge-neutral ml-2">{{ total }}</span>
+
+        {# Settings Button #}
+        {% if plugin_has_settings('crm') %}
+        <a href="{{ plugin_settings_url('crm') }}"
+           class="btn btn-ghost btn-sm btn-circle ml-2"
+           title="Einstellungen">
+            <i class="ti ti-adjustments text-lg"></i>
+        </a>
+        {% endif %}
+    </h1>
+    <a href="{{ url_for('crm_admin.new_customer') }}" class="btn btn-primary btn-sm">
+        <i class="ti ti-plus mr-1"></i> Neuer Kunde
+    </a>
+</div>
+
+{# Search & Filter Bar #}
+<div class="card bg-base-100 shadow mb-6">
+    <div class="card-body p-4">
+        <form method="GET" class="flex flex-col sm:flex-row gap-4">
+            {# Search Input #}
+            <div class="flex-1">
+                <div class="join w-full">
+                    <input type="text"
+                           name="q"
+                           value="{{ query }}"
+                           placeholder="Suche nach Firma, Kundennummer, E-Mail..."
+                           class="input input-bordered join-item w-full">
+                    <button type="submit" class="btn btn-primary join-item">
+                        <i class="ti ti-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            {# Status Filter #}
+            <select name="status" class="select select-bordered w-full sm:w-auto" onchange="this.form.submit()">
+                <option value="">Alle Status</option>
+                <option value="active" {% if status == 'active' %}selected{% endif %}>Aktiv</option>
+                <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inaktiv</option>
+                <option value="blocked" {% if status == 'blocked' %}selected{% endif %}>Gesperrt</option>
+            </select>
+
+            {# Clear Filters #}
+            {% if query or status %}
+            <a href="{{ url_for('crm_admin.list_customers') }}" class="btn btn-ghost btn-sm">
+                <i class="ti ti-x mr-1"></i> Filter zurücksetzen
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{# Customer Table #}
+{% if customers %}
+<div class="card bg-base-100 shadow">
+    <div class="overflow-x-auto">
+        <table class="table table-zebra">
+            <thead>
+                <tr>
+                    <th>Kundennr.</th>
+                    <th>Firma</th>
+                    <th>E-Mail</th>
+                    <th>Telefon</th>
+                    <th>Status</th>
+                    <th class="text-right">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr class="hover">
+                    <td>
+                        <span class="font-mono text-sm">{{ customer.customer_number }}</span>
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="avatar placeholder">
+                                <div class="bg-neutral text-neutral-content rounded-full w-10">
+                                    <span class="text-sm">{{ customer.company_name[:2]|upper }}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="font-bold">{{ customer.company_name }}</div>
+                                {% if customer.legal_form %}
+                                <div class="text-sm text-base-content/60">{{ customer.legal_form }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <a href="mailto:{{ customer.email }}" class="link link-hover">{{ customer.email }}</a>
+                    </td>
+                    <td>{{ customer.phone or '-' }}</td>
+                    <td>
+                        {% if customer.status == 'active' %}
+                        <span class="badge badge-success badge-sm">Aktiv</span>
+                        {% elif customer.status == 'inactive' %}
+                        <span class="badge badge-ghost badge-sm">Inaktiv</span>
+                        {% elif customer.status == 'blocked' %}
+                        <span class="badge badge-error badge-sm">Gesperrt</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        <div class="flex justify-end gap-1">
+                            <a href="{{ url_for('crm_admin.edit_customer', customer_id=customer.id) }}"
+                               class="btn btn-ghost btn-sm btn-square"
+                               title="Bearbeiten">
+                                <i class="ti ti-edit"></i>
+                            </a>
+                            <form method="POST"
+                                  action="{{ url_for('crm_admin.delete_customer', customer_id=customer.id) }}"
+                                  onsubmit="return confirm('Kunde wirklich löschen?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-ghost btn-sm btn-square text-error" title="Löschen">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Pagination #}
+    {% if total_pages > 1 %}
+    <div class="card-actions justify-center p-4 border-t border-base-200">
+        <div class="join">
+            {% if page > 1 %}
+            <a href="{{ url_for('crm_admin.list_customers', q=query, status=status, page=page-1) }}"
+               class="join-item btn btn-sm">«</a>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                <button class="join-item btn btn-sm btn-active">{{ p }}</button>
+                {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                <a href="{{ url_for('crm_admin.list_customers', q=query, status=status, page=p) }}"
+                   class="join-item btn btn-sm">{{ p }}</a>
+                {% elif p == page - 3 or p == page + 3 %}
+                <button class="join-item btn btn-sm btn-disabled">...</button>
+                {% endif %}
+            {% endfor %}
+
+            {% if page < total_pages %}
+            <a href="{{ url_for('crm_admin.list_customers', q=query, status=status, page=page+1) }}"
+               class="join-item btn btn-sm">»</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+{# Empty State #}
+<div class="card bg-base-100 shadow">
+    <div class="card-body items-center text-center py-12">
+        <i class="ti ti-users-off text-6xl text-base-content/30 mb-4"></i>
+        {% if search or status %}
+        <h2 class="card-title text-base-content/60">Keine Kunden gefunden</h2>
+        <p class="text-base-content/50 mb-4">Versuche andere Suchkriterien oder setze die Filter zurück.</p>
+        <a href="{{ url_for('crm_admin.list_customers') }}" class="btn btn-ghost">
+            <i class="ti ti-x mr-1"></i> Filter zurücksetzen
+        </a>
+        {% else %}
+        <h2 class="card-title text-base-content/60">Noch keine Kunden vorhanden</h2>
+        <p class="text-base-content/50 mb-4">Lege deinen ersten Kunden an, um mit der Verwaltung zu beginnen.</p>
+        <a href="{{ url_for('crm_admin.new_customer') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-1"></i> Ersten Kunden anlegen
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

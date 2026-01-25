@@ -1,0 +1,155 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Geodaten - Business Directory{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">
+            <i class="ti ti-map-2 mr-2"></i>
+            Geodaten
+        </h1>
+        <form action="{{ url_for('business_directory_admin_geodaten.import_laender') }}" method="post" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="ti ti-download mr-2"></i>
+                Länder importieren
+            </button>
+        </form>
+    </div>
+
+    {# Statistiken #}
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div class="stat bg-base-100 rounded-box shadow-sm">
+            <div class="stat-figure text-primary">
+                <i class="ti ti-world text-3xl"></i>
+            </div>
+            <div class="stat-title">Länder</div>
+            <div class="stat-value text-primary">{{ stats.laender }}</div>
+        </div>
+
+        <div class="stat bg-base-100 rounded-box shadow-sm">
+            <div class="stat-figure text-secondary">
+                <i class="ti ti-map text-3xl"></i>
+            </div>
+            <div class="stat-title">Bundesländer</div>
+            <div class="stat-value text-secondary">{{ stats.bundeslaender }}</div>
+        </div>
+
+        <div class="stat bg-base-100 rounded-box shadow-sm">
+            <div class="stat-figure text-accent">
+                <i class="ti ti-map-pins text-3xl"></i>
+            </div>
+            <div class="stat-title">Kreise</div>
+            <div class="stat-value text-accent">{{ stats.kreise }}</div>
+        </div>
+
+        <div class="stat bg-base-100 rounded-box shadow-sm">
+            <div class="stat-figure text-info">
+                <i class="ti ti-building-community text-3xl"></i>
+            </div>
+            <div class="stat-title">Orte</div>
+            <div class="stat-value text-info">{{ stats.orte }}</div>
+        </div>
+
+        <div class="stat bg-base-100 rounded-box shadow-sm">
+            <div class="stat-figure text-success">
+                <i class="ti ti-circle-check text-3xl"></i>
+            </div>
+            <div class="stat-title">Kreise mit Orten</div>
+            <div class="stat-value text-success">{{ stats.kreise_importiert }}</div>
+        </div>
+    </div>
+
+    {# Länder-Liste #}
+    {% if laender %}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Importierte Länder</h2>
+
+            <div class="overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Land</th>
+                            <th>Code</th>
+                            <th>Bundesländer</th>
+                            <th>Kreise</th>
+                            <th>Orte</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for land in laender %}
+                        <tr>
+                            <td>
+                                <div class="font-medium">{{ land.name }}</div>
+                            </td>
+                            <td>
+                                <code class="text-sm">{{ land.iso_code or land.id }}</code>
+                            </td>
+                            <td>{{ land.bundeslaender.count() }}</td>
+                            <td>
+                                {% set kreis_count = 0 %}
+                                {% for bl in land.bundeslaender %}
+                                    {% set kreis_count = kreis_count + bl.kreise.count() %}
+                                {% endfor %}
+                                {{ kreis_count }}
+                            </td>
+                            <td>
+                                {% set ort_count = 0 %}
+                                {% for bl in land.bundeslaender %}
+                                    {% for kr in bl.kreise %}
+                                        {% set ort_count = ort_count + kr.orte.count() %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ ort_count }}
+                            </td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <a href="{{ url_for('business_directory_admin_geodaten.view_land', land_id=land.id) }}"
+                                       class="btn btn-ghost btn-sm" title="Anzeigen">
+                                        <i class="ti ti-eye"></i>
+                                    </a>
+                                    <form action="{{ url_for('business_directory_admin_geodaten.import_bundeslaender', land_id=land.id) }}"
+                                          method="post" class="inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-ghost btn-sm" title="Bundesländer importieren">
+                                            <i class="ti ti-download"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="ti ti-info-circle"></i>
+        <div>
+            <h3 class="font-bold">Noch keine Geodaten importiert</h3>
+            <div class="text-sm">
+                Klicken Sie auf "Länder importieren", um mit dem Import der Geodaten zu beginnen.
+                Nach dem Import können Sie Bundesländer, Kreise und Orte einzeln oder gesammelt importieren.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Info-Box #}
+    <div class="alert mt-6">
+        <i class="ti ti-bulb"></i>
+        <div>
+            <h3 class="font-bold">Hinweis zur Geodaten-Hierarchie</h3>
+            <div class="text-sm">
+                Die Geodaten werden hierarchisch verwaltet: <strong>Land → Bundesland → Kreis → Ort</strong>.
+                Importieren Sie zunächst ein Land, dann dessen Bundesländer, dann die Kreise und schließlich die Orte.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{#
+    CTA Variant: Floating
+    A fixed-position floating widget in the bottom-right corner.
+    Non-intrusive but always visible. Includes close button.
+
+    Expected context:
+        - title: Rendered title text
+        - description: Rendered description text
+        - cta_text: Button text (optional, used as aria-label)
+        - cta_link: Button URL (optional)
+#}
+<div id="cta-floating-widget"
+     class="fixed bottom-4 right-4 z-50 transition-all duration-300"
+     x-data="{ show: true }"
+     x-show="show"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 translate-y-4"
+     x-transition:enter-end="opacity-100 translate-y-0"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 translate-y-0"
+     x-transition:leave-end="opacity-0 translate-y-4">
+
+    {# Close Button #}
+    <button @click="show = false"
+            class="absolute -top-2 -right-2 btn btn-circle btn-xs btn-ghost bg-base-100 shadow border"
+            aria-label="Schließen">
+        <i class="ti ti-x text-xs"></i>
+    </button>
+
+    <a href="{{ cta_link if cta_link else '#' }}"
+       class="card bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 shadow-lg hover:shadow-xl transition-all hover:scale-105"
+       {% if cta_text %}aria-label="{{ cta_text }}"{% endif %}>
+        <div class="card-body p-4">
+            <div class="flex items-center gap-3">
+                <i class="ti ti-building-store text-2xl text-amber-600"></i>
+                <div>
+                    <p class="font-semibold text-sm text-amber-800">
+                        {{ title }}
+                    </p>
+                    {% if description %}
+                    <p class="text-xs text-amber-700">
+                        {{ description }}
+                    </p>
+                    {% endif %}
+                </div>
+                <i class="ti ti-chevron-right text-amber-600"></i>
+            </div>
+        </div>
+    </a>
+</div>
+
+{# Fallback for non-Alpine.js pages: hide with vanilla JS #}
+<script>
+(function() {
+    // Check if Alpine.js is loaded
+    if (typeof Alpine === 'undefined') {
+        var widget = document.getElementById('cta-floating-widget');
+        if (widget) {
+            // Show widget by default
+            widget.style.display = 'block';
+
+            // Add close functionality
+            var closeBtn = widget.querySelector('button');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    widget.style.display = 'none';
+                });
+            }
+        }
+    }
+})();
+</script>

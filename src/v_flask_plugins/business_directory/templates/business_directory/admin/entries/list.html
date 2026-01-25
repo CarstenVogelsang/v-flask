@@ -1,0 +1,217 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Einträge - Business Directory{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">
+            <i class="ti ti-building-store mr-2"></i>
+            Einträge
+        </h1>
+        <a href="{{ url_for('business_directory_admin.create_entry') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-2"></i>
+            Neuer Eintrag
+        </a>
+    </div>
+
+    {# Filter-Bereich #}
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body py-4">
+            <form method="get" class="flex flex-wrap gap-4 items-end">
+                {# Typ-Filter #}
+                <div class="form-control">
+                    <label class="label py-1">
+                        <span class="label-text">Verzeichnistyp</span>
+                    </label>
+                    <select name="type" class="select select-bordered select-sm">
+                        <option value="">Alle Typen</option>
+                        {% for type in types %}
+                        <option value="{{ type.id }}" {{ 'selected' if current_type == type.id }}>
+                            {{ type.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {# Status-Filter #}
+                <div class="form-control">
+                    <label class="label py-1">
+                        <span class="label-text">Status</span>
+                    </label>
+                    <select name="status" class="select select-bordered select-sm">
+                        <option value="all" {{ 'selected' if current_status == 'all' }}>Alle</option>
+                        <option value="active" {{ 'selected' if current_status == 'active' }}>Aktiv</option>
+                        <option value="inactive" {{ 'selected' if current_status == 'inactive' }}>Inaktiv</option>
+                        <option value="verified" {{ 'selected' if current_status == 'verified' }}>Verifiziert</option>
+                        <option value="self_managed" {{ 'selected' if current_status == 'self_managed' }}>Selbstverwaltet</option>
+                    </select>
+                </div>
+
+                {# Suche #}
+                <div class="form-control flex-1 min-w-[200px]">
+                    <label class="label py-1">
+                        <span class="label-text">Suche</span>
+                    </label>
+                    <input type="text" name="q" value="{{ search }}"
+                           placeholder="Name, E-Mail oder Adresse..."
+                           class="input input-bordered input-sm">
+                </div>
+
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="ti ti-search mr-1"></i>
+                    Filtern
+                </button>
+
+                {% if current_type or current_status != 'all' or search %}
+                <a href="{{ url_for('business_directory_admin.list_entries') }}" class="btn btn-sm btn-ghost">
+                    <i class="ti ti-x mr-1"></i>
+                    Zurücksetzen
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    {# Einträge-Tabelle #}
+    {% if entries.items %}
+    <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Typ</th>
+                    <th>Ort</th>
+                    <th>Status</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries.items %}
+                <tr>
+                    <td>
+                        <div class="font-medium">{{ entry.name }}</div>
+                        {% if entry.email %}
+                        <div class="text-sm text-base-content/60">{{ entry.email }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if entry.directory_type %}
+                        <span class="badge badge-outline">
+                            <i class="ti {{ entry.directory_type.icon }} mr-1"></i>
+                            {{ entry.directory_type.name }}
+                        </span>
+                        {% else %}
+                        <span class="text-base-content/40">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if entry.geo_ort %}
+                        <div>{{ entry.geo_ort.name }}</div>
+                        <div class="text-sm text-base-content/60">{{ entry.geo_ort.plz }}</div>
+                        {% elif entry.strasse %}
+                        <div class="text-sm">{{ entry.strasse }}</div>
+                        {% else %}
+                        <span class="text-base-content/40">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex flex-col gap-1">
+                            {% if entry.active %}
+                            <span class="badge badge-success badge-sm">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-warning badge-sm">Inaktiv</span>
+                            {% endif %}
+
+                            {% if entry.verified %}
+                            <span class="badge badge-info badge-sm">Verifiziert</span>
+                            {% endif %}
+
+                            {% if entry.self_managed %}
+                            <span class="badge badge-accent badge-sm">Selbstverwaltet</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="flex gap-1">
+                            <a href="{{ url_for('business_directory_admin.edit_entry', entry_id=entry.id) }}"
+                               class="btn btn-ghost btn-sm" title="Bearbeiten">
+                                <i class="ti ti-edit"></i>
+                            </a>
+
+                            {% if entry.active %}
+                            <form action="{{ url_for('business_directory_admin.deactivate_entry', entry_id=entry.id) }}"
+                                  method="post" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-ghost btn-sm" title="Deaktivieren">
+                                    <i class="ti ti-eye-off"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <form action="{{ url_for('business_directory_admin.activate_entry', entry_id=entry.id) }}"
+                                  method="post" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-ghost btn-sm" title="Aktivieren">
+                                    <i class="ti ti-eye"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            <form action="{{ url_for('business_directory_admin.delete_entry', entry_id=entry.id) }}"
+                                  method="post" class="inline"
+                                  onsubmit="return confirm('Eintrag wirklich löschen?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-ghost btn-sm text-error" title="Löschen">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Pagination #}
+    {% if entries.pages > 1 %}
+    <div class="flex justify-center mt-6">
+        <div class="join">
+            {% if entries.has_prev %}
+            <a href="{{ url_for('business_directory_admin.list_entries', page=entries.prev_num, type=current_type, status=current_status, q=search) }}"
+               class="join-item btn btn-sm">«</a>
+            {% endif %}
+
+            {% for page_num in entries.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                <a href="{{ url_for('business_directory_admin.list_entries', page=page_num, type=current_type, status=current_status, q=search) }}"
+                   class="join-item btn btn-sm {{ 'btn-active' if page_num == entries.page }}">
+                    {{ page_num }}
+                </a>
+                {% else %}
+                <span class="join-item btn btn-sm btn-disabled">…</span>
+                {% endif %}
+            {% endfor %}
+
+            {% if entries.has_next %}
+            <a href="{{ url_for('business_directory_admin.list_entries', page=entries.next_num, type=current_type, status=current_status, q=search) }}"
+               class="join-item btn btn-sm">»</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-info">
+        <i class="ti ti-info-circle"></i>
+        <span>
+            {% if search or current_type or current_status != 'all' %}
+            Keine Einträge gefunden. Versuchen Sie andere Filterkriterien.
+            {% else %}
+            Noch keine Einträge vorhanden. Erstellen Sie den ersten Eintrag.
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{# PDF Card Component #}
+{# Expects: pdf (KatalogPDF instance) #}
+
+<div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow">
+    {% if pdf.cover_image_path %}
+    <figure class="relative">
+        <img src="{{ url_for('katalog.serve_cover', pdf_id=pdf.id) }}"
+             alt="{{ pdf.title }}"
+             class="w-full h-48 object-cover">
+        {% if pdf.year %}
+        <span class="absolute top-2 right-2 badge badge-primary">{{ pdf.year }}</span>
+        {% endif %}
+    </figure>
+    {% else %}
+    <figure class="bg-base-200 h-48 flex items-center justify-center relative">
+        <i class="ti ti-file-type-pdf text-6xl text-base-content/20"></i>
+        {% if pdf.year %}
+        <span class="absolute top-2 right-2 badge badge-primary">{{ pdf.year }}</span>
+        {% endif %}
+    </figure>
+    {% endif %}
+
+    <div class="card-body p-4">
+        <h3 class="card-title text-base line-clamp-2">{{ pdf.title }}</h3>
+
+        {% if pdf.description %}
+        <p class="text-sm text-base-content/70 line-clamp-2">{{ pdf.description }}</p>
+        {% endif %}
+
+        <div class="flex items-center gap-2 text-xs text-base-content/50 mt-2">
+            <span><i class="ti ti-file mr-1"></i>{{ pdf.file_size_display }}</span>
+            {% if pdf.kategorie %}
+            <span>•</span>
+            <span>{{ pdf.kategorie.name }}</span>
+            {% endif %}
+        </div>
+
+        <div class="card-actions justify-end mt-3">
+            <a href="{{ url_for('katalog.view', pdf_id=pdf.id) }}"
+               class="btn btn-primary btn-sm">
+                <i class="ti ti-eye mr-1"></i>Ansehen
+            </a>
+            <a href="{{ url_for('katalog.download', pdf_id=pdf.id) }}"
+               class="btn btn-outline btn-sm">
+                <i class="ti ti-download"></i>
+            </a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,79 @@
+{% extends "shop/public/base.html" %}
+
+{% block title %}{{ category.name }} - Shop{% endblock %}
+
+{% block content %}
+{# Breadcrumbs #}
+<div class="breadcrumbs text-sm mb-4">
+    <ul>
+        <li><a href="{{ url_for('shop_public.home') }}"><i class="ti ti-home"></i> Shop</a></li>
+        <li>{{ category.name }}</li>
+    </ul>
+</div>
+
+<div class="mb-6">
+    <h1 class="text-3xl font-bold">{{ category.name }}</h1>
+    {% if category.description %}
+    <p class="text-base-content/60 mt-1">{{ category.description }}</p>
+    {% endif %}
+    <p class="text-sm text-base-content/50 mt-1">{{ products|length }} Produkte</p>
+</div>
+
+{% if products %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    {% for item in products %}
+    <div class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+        <div class="card-body">
+            <h2 class="card-title text-base">
+                <a href="{{ url_for('shop_public.product', product_id=item.product.id) }}"
+                   class="hover:text-primary">
+                    {{ item.product.name }}
+                </a>
+            </h2>
+            <p class="text-sm text-base-content/60">{{ item.product.sku }}</p>
+
+            {# Price Display #}
+            <div class="mt-2">
+                {% if item.is_discounted %}
+                <div class="text-sm line-through text-base-content/40">
+                    {{ "%.2f"|format(item.list_price) }} EUR
+                </div>
+                <div class="text-lg font-bold text-success">
+                    {{ "%.2f"|format(item.final_price) }} EUR
+                    <span class="badge badge-success badge-sm ml-1">-{{ "%.0f"|format(item.discount_percent) }}%</span>
+                </div>
+                {% else %}
+                <div class="text-lg font-bold">
+                    {{ "%.2f"|format(item.final_price) }} EUR
+                </div>
+                {% endif %}
+            </div>
+
+            {# Add to Cart Form #}
+            <form method="POST" action="{{ url_for('shop_public.cart_add') }}" class="mt-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="product_id" value="{{ item.product.id }}">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn btn-primary btn-sm btn-block">
+                    <i class="ti ti-shopping-cart-plus"></i>
+                    In den Warenkorb
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card bg-base-100 shadow">
+    <div class="card-body items-center text-center py-12">
+        <i class="ti ti-package-off text-6xl text-base-content/30 mb-4"></i>
+        <h2 class="card-title text-base-content/60">Keine Produkte in dieser Kategorie</h2>
+        <p class="text-base-content/50">Diese Kategorie enthält noch keine Produkte.</p>
+        <a href="{{ url_for('shop_public.home') }}" class="btn btn-primary mt-4">
+            <i class="ti ti-arrow-left"></i>
+            Zurück zur Übersicht
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

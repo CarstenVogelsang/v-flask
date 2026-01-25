@@ -1,0 +1,394 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{% if section %}CTA Section bearbeiten{% else %}Neue CTA Section{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    {# Title Bar #}
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+            <i class="ti ti-click text-primary"></i>
+            <span>{% if section %}{{ section.display_name }}{% else %}Neue CTA Section{% endif %}</span>
+        </h1>
+        <div class="flex gap-2">
+            {% if section %}
+            <button type="button"
+                    onclick="document.getElementById('delete-modal').showModal()"
+                    class="btn btn-ghost btn-sm text-error">
+                <i class="ti ti-trash mr-1"></i> Löschen
+            </button>
+            {% endif %}
+            <a href="{{ url_for('cta_admin.list_sections') }}" class="btn btn-ghost btn-sm">
+                <i class="ti ti-arrow-left mr-1"></i> Zurück
+            </a>
+            <button type="submit" form="section-form" class="btn btn-primary btn-sm">
+                <i class="ti ti-device-floppy mr-1"></i> Speichern
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-4xl">
+        <form method="post"
+              action="{% if section %}{{ url_for('cta_admin.edit_section', section_id=section.id) }}{% else %}{{ url_for('cta_admin.create_section') }}{% endif %}"
+              id="section-form">
+
+            {# Basic Info #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-info-circle"></i>
+                        Grundeinstellungen
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Name (intern)</span>
+                            </label>
+                            <input type="text" name="name"
+                                   value="{{ section.name or '' if section else '' }}"
+                                   class="input input-bordered"
+                                   placeholder="z.B. Anbieter-CTA, Keine Lokale"
+                                   required>
+                            <label class="label">
+                                <span class="label-text-alt">Zur Identifizierung im Admin</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label cursor-pointer justify-start gap-2">
+                                <input type="checkbox" name="active" value="1"
+                                       class="checkbox checkbox-primary"
+                                       {% if (section and section.active) or not section %}checked{% endif %}>
+                                <span class="label-text">Aktiv</span>
+                            </label>
+                            <label class="label">
+                                <span class="label-text-alt">Inaktive CTAs werden nicht angezeigt</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Variant Selection #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-layout"></i>
+                        Design-Variante
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {# Card Variant #}
+                        <label class="cursor-pointer">
+                            <input type="radio" name="variant" value="card"
+                                   class="peer hidden"
+                                   {% if (section and section.variant == 'card') or not section %}checked{% endif %}>
+                            <div class="card bg-base-200 peer-checked:ring-2 peer-checked:ring-primary transition-all hover:bg-base-300">
+                                <div class="card-body p-3">
+                                    <div class="aspect-video bg-base-300 rounded mb-2 relative overflow-hidden p-2">
+                                        <div class="bg-base-100 rounded h-full flex flex-col justify-center items-center p-2">
+                                            <div class="w-8 h-1 bg-base-content/40 mb-1 rounded"></div>
+                                            <div class="w-12 h-0.5 bg-base-content/30 mb-2 rounded"></div>
+                                            <div class="w-6 h-2 bg-primary/50 rounded"></div>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-medium">Card</span>
+                                    <span class="text-xs text-base-content/60">Inline-Karte</span>
+                                </div>
+                            </div>
+                        </label>
+
+                        {# Alert Variant #}
+                        <label class="cursor-pointer">
+                            <input type="radio" name="variant" value="alert"
+                                   class="peer hidden"
+                                   {% if section and section.variant == 'alert' %}checked{% endif %}>
+                            <div class="card bg-base-200 peer-checked:ring-2 peer-checked:ring-primary transition-all hover:bg-base-300">
+                                <div class="card-body p-3">
+                                    <div class="aspect-video bg-base-300 rounded mb-2 relative overflow-hidden p-2">
+                                        <div class="bg-warning/20 border-l-4 border-warning rounded h-full flex flex-col justify-center px-2">
+                                            <div class="w-8 h-1 bg-base-content/40 mb-1 rounded"></div>
+                                            <div class="w-10 h-0.5 bg-base-content/30 rounded"></div>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-medium">Alert</span>
+                                    <span class="text-xs text-base-content/60">Hinweisbox</span>
+                                </div>
+                            </div>
+                        </label>
+
+                        {# Floating Variant #}
+                        <label class="cursor-pointer">
+                            <input type="radio" name="variant" value="floating"
+                                   class="peer hidden"
+                                   {% if section and section.variant == 'floating' %}checked{% endif %}>
+                            <div class="card bg-base-200 peer-checked:ring-2 peer-checked:ring-primary transition-all hover:bg-base-300">
+                                <div class="card-body p-3">
+                                    <div class="aspect-video bg-base-300 rounded mb-2 relative overflow-hidden">
+                                        <div class="absolute bottom-1 right-1 bg-base-100 shadow-lg rounded p-1">
+                                            <div class="w-6 h-3 bg-primary/30 rounded flex items-center justify-center">
+                                                <div class="w-4 h-0.5 bg-white rounded"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-medium">Floating</span>
+                                    <span class="text-xs text-base-content/60">Schwebendes Widget</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {# Text Content #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-text-size"></i>
+                        Text-Inhalt
+                    </h2>
+
+                    {# Text Source Toggle #}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Text-Quelle</span>
+                        </label>
+                        <div class="flex gap-4">
+                            <label class="cursor-pointer flex items-center gap-2">
+                                <input type="radio" name="text_source" value="custom"
+                                       class="radio radio-primary"
+                                       {% if not section or not section.template_id %}checked{% endif %}
+                                       onchange="toggleTextSource('custom')">
+                                <span>Eigener Text</span>
+                            </label>
+                            <label class="cursor-pointer flex items-center gap-2">
+                                <input type="radio" name="text_source" value="template"
+                                       class="radio radio-primary"
+                                       {% if section and section.template_id %}checked{% endif %}
+                                       onchange="toggleTextSource('template')">
+                                <span>Vorlage</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {# Template Selection #}
+                    <div id="template-selection" class="{% if not section or not section.template_id %}hidden{% endif %}">
+                        <div class="form-control mb-4">
+                            <label class="label">
+                                <span class="label-text">Vorlage auswählen</span>
+                            </label>
+                            <select name="template_id" class="select select-bordered w-full">
+                                <option value="">-- Vorlage wählen --</option>
+                                {% for tpl in templates %}
+                                <option value="{{ tpl.id }}" {% if section and section.template_id == tpl.id %}selected{% endif %}>
+                                    {{ tpl.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Custom Text #}
+                    <div id="custom-text" class="{% if section and section.template_id %}hidden{% endif %}">
+                        <div class="form-control mb-4">
+                            <label class="label">
+                                <span class="label-text">Titel</span>
+                            </label>
+                            <input type="text" name="custom_title"
+                                   value="{{ section.custom_title or '' if section else '' }}"
+                                   class="input input-bordered"
+                                   placeholder="Ihr Lokal fehlt noch?">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Beschreibung</span>
+                            </label>
+                            <textarea name="custom_description"
+                                      class="textarea textarea-bordered"
+                                      rows="3"
+                                      placeholder="Tragen Sie Ihr Lokal jetzt kostenlos ein...">{{ section.custom_description or '' if section else '' }}</textarea>
+                        </div>
+                    </div>
+
+                    {# Placeholder Info #}
+                    <div class="alert alert-info mt-4">
+                        <i class="ti ti-variable"></i>
+                        <div>
+                            <p class="font-medium text-sm">Verfügbare Platzhalter</p>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                {% for placeholder in placeholders %}
+                                <code class="bg-base-200 px-1 rounded text-xs">{{ placeholder }}</code>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# CTA Button #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-click"></i>
+                        Call-to-Action Button
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Button-Text</span>
+                            </label>
+                            <input type="text" name="cta_text"
+                                   value="{{ section.cta_text or '' if section else '' }}"
+                                   class="input input-bordered"
+                                   placeholder="Jetzt eintragen">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Button-Link</span>
+                            </label>
+                            <input type="text" name="cta_link"
+                                   value="{{ section.cta_link or '' if section else '' }}"
+                                   class="input input-bordered"
+                                   placeholder="/registrieren">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {# Page Assignments (only for existing sections) #}
+        {% if section %}
+        <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-link"></i>
+                    Seiten-Zuweisungen
+                </h2>
+
+                <p class="text-sm text-base-content/70 mb-4">
+                    Auf welchen Seiten und in welchen Slots soll dieser CTA angezeigt werden?
+                </p>
+
+                {# Current Assignments #}
+                {% if section.assignments %}
+                <div class="space-y-2 mb-4">
+                    {% for assignment in section.assignments %}
+                    <div class="flex items-center justify-between bg-base-200 p-3 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <i class="ti ti-file text-primary"></i>
+                            <div>
+                                <span class="font-medium">{{ assignment.page_route.display_name or assignment.page_route.endpoint }}</span>
+                                <span class="text-xs text-base-content/60 ml-2">{{ assignment.page_route.rule }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="badge badge-outline badge-sm">{{ assignment.slot_position }}</span>
+                            <span class="badge badge-ghost badge-sm">P: {{ assignment.priority }}</span>
+                            <form action="{{ url_for('cta_admin.delete_assignment', assignment_id=assignment.id) }}"
+                                  method="post">
+                                <button type="submit" class="btn btn-ghost btn-xs text-error"
+                                        title="Zuweisung entfernen">
+                                    <i class="ti ti-x"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-warning mb-4">
+                    <i class="ti ti-alert-triangle"></i>
+                    <span>Dieser CTA ist keiner Seite zugewiesen und wird daher nicht angezeigt.</span>
+                </div>
+                {% endif %}
+
+                {# Add New Assignment #}
+                {% if routes %}
+                <form action="{{ url_for('cta_admin.assign_route', section_id=section.id) }}"
+                      method="post"
+                      class="flex flex-col md:flex-row gap-2 w-full">
+
+                    <select name="route_id" class="select select-bordered flex-1 min-w-0" required>
+                        <option value="">-- Seite auswählen --</option>
+                        {% for route in routes %}
+                        <option value="{{ route.id }}">
+                            {{ route.display_name or route.endpoint }} ({{ route.rule }})
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="slot" class="select select-bordered w-full md:w-40 shrink-0">
+                        <option value="after_content">after_content</option>
+                        <option value="before_content">before_content</option>
+                        <option value="sidebar">sidebar</option>
+                        <option value="floating">floating</option>
+                        <option value="footer">footer</option>
+                    </select>
+
+                    <input type="number" name="priority" value="50"
+                           class="input input-bordered w-full md:w-20 shrink-0"
+                           placeholder="Prio" min="1" max="100" title="Priorität (1-100)">
+
+                    <button type="submit" class="btn btn-primary shrink-0">
+                        <i class="ti ti-plus mr-1"></i> Zuweisen
+                    </button>
+                </form>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="ti ti-info-circle"></i>
+                    <span>Keine Seiten zur Zuweisung verfügbar.</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Delete Confirmation Modal #}
+{% if section %}
+<dialog id="delete-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg text-error">
+            <i class="ti ti-alert-triangle mr-2"></i>CTA Section löschen
+        </h3>
+        <p class="py-4">
+            Diese Aktion kann nicht rückgängig gemacht werden.
+            Alle Zuweisungen werden ebenfalls gelöscht.
+        </p>
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-ghost">Abbrechen</button>
+            </form>
+            <form method="post" action="{{ url_for('cta_admin.delete_section', section_id=section.id) }}">
+                <button type="submit" class="btn btn-error">
+                    <i class="ti ti-trash mr-1"></i> Endgültig löschen
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+{% endif %}
+
+<script>
+function toggleTextSource(source) {
+    const templateSection = document.getElementById('template-selection');
+    const customSection = document.getElementById('custom-text');
+
+    if (source === 'template') {
+        templateSection.classList.remove('hidden');
+        customSection.classList.add('hidden');
+    } else {
+        templateSection.classList.add('hidden');
+        customSection.classList.remove('hidden');
+    }
+}
+</script>
+{% endblock %}

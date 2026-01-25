@@ -1,0 +1,79 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Shop-Zugang aktivieren - {{ customer.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('crm_admin.list_customers') }}">Kunden</a></li>
+        <li><a href="{{ url_for('crm_admin.show_customer', customer_id=customer.id) }}">{{ customer.customer_number }}</a></li>
+        <li>Shop-Zugang aktivieren</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-key text-primary"></i>
+        <span>Shop-Zugang aktivieren</span>
+    </h1>
+    <a href="{{ url_for('crm_admin.show_customer', customer_id=customer.id) }}" class="btn btn-ghost btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Zurück
+    </a>
+</div>
+
+<div class="max-w-xl">
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <div class="alert alert-info mb-6">
+                <i class="ti ti-info-circle"></i>
+                <div>
+                    <p><strong>{{ customer.company_name }}</strong> erhält Shop-Zugang.</p>
+                    <p class="text-sm mt-1">Login-E-Mail: <strong>{{ customer.email }}</strong></p>
+                </div>
+            </div>
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Initiales Passwort *</span>
+                    </label>
+                    <input type="password"
+                           name="password"
+                           class="input input-bordered"
+                           minlength="8"
+                           required
+                           autofocus>
+                    <label class="label">
+                        <span class="label-text-alt">Mindestens 8 Zeichen</span>
+                    </label>
+                </div>
+
+                <div class="form-control mb-6">
+                    <label class="label">
+                        <span class="label-text">Passwort bestätigen *</span>
+                    </label>
+                    <input type="password"
+                           name="password_confirm"
+                           class="input input-bordered"
+                           minlength="8"
+                           required>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-check mr-1"></i> Zugang aktivieren
+                    </button>
+                    <a href="{{ url_for('crm_admin.show_customer', customer_id=customer.id) }}" class="btn btn-ghost">
+                        Abbrechen
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

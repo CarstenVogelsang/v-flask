@@ -1,0 +1,99 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}
+{{ 'Hersteller bearbeiten' if manufacturer else 'Neuer Hersteller' }} - PIM
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('pim_admin.list_manufacturers') }}">Hersteller</a></li>
+        <li>{{ 'Bearbeiten' if manufacturer else 'Neu' }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl max-w-2xl">
+    <div class="card-body">
+        <h2 class="card-title mb-4">
+            {% if manufacturer %}
+            <i class="ti ti-edit text-primary mr-2"></i>
+            {{ manufacturer.name }}
+            {% else %}
+            <i class="ti ti-plus text-primary mr-2"></i>
+            Neuer Hersteller
+            {% endif %}
+        </h2>
+
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {# Name #}
+                <div class="form-control md:col-span-2">
+                    <label class="label">
+                        <span class="label-text">Name *</span>
+                    </label>
+                    <input type="text" name="name"
+                           value="{{ manufacturer.name if manufacturer else '' }}"
+                           class="input input-bordered" required>
+                </div>
+
+                {# Slug #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Slug (URL)</span>
+                    </label>
+                    <input type="text" name="slug"
+                           value="{{ manufacturer.slug if manufacturer else '' }}"
+                           class="input input-bordered font-mono"
+                           placeholder="wird automatisch generiert">
+                </div>
+
+                {# Website #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Website</span>
+                    </label>
+                    <input type="url" name="website"
+                           value="{{ manufacturer.website if manufacturer else '' }}"
+                           class="input input-bordered"
+                           placeholder="https://example.com">
+                </div>
+
+                {# Description #}
+                <div class="form-control md:col-span-2">
+                    <label class="label">
+                        <span class="label-text">Beschreibung</span>
+                    </label>
+                    <textarea name="description" rows="3"
+                              class="textarea textarea-bordered">{{ manufacturer.description if manufacturer else '' }}</textarea>
+                </div>
+
+                {# Active #}
+                <div class="form-control md:col-span-2">
+                    <label class="label cursor-pointer justify-start gap-4">
+                        <input type="checkbox" name="is_active"
+                               class="checkbox checkbox-success"
+                               {% if not manufacturer or manufacturer.is_active %}checked{% endif %}>
+                        <span class="label-text">Aktiv</span>
+                    </label>
+                </div>
+            </div>
+
+            {# Buttons #}
+            <div class="flex gap-2 mt-6">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-check mr-2"></i>
+                    {{ 'Speichern' if manufacturer else 'Erstellen' }}
+                </button>
+                <a href="{{ url_for('pim_admin.list_manufacturers') }}" class="btn btn-ghost">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

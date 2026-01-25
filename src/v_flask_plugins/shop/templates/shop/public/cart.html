@@ -1,0 +1,132 @@
+{% extends "shop/public/base.html" %}
+
+{% block title %}Warenkorb - Shop{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-bold flex items-center gap-2">
+        <i class="ti ti-shopping-cart text-primary"></i>
+        Warenkorb
+    </h1>
+    <p class="text-base-content/60 mt-1">{{ totals.item_count }} Artikel im Warenkorb</p>
+</div>
+
+{% if items %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Cart Items #}
+    <div class="lg:col-span-2">
+        <div class="card bg-base-100 shadow">
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Produkt</th>
+                            <th class="text-center">Menge</th>
+                            <th class="text-right">Preis</th>
+                            <th class="text-right">Gesamt</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item_data in items %}
+                        <tr class="hover">
+                            <td>
+                                <div>
+                                    <div class="font-medium">{{ item_data.product.name }}</div>
+                                    <div class="text-sm text-base-content/60">{{ item_data.product.sku }}</div>
+                                    {% if item_data.is_discounted %}
+                                    <span class="badge badge-success badge-sm">-{{ "%.0f"|format((1 - item_data.unit_price / item_data.list_price) * 100) }}%</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('shop_public.cart_update') }}" class="flex items-center justify-center gap-1">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="item_id" value="{{ item_data.item.id }}">
+                                    <input type="number"
+                                           name="quantity"
+                                           value="{{ item_data.item.quantity }}"
+                                           min="0"
+                                           class="input input-bordered input-sm w-20 text-center"
+                                           onchange="this.form.submit()">
+                                </form>
+                            </td>
+                            <td class="text-right">
+                                {% if item_data.is_discounted %}
+                                <div class="text-xs line-through text-base-content/40">{{ "%.2f"|format(item_data.list_price) }} EUR</div>
+                                {% endif %}
+                                <div>{{ "%.2f"|format(item_data.unit_price) }} EUR</div>
+                            </td>
+                            <td class="text-right font-medium">
+                                {{ "%.2f"|format(item_data.line_total) }} EUR
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('shop_public.cart_remove') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="item_id" value="{{ item_data.item.id }}">
+                                    <button type="submit" class="btn btn-ghost btn-sm btn-square text-error">
+                                        <i class="ti ti-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# Cart Summary #}
+    <div class="lg:col-span-1">
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">Zusammenfassung</h2>
+
+                <div class="divider my-2"></div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Zwischensumme</span>
+                        <span>{{ "%.2f"|format(totals.subtotal) }} EUR</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">MwSt. ({{ "%.0f"|format(totals.tax_rate) }}%)</span>
+                        <span>{{ "%.2f"|format(totals.tax_amount) }} EUR</span>
+                    </div>
+                </div>
+
+                <div class="divider my-2"></div>
+
+                <div class="flex justify-between text-lg font-bold">
+                    <span>Gesamt</span>
+                    <span>{{ "%.2f"|format(totals.total) }} EUR</span>
+                </div>
+
+                <a href="{{ url_for('shop_public.checkout') }}" class="btn btn-primary btn-block mt-4">
+                    <i class="ti ti-credit-card"></i>
+                    Zur Kasse
+                </a>
+
+                <a href="{{ url_for('shop_public.home') }}" class="btn btn-ghost btn-block mt-2">
+                    <i class="ti ti-arrow-left"></i>
+                    Weiter einkaufen
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card bg-base-100 shadow">
+    <div class="card-body items-center text-center py-12">
+        <i class="ti ti-shopping-cart-off text-6xl text-base-content/30 mb-4"></i>
+        <h2 class="card-title text-base-content/60">Ihr Warenkorb ist leer</h2>
+        <p class="text-base-content/50 mb-4">Fügen Sie Produkte hinzu, um eine Bestellung aufzugeben.</p>
+        <a href="{{ url_for('shop_public.home') }}" class="btn btn-primary">
+            <i class="ti ti-shopping-bag"></i>
+            Jetzt einkaufen
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

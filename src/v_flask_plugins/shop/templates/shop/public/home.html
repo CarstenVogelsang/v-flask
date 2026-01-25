@@ -1,0 +1,43 @@
+{% extends "shop/public/base.html" %}
+
+{% block title %}Shop - Kategorien{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-bold flex items-center gap-2">
+        <i class="ti ti-category text-primary"></i>
+        Kategorien
+    </h1>
+    <p class="text-base-content/60 mt-1">Wählen Sie eine Kategorie, um Produkte anzuzeigen.</p>
+</div>
+
+{% if categories %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    {% for category in categories %}
+    <a href="{{ url_for('shop_public.category', slug=category.slug) }}"
+       class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+        <div class="card-body">
+            <h2 class="card-title">
+                <i class="ti ti-folder text-primary"></i>
+                {{ category.name }}
+            </h2>
+            {% if category.description %}
+            <p class="text-base-content/60 text-sm">{{ category.description }}</p>
+            {% endif %}
+            <div class="card-actions justify-end mt-2">
+                <span class="text-sm text-primary">Produkte ansehen →</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card bg-base-100 shadow">
+    <div class="card-body items-center text-center py-12">
+        <i class="ti ti-folder-off text-6xl text-base-content/30 mb-4"></i>
+        <h2 class="card-title text-base-content/60">Keine Kategorien vorhanden</h2>
+        <p class="text-base-content/50">Es wurden noch keine Produktkategorien angelegt.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

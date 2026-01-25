@@ -1,0 +1,101 @@
+{% extends "shop/public/base.html" %}
+
+{% block title %}{{ product.product.name }} - Shop{% endblock %}
+
+{% block content %}
+{# Breadcrumbs #}
+<div class="breadcrumbs text-sm mb-4">
+    <ul>
+        <li><a href="{{ url_for('shop_public.home') }}"><i class="ti ti-home"></i> Shop</a></li>
+        {% if product.product.category %}
+        <li><a href="{{ url_for('shop_public.category', slug=product.product.category.slug) }}">{{ product.product.category.name }}</a></li>
+        {% endif %}
+        <li>{{ product.product.name }}</li>
+    </ul>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {# Product Image (Placeholder) #}
+    <div class="card bg-base-100 shadow">
+        <figure class="px-10 pt-10">
+            <div class="bg-base-200 rounded-xl w-full h-64 flex items-center justify-center">
+                <i class="ti ti-photo text-6xl text-base-content/20"></i>
+            </div>
+        </figure>
+    </div>
+
+    {# Product Details #}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h1 class="text-2xl font-bold">{{ product.product.name }}</h1>
+            <p class="text-base-content/60">Art.-Nr.: {{ product.product.sku }}</p>
+
+            {% if product.product.description %}
+            <div class="mt-4">
+                <p class="text-base-content/80">{{ product.product.description }}</p>
+            </div>
+            {% endif %}
+
+            {# Price Display #}
+            <div class="mt-6 p-4 bg-base-200 rounded-lg">
+                {% if product.is_discounted %}
+                <div class="text-sm line-through text-base-content/40">
+                    Listenpreis: {{ "%.2f"|format(product.list_price) }} EUR
+                </div>
+                <div class="text-3xl font-bold text-success">
+                    {{ "%.2f"|format(product.final_price) }} EUR
+                </div>
+                <div class="badge badge-success mt-1">
+                    Sie sparen {{ "%.0f"|format(product.discount_percent) }}%
+                </div>
+                {% else %}
+                <div class="text-3xl font-bold">
+                    {{ "%.2f"|format(product.final_price) }} EUR
+                </div>
+                {% endif %}
+                <p class="text-sm text-base-content/60 mt-2">zzgl. MwSt.</p>
+            </div>
+
+            {# Add to Cart Form #}
+            <form method="POST" action="{{ url_for('shop_public.cart_add') }}" class="mt-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="product_id" value="{{ product.product.id }}">
+
+                <div class="flex items-end gap-4">
+                    <div class="form-control w-24">
+                        <label class="label">
+                            <span class="label-text">Menge</span>
+                        </label>
+                        <input type="number"
+                               name="quantity"
+                               value="1"
+                               min="1"
+                               class="input input-bordered">
+                    </div>
+                    <button type="submit" class="btn btn-primary flex-1">
+                        <i class="ti ti-shopping-cart-plus"></i>
+                        In den Warenkorb
+                    </button>
+                </div>
+            </form>
+
+            {# Stock Info (if available) #}
+            {% if product.product.stock_quantity is defined %}
+            <div class="mt-4">
+                {% if product.product.stock_quantity > 0 %}
+                <span class="badge badge-success badge-outline">
+                    <i class="ti ti-check mr-1"></i>
+                    Auf Lager ({{ product.product.stock_quantity }} verfügbar)
+                </span>
+                {% else %}
+                <span class="badge badge-warning badge-outline">
+                    <i class="ti ti-clock mr-1"></i>
+                    Nicht auf Lager
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

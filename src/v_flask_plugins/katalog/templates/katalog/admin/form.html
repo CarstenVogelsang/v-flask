@@ -1,0 +1,167 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{{ 'Katalog bearbeiten' if pdf else 'Neuer Katalog' }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="text-sm breadcrumbs">
+        <ul>
+            <li><a href="{{ url_for('katalog_admin.list_pdfs') }}">Kataloge</a></li>
+            <li>{{ 'Bearbeiten' if pdf else 'Neu' }}</li>
+        </ul>
+    </div>
+    <h1 class="text-2xl font-bold mt-2">
+        {{ 'Katalog bearbeiten' if pdf else 'Neuer Katalog' }}
+    </h1>
+</div>
+
+<form method="POST" enctype="multipart/form-data" class="max-w-2xl">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <!-- Title -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Titel *</span>
+                </label>
+                <input type="text"
+                       name="title"
+                       value="{{ pdf.title if pdf else '' }}"
+                       class="input input-bordered"
+                       required
+                       placeholder="z.B. Hauptkatalog 2026">
+            </div>
+
+            <!-- Description -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Beschreibung</span>
+                </label>
+                <textarea name="description"
+                          class="textarea textarea-bordered h-24"
+                          placeholder="Optionale Beschreibung des Katalogs">{{ pdf.description if pdf else '' }}</textarea>
+            </div>
+
+            <!-- Category -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Kategorie</span>
+                </label>
+                <select name="kategorie_id" class="select select-bordered">
+                    <option value="">— Keine Kategorie —</option>
+                    {% for kat in categories %}
+                    <option value="{{ kat.id }}"
+                            {{ 'selected' if pdf and pdf.kategorie_id == kat.id }}>
+                        {{ kat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Year -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Jahr</span>
+                </label>
+                <input type="number"
+                       name="year"
+                       value="{{ pdf.year if pdf and pdf.year else '' }}"
+                       class="input input-bordered w-32"
+                       min="2000"
+                       max="2100"
+                       placeholder="{{ 'now'|strftime('%Y') }}">
+            </div>
+
+            <div class="divider">PDF-Datei</div>
+
+            <!-- PDF Upload -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">{{ 'Neue PDF-Datei (optional)' if pdf else 'PDF-Datei *' }}</span>
+                </label>
+                {% if pdf %}
+                <div class="alert alert-info mb-2">
+                    <i class="ti ti-file-type-pdf"></i>
+                    <span>Aktuelle Datei: {{ pdf.file_size_display }}</span>
+                </div>
+                {% endif %}
+                <input type="file"
+                       name="pdf_file"
+                       accept=".pdf"
+                       class="file-input file-input-bordered"
+                       {{ 'required' if not pdf }}>
+                <label class="label">
+                    <span class="label-text-alt">Nur PDF-Dateien, max. 50 MB</span>
+                </label>
+            </div>
+
+            <div class="divider">Cover-Bild</div>
+
+            <!-- Cover Image -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Cover-Bild (optional)</span>
+                </label>
+                {% if pdf and pdf.cover_image_path %}
+                <div class="flex items-center gap-4 mb-2">
+                    <img src="{{ url_for('katalog.serve_cover', pdf_id=pdf.id) }}"
+                         alt="Cover"
+                         class="w-24 h-32 object-cover rounded border">
+                    <label class="cursor-pointer flex items-center gap-2">
+                        <input type="checkbox" name="delete_cover" class="checkbox checkbox-error checkbox-sm">
+                        <span class="text-sm">Cover löschen</span>
+                    </label>
+                </div>
+                {% endif %}
+                <input type="file"
+                       name="cover_image"
+                       accept=".png,.jpg,.jpeg,.webp"
+                       class="file-input file-input-bordered">
+                <label class="label">
+                    <span class="label-text-alt">PNG, JPG oder WebP, empfohlen: 400×600 px</span>
+                </label>
+            </div>
+
+            <div class="divider">Einstellungen</div>
+
+            <!-- Sort Order -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Sortierung</span>
+                </label>
+                <input type="number"
+                       name="sort_order"
+                       value="{{ pdf.sort_order if pdf else 0 }}"
+                       class="input input-bordered w-24"
+                       min="0">
+                <label class="label">
+                    <span class="label-text-alt">Niedrigere Zahlen werden zuerst angezeigt</span>
+                </label>
+            </div>
+
+            <!-- Active -->
+            <div class="form-control">
+                <label class="cursor-pointer label justify-start gap-4">
+                    <input type="checkbox"
+                           name="is_active"
+                           class="checkbox checkbox-primary"
+                           {{ 'checked' if not pdf or pdf.is_active }}>
+                    <span class="label-text">Aktiv (öffentlich sichtbar)</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-2 mt-6">
+        <a href="{{ url_for('katalog_admin.list_pdfs') }}" class="btn btn-ghost">
+            Abbrechen
+        </a>
+        <button type="submit" class="btn btn-primary">
+            <i class="ti ti-device-floppy mr-2"></i>
+            {{ 'Speichern' if pdf else 'Hochladen' }}
+        </button>
+    </div>
+</form>
+{% endblock %}

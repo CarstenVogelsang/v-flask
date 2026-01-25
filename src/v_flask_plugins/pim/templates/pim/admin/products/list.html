@@ -1,0 +1,218 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Produkte - PIM{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li>Produkte</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title row with action buttons #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-package text-primary"></i>
+        <span>Produkte</span>
+
+        {# Settings Button #}
+        {% if plugin_has_settings('pim') %}
+        <a href="{{ plugin_settings_url('pim') }}"
+           class="btn btn-ghost btn-sm btn-circle ml-2"
+           title="Einstellungen">
+            <i class="ti ti-adjustments text-lg"></i>
+        </a>
+        {% endif %}
+
+        {# Help Button #}
+        <a href="{{ plugin_help_url('pim') }}"
+           class="btn btn-ghost btn-sm btn-circle"
+           title="Hilfe">
+            <i class="ti ti-info-circle text-lg"></i>
+        </a>
+    </h1>
+
+    <a href="{{ url_for('pim_admin.new_product') }}" class="btn btn-primary">
+        <i class="ti ti-plus mr-2"></i>
+        Neues Produkt
+    </a>
+</div>
+
+{# Filter row #}
+<div class="card bg-base-100 shadow mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            {# Search #}
+            <div class="form-control">
+                <label class="label py-0">
+                    <span class="label-text text-xs">Suche</span>
+                </label>
+                <input type="text" name="search" value="{{ search }}"
+                       placeholder="Name, SKU, EAN..."
+                       class="input input-bordered input-sm w-64">
+            </div>
+
+            {# Category filter #}
+            <div class="form-control">
+                <label class="label py-0">
+                    <span class="label-text text-xs">Kategorie</span>
+                </label>
+                <select name="category" class="select select-bordered select-sm">
+                    <option value="">Alle Kategorien</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if cat.id == selected_category %}selected{% endif %}>
+                        {{ cat.full_path }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Show inactive #}
+            <div class="form-control">
+                <label class="label cursor-pointer gap-2">
+                    <input type="checkbox" name="show_inactive" value="1"
+                           class="checkbox checkbox-sm"
+                           {% if show_inactive %}checked{% endif %}>
+                    <span class="label-text text-xs">Inaktive zeigen</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-ghost">
+                <i class="ti ti-filter"></i>
+                Filtern
+            </button>
+
+            {% if search or selected_category or show_inactive %}
+            <a href="{{ url_for('pim_admin.list_products') }}" class="btn btn-sm btn-ghost">
+                <i class="ti ti-x"></i>
+                Zurücksetzen
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{# Products table #}
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Bild</th>
+                        <th>SKU</th>
+                        <th>Name</th>
+                        <th>Kategorie</th>
+                        <th class="text-right">Preis (netto)</th>
+                        <th class="text-right">Bestand</th>
+                        <th>Status</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr class="{% if not product.is_active %}opacity-50{% endif %}">
+                        <td>
+                            {% if product.main_image_url %}
+                            <div class="avatar">
+                                <div class="w-12 h-12 rounded">
+                                    <img src="{{ product.main_image_url }}" alt="{{ product.name }}">
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="avatar placeholder">
+                                <div class="bg-neutral text-neutral-content rounded w-12 h-12">
+                                    <i class="ti ti-photo-off"></i>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code class="text-xs">{{ product.sku }}</code>
+                            {% if product.barcode %}
+                            <br>
+                            <span class="text-xs text-gray-500">{{ product.barcode_type }}: {{ product.barcode }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="font-medium">{{ product.name }}</div>
+                            {% if product.manufacturer %}
+                            <span class="text-xs text-gray-500">{{ product.manufacturer.name }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.category %}
+                            <span class="badge badge-ghost badge-sm">{{ product.category.name }}</span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right font-mono">
+                            {{ "%.2f"|format(product.price_net) }} €
+                        </td>
+                        <td class="text-right">
+                            <span class="{% if product.is_low_stock %}text-error font-bold{% endif %}">
+                                {{ product.stock_quantity|int }} {{ product.stock_unit }}
+                            </span>
+                            {% if product.is_low_stock %}
+                            <span class="badge badge-error badge-xs ml-1" title="Unter Mindestbestand">!</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.is_active %}
+                            <span class="badge badge-success badge-sm">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-ghost badge-sm">Inaktiv</span>
+                            {% endif %}
+                            {% if product.is_featured %}
+                            <span class="badge badge-warning badge-sm ml-1">★</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="flex gap-1">
+                                <a href="{{ url_for('pim_admin.edit_product', product_id=product.id) }}"
+                                   class="btn btn-ghost btn-sm btn-square"
+                                   title="Bearbeiten">
+                                    <i class="ti ti-edit"></i>
+                                </a>
+                                <form action="{{ url_for('pim_admin.delete_product', product_id=product.id) }}"
+                                      method="post" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit"
+                                            class="btn btn-ghost btn-sm btn-square text-error"
+                                            title="Deaktivieren"
+                                            onclick="return confirm('Produkt wirklich deaktivieren?')">
+                                        <i class="ti ti-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-gray-500 py-8">
+                            <i class="ti ti-package-off text-4xl mb-2"></i>
+                            <p>Keine Produkte gefunden.</p>
+                            <a href="{{ url_for('pim_admin.new_product') }}" class="btn btn-primary btn-sm mt-4">
+                                <i class="ti ti-plus mr-1"></i>
+                                Erstes Produkt anlegen
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Summary #}
+        {% if products %}
+        <div class="text-sm text-gray-500 mt-4">
+            {{ products|length }} Produkt{% if products|length != 1 %}e{% endif %} gefunden
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

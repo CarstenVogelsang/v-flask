@@ -1,0 +1,119 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Kataloge verwalten{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold">PDF-Kataloge</h1>
+        <p class="text-base-content/70">{{ pdfs|length }} Kataloge</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{{ url_for('katalog_admin.list_categories') }}" class="btn btn-outline">
+            <i class="ti ti-category mr-2"></i>Kategorien
+        </a>
+        <a href="{{ url_for('katalog_admin.new_pdf') }}" class="btn btn-primary">
+            <i class="ti ti-upload mr-2"></i>Neuer Katalog
+        </a>
+    </div>
+</div>
+
+{% if pdfs %}
+<div class="overflow-x-auto">
+    <table class="table table-zebra">
+        <thead>
+            <tr>
+                <th>Cover</th>
+                <th>Titel</th>
+                <th>Kategorie</th>
+                <th>Jahr</th>
+                <th>Größe</th>
+                <th>Downloads</th>
+                <th>Status</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pdf in pdfs %}
+            <tr>
+                <td>
+                    {% if pdf.cover_image_path %}
+                    <img src="{{ url_for('katalog.serve_cover', pdf_id=pdf.id) }}"
+                         alt=""
+                         class="w-12 h-16 object-cover rounded">
+                    {% else %}
+                    <div class="w-12 h-16 bg-base-200 rounded flex items-center justify-center">
+                        <i class="ti ti-file-type-pdf text-xl text-base-content/30"></i>
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="font-medium">{{ pdf.title }}</div>
+                    {% if pdf.description %}
+                    <div class="text-sm text-base-content/60 truncate max-w-xs">{{ pdf.description }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if pdf.kategorie %}
+                    <span class="badge badge-ghost">{{ pdf.kategorie.name }}</span>
+                    {% else %}
+                    <span class="text-base-content/40">—</span>
+                    {% endif %}
+                </td>
+                <td>{{ pdf.year or '—' }}</td>
+                <td>{{ pdf.file_size_display }}</td>
+                <td>
+                    <span class="text-sm">
+                        <i class="ti ti-download mr-1"></i>{{ pdf.download_count }}
+                    </span>
+                    <span class="text-sm ml-2">
+                        <i class="ti ti-eye mr-1"></i>{{ pdf.view_count }}
+                    </span>
+                </td>
+                <td>
+                    {% if pdf.is_active %}
+                    <span class="badge badge-success badge-sm">Aktiv</span>
+                    {% else %}
+                    <span class="badge badge-ghost badge-sm">Inaktiv</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="flex gap-1">
+                        <a href="{{ url_for('katalog.view', pdf_id=pdf.id) }}"
+                           target="_blank"
+                           class="btn btn-ghost btn-xs"
+                           title="Vorschau">
+                            <i class="ti ti-eye"></i>
+                        </a>
+                        <a href="{{ url_for('katalog_admin.edit_pdf', pdf_id=pdf.id) }}"
+                           class="btn btn-ghost btn-xs"
+                           title="Bearbeiten">
+                            <i class="ti ti-edit"></i>
+                        </a>
+                        <form action="{{ url_for('katalog_admin.delete_pdf', pdf_id=pdf.id) }}"
+                              method="POST"
+                              class="inline"
+                              onsubmit="return confirm('Katalog wirklich löschen?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-ghost btn-xs text-error" title="Löschen">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-16">
+    <i class="ti ti-file-type-pdf text-6xl text-base-content/20 mb-4"></i>
+    <h2 class="text-xl font-semibold mb-2">Noch keine Kataloge</h2>
+    <p class="text-base-content/70 mb-4">Laden Sie Ihren ersten PDF-Katalog hoch.</p>
+    <a href="{{ url_for('katalog_admin.new_pdf') }}" class="btn btn-primary">
+        <i class="ti ti-upload mr-2"></i>Katalog hochladen
+    </a>
+</div>
+{% endif %}
+{% endblock %}

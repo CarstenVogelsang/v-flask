@@ -1,0 +1,13 @@
+{# CTA Section Preview Partial #}
+{# Expects: rendered (HTML string), variant (str) #}
+
+{% if rendered %}
+<div class="preview-wrapper">
+    {{ rendered|safe }}
+</div>
+{% else %}
+<div class="p-6 bg-base-200 rounded-lg text-center">
+    <i class="ti ti-eye-off text-3xl text-base-content/30 mb-2"></i>
+    <p class="text-base-content/50 text-sm">Keine Vorschau verfügbar</p>
+</div>
+{% endif %}

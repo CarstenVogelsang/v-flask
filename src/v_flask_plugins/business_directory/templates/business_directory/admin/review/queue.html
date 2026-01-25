@@ -1,0 +1,209 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Review Queue - Business Directory{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">
+            <i class="ti ti-clipboard-check mr-2"></i>
+            Review Queue
+        </h1>
+    </div>
+
+    {# Statistik-Badges #}
+    <div class="flex gap-4 mb-6">
+        <div class="badge badge-lg badge-warning gap-2">
+            <i class="ti ti-clock"></i>
+            {{ pending_entries|length }} Einträge zur Prüfung
+        </div>
+        <div class="badge badge-lg badge-info gap-2">
+            <i class="ti ti-user-check"></i>
+            {{ pending_claims|length }} Claim-Anfragen
+        </div>
+    </div>
+
+    {# Pending Entries #}
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <h2 class="card-title">
+                <i class="ti ti-building-store mr-2"></i>
+                Einträge zur Prüfung
+            </h2>
+
+            {% if pending_entries %}
+            <div class="overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Typ</th>
+                            <th>Ort</th>
+                            <th>Erstellt</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in pending_entries %}
+                        <tr>
+                            <td>
+                                <div class="font-medium">{{ entry.name }}</div>
+                                {% if entry.email %}
+                                <div class="text-sm text-base-content/60">{{ entry.email }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.directory_type %}
+                                <span class="badge badge-outline">
+                                    <i class="ti {{ entry.directory_type.icon }} mr-1"></i>
+                                    {{ entry.directory_type.name }}
+                                </span>
+                                {% else %}
+                                <span class="text-base-content/40">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.geo_ort %}
+                                <div>{{ entry.geo_ort.name }}</div>
+                                <div class="text-sm text-base-content/60">{{ entry.geo_ort.plz }}</div>
+                                {% elif entry.strasse %}
+                                <div class="text-sm">{{ entry.strasse }}</div>
+                                {% else %}
+                                <span class="text-base-content/40">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="text-sm">
+                                    {{ entry.created_at.strftime('%d.%m.%Y') if entry.created_at else '-' }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex gap-1">
+                                    <a href="{{ url_for('business_directory_admin.edit_entry', entry_id=entry.id) }}"
+                                       class="btn btn-ghost btn-sm" title="Bearbeiten & Prüfen">
+                                        <i class="ti ti-edit"></i>
+                                    </a>
+                                    <form action="{{ url_for('business_directory_admin.activate_entry', entry_id=entry.id) }}"
+                                          method="post" class="inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-success btn-sm" title="Freigeben">
+                                            <i class="ti ti-check"></i>
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('business_directory_admin.delete_entry', entry_id=entry.id) }}"
+                                          method="post" class="inline"
+                                          onsubmit="return confirm('Eintrag wirklich ablehnen und löschen?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-error btn-sm" title="Ablehnen">
+                                            <i class="ti ti-x"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <i class="ti ti-circle-check"></i>
+                <span>Keine Einträge zur Prüfung vorhanden. Alles erledigt!</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Pending Claims #}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">
+                <i class="ti ti-user-check mr-2"></i>
+                Ownership-Anfragen (Claims)
+            </h2>
+
+            {% if pending_claims %}
+            <div class="overflow-x-auto">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Eintrag</th>
+                            <th>Antragsteller</th>
+                            <th>Begründung</th>
+                            <th>Datum</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for claim in pending_claims %}
+                        <tr>
+                            <td>
+                                {% if claim.entry %}
+                                <div class="font-medium">{{ claim.entry.name }}</div>
+                                {% if claim.entry.directory_type %}
+                                <div class="text-sm text-base-content/60">
+                                    {{ claim.entry.directory_type.name }}
+                                </div>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-base-content/40">Eintrag gelöscht</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if claim.user %}
+                                <div>{{ claim.user.email }}</div>
+                                {% if claim.user.name %}
+                                <div class="text-sm text-base-content/60">{{ claim.user.name }}</div>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-base-content/40">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="max-w-xs truncate" title="{{ claim.reason or '' }}">
+                                    {{ claim.reason or '-' }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-sm">
+                                    {{ claim.created_at.strftime('%d.%m.%Y') if claim.created_at else '-' }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex gap-1">
+                                    <a href="{{ url_for('business_directory_admin.view_claim', claim_id=claim.id) }}"
+                                       class="btn btn-ghost btn-sm" title="Details anzeigen">
+                                        <i class="ti ti-eye"></i>
+                                    </a>
+                                    <form action="{{ url_for('business_directory_admin.approve_claim', claim_id=claim.id) }}"
+                                          method="post" class="inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-success btn-sm" title="Genehmigen">
+                                            <i class="ti ti-check"></i>
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('business_directory_admin.reject_claim', claim_id=claim.id) }}"
+                                          method="post" class="inline"
+                                          onsubmit="return confirm('Claim-Anfrage wirklich ablehnen?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-error btn-sm" title="Ablehnen">
+                                            <i class="ti ti-x"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <i class="ti ti-circle-check"></i>
+                <span>Keine Claim-Anfragen vorhanden.</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

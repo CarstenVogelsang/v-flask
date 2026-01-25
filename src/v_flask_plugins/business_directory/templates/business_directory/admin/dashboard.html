@@ -1,0 +1,146 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Business Directory - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <h1 class="text-2xl font-bold mb-6">Business Directory</h1>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="stat bg-base-100 shadow rounded-box">
+            <div class="stat-figure text-primary">
+                <i class="ti ti-building-store text-3xl"></i>
+            </div>
+            <div class="stat-title">Einträge gesamt</div>
+            <div class="stat-value text-primary">{{ stats.total_entries }}</div>
+        </div>
+
+        <div class="stat bg-base-100 shadow rounded-box">
+            <div class="stat-figure text-success">
+                <i class="ti ti-check text-3xl"></i>
+            </div>
+            <div class="stat-title">Aktiv</div>
+            <div class="stat-value text-success">{{ stats.active_entries }}</div>
+        </div>
+
+        <div class="stat bg-base-100 shadow rounded-box">
+            <div class="stat-figure text-warning">
+                <i class="ti ti-clock text-3xl"></i>
+            </div>
+            <div class="stat-title">Zur Prüfung</div>
+            <div class="stat-value text-warning">{{ stats.pending_entries }}</div>
+            {% if stats.pending_entries > 0 %}
+            <div class="stat-actions">
+                <a href="{{ url_for('business_directory_admin.review_queue') }}" class="btn btn-xs btn-warning">
+                    Prüfen
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="stat bg-base-100 shadow rounded-box">
+            <div class="stat-figure text-info">
+                <i class="ti ti-certificate text-3xl"></i>
+            </div>
+            <div class="stat-title">Offene Claims</div>
+            <div class="stat-value text-info">{{ stats.pending_claims }}</div>
+            {% if stats.pending_claims > 0 %}
+            <div class="stat-actions">
+                <a href="{{ url_for('business_directory_admin.review_queue') }}" class="btn btn-xs btn-info">
+                    Prüfen
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <a href="{{ url_for('business_directory_admin.list_entries') }}" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-list text-primary"></i>
+                    Einträge verwalten
+                </h2>
+                <p>Alle Verzeichniseinträge anzeigen und bearbeiten.</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('business_directory_admin_types.list_types') }}" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-category text-primary"></i>
+                    Verzeichnistypen
+                </h2>
+                <p>Typen wie "Händler" oder "Hersteller" konfigurieren.</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('business_directory_admin_geodaten.index') }}" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-map-2 text-primary"></i>
+                    Geodaten
+                </h2>
+                <p>Länder, Bundesländer, Kreise und Orte importieren.</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- Types Overview -->
+    {% if stats.types %}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Verzeichnistypen</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Typ</th>
+                            <th>Aktive Einträge</th>
+                            <th>Zur Prüfung</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for type in stats.types %}
+                        <tr>
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <i class="ti {{ type.icon }} text-xl text-primary"></i>
+                                    <div>
+                                        <div class="font-bold">{{ type.name }}</div>
+                                        <div class="text-sm opacity-50">{{ type.slug }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ type.entries.filter_by(active=True).count() }}</td>
+                            <td>{{ type.entries.filter_by(active=False).count() }}</td>
+                            <td>
+                                <a href="{{ url_for('business_directory_admin.list_entries', type=type.id) }}"
+                                   class="btn btn-ghost btn-sm">
+                                    Anzeigen
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="ti ti-info-circle"></i>
+        <div>
+            <h3 class="font-bold">Erste Schritte</h3>
+            <p>Erstellen Sie zunächst einen Verzeichnistyp, um Einträge hinzuzufügen.</p>
+        </div>
+        <a href="{{ url_for('business_directory_admin_types.create_type') }}" class="btn btn-primary btn-sm">
+            Typ erstellen
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

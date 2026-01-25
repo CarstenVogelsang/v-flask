@@ -1,0 +1,45 @@
+{#
+    CTA Variant: Alert
+    A prominent centered alert box with icon, title, description,
+    CTA button, and optional feature highlights.
+    Best for empty states or high-impact placements.
+
+    Expected context:
+        - title: Rendered title text
+        - description: Rendered description text
+        - cta_text: Button text (optional)
+        - cta_link: Button URL (optional)
+#}
+<div class="card bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-dashed border-amber-300">
+    <div class="card-body text-center py-12">
+        <div class="text-5xl mb-4">☕</div>
+        <h3 class="text-xl font-bold text-amber-800 mb-2">
+            {{ title }}
+        </h3>
+        {% if description %}
+        <p class="text-amber-700 mb-6 max-w-md mx-auto">
+            {{ description }}
+        </p>
+        {% endif %}
+        {% if cta_text and cta_link %}
+        <a href="{{ cta_link }}" class="btn btn-primary btn-lg gap-2">
+            <i class="ti ti-plus"></i>
+            {{ cta_text }}
+        </a>
+        {% endif %}
+        <div class="flex flex-wrap justify-center gap-4 mt-6 text-sm text-amber-600">
+            <span class="flex items-center gap-1">
+                <i class="ti ti-check"></i>
+                Kostenloser Basiseintrag
+            </span>
+            <span class="flex items-center gap-1">
+                <i class="ti ti-check"></i>
+                Selbstverwaltung
+            </span>
+            <span class="flex items-center gap-1">
+                <i class="ti ti-check"></i>
+                Sofort sichtbar
+            </span>
+        </div>
+    </div>
+</div>

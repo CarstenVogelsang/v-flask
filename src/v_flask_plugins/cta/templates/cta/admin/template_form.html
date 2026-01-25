@@ -1,0 +1,268 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{% if template %}Vorlage bearbeiten{% else %}Neue Vorlage{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    {# Title Bar #}
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+            <i class="ti ti-template text-primary"></i>
+            <span>{% if template %}{{ template.name }}{% else %}Neue Vorlage{% endif %}</span>
+        </h1>
+        <div class="flex gap-2">
+            {% if template %}
+            <button type="button"
+                    onclick="document.getElementById('delete-modal').showModal()"
+                    class="btn btn-ghost btn-sm text-error">
+                <i class="ti ti-trash mr-1"></i> Löschen
+            </button>
+            {% endif %}
+            <a href="{{ url_for('cta_admin.list_templates') }}" class="btn btn-ghost btn-sm">
+                <i class="ti ti-arrow-left mr-1"></i> Zurück
+            </a>
+            <button type="submit" form="template-form" class="btn btn-primary btn-sm">
+                <i class="ti ti-device-floppy mr-1"></i> Speichern
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-2xl">
+        <form method="post"
+              action="{% if template %}{{ url_for('cta_admin.edit_template', template_id=template.id) }}{% else %}{{ url_for('cta_admin.create_template') }}{% endif %}"
+              id="template-form">
+
+            {# Basic Info #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-info-circle"></i>
+                        Grundeinstellungen
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Name</span>
+                            </label>
+                            <input type="text" name="name"
+                                   value="{{ template.name or '' if template else '' }}"
+                                   class="input input-bordered"
+                                   placeholder="z.B. Anbieter-Aufruf"
+                                   required>
+                            <label class="label">
+                                <span class="label-text-alt">Anzeigename im Admin</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Slug</span>
+                            </label>
+                            <input type="text" name="slug"
+                                   value="{{ template.slug or '' if template else '' }}"
+                                   class="input input-bordered"
+                                   placeholder="anbieter_aufruf"
+                                   pattern="[a-z0-9_]+"
+                                   {% if template %}readonly{% endif %}
+                                   required>
+                            <label class="label">
+                                <span class="label-text-alt">
+                                    {% if template %}Kann nicht geändert werden{% else %}Nur Kleinbuchstaben, Zahlen, Unterstriche{% endif %}
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {% if template %}
+                    <div class="form-control mt-4">
+                        <label class="label cursor-pointer justify-start gap-2">
+                            <input type="checkbox" name="active" value="1"
+                                   class="checkbox checkbox-primary"
+                                   {% if template.active %}checked{% endif %}>
+                            <span class="label-text">Aktiv</span>
+                        </label>
+                        <label class="label">
+                            <span class="label-text-alt">Inaktive Vorlagen können nicht ausgewählt werden</span>
+                        </label>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Text Content #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-text-size"></i>
+                        Text-Inhalt
+                    </h2>
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text">Titel</span>
+                        </label>
+                        <input type="text" name="titel"
+                               value="{{ template.titel or '' if template else '' }}"
+                               class="input input-bordered"
+                               placeholder="Ihr Lokal fehlt in {{ '{{ ort.name }}' }}?"
+                               required>
+                        <label class="label">
+                            <span class="label-text-alt">Kann Platzhalter enthalten</span>
+                        </label>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Beschreibung</span>
+                        </label>
+                        <textarea name="beschreibung"
+                                  class="textarea textarea-bordered"
+                                  rows="4"
+                                  placeholder="Tragen Sie Ihr Frühstückslokal jetzt kostenlos auf {{ '{{ plattform.name }}' }} ein..."
+                                  required>{{ template.beschreibung or '' if template else '' }}</textarea>
+                        <label class="label">
+                            <span class="label-text-alt">Kann Platzhalter enthalten</span>
+                        </label>
+                    </div>
+
+                    {# Placeholder Reference #}
+                    <div class="alert alert-info mt-4">
+                        <i class="ti ti-variable"></i>
+                        <div>
+                            <p class="font-medium text-sm">Verfügbare Platzhalter</p>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                {% for placeholder in placeholders %}
+                                <code class="bg-base-200 px-1 rounded text-xs cursor-pointer hover:bg-base-300"
+                                      onclick="copyToClipboard('{{ placeholder }}')"
+                                      title="Klicken zum Kopieren">{{ placeholder }}</code>
+                                {% endfor %}
+                            </div>
+                            <p class="text-xs mt-2 opacity-70">Klicke zum Kopieren</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Preview #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-eye"></i>
+                        Vorschau
+                    </h2>
+                    <p class="text-sm text-base-content/60 mb-4">
+                        So sieht die Vorlage mit Beispieldaten aus:
+                    </p>
+
+                    <div id="preview-container" class="p-4 bg-base-200 rounded-lg">
+                        <div class="card bg-base-100 shadow">
+                            <div class="card-body">
+                                <h3 class="card-title text-lg" id="preview-title">
+                                    {% if template %}
+                                    {{ template.titel | replace('{{ plattform.name }}', 'fruehstuecken.click') | replace('{{ ort.name }}', 'Kleve') | replace('{{ kreis.name }}', 'Kleve') | replace('{{ bundesland.name }}', 'NRW') }}
+                                    {% else %}
+                                    Ihr Titel erscheint hier
+                                    {% endif %}
+                                </h3>
+                                <p class="text-sm" id="preview-beschreibung">
+                                    {% if template %}
+                                    {{ template.beschreibung | replace('{{ plattform.name }}', 'fruehstuecken.click') | replace('{{ ort.name }}', 'Kleve') | replace('{{ kreis.name }}', 'Kleve') | replace('{{ bundesland.name }}', 'NRW') }}
+                                    {% else %}
+                                    Ihre Beschreibung erscheint hier
+                                    {% endif %}
+                                </p>
+                                <div class="card-actions justify-end">
+                                    <span class="btn btn-primary btn-sm">Button-Text</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Delete Confirmation Modal #}
+{% if template %}
+<dialog id="delete-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg text-error">
+            <i class="ti ti-alert-triangle mr-2"></i>Vorlage löschen
+        </h3>
+        {% if template.cta_sections.count() > 0 %}
+        <div class="alert alert-error my-4">
+            <i class="ti ti-alert-circle"></i>
+            <span>Diese Vorlage wird von {{ template.cta_sections.count() }} CTA Sections verwendet und kann nicht gelöscht werden.</span>
+        </div>
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-ghost">Schließen</button>
+            </form>
+        </div>
+        {% else %}
+        <p class="py-4">
+            Diese Aktion kann nicht rückgängig gemacht werden.
+        </p>
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-ghost">Abbrechen</button>
+            </form>
+            <form method="post" action="{{ url_for('cta_admin.delete_template', template_id=template.id) }}">
+                <button type="submit" class="btn btn-error">
+                    <i class="ti ti-trash mr-1"></i> Endgültig löschen
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+{% endif %}
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Visual feedback
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-top toast-end';
+        toast.innerHTML = '<div class="alert alert-success"><span>Kopiert: ' + text + '</span></div>';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    });
+}
+
+// Live preview update
+document.addEventListener('DOMContentLoaded', function() {
+    const titelInput = document.querySelector('input[name="titel"]');
+    const beschreibungInput = document.querySelector('textarea[name="beschreibung"]');
+    const previewTitle = document.getElementById('preview-title');
+    const previewBeschreibung = document.getElementById('preview-beschreibung');
+
+    function replacePlaceholders(text) {
+        return text
+            .replace(/\{\{\s*plattform\.name\s*\}\}/g, 'fruehstuecken.click')
+            .replace(/\{\{\s*plattform\.zielgruppe\s*\}\}/g, 'Frühstück-Fans')
+            .replace(/\{\{\s*location\.bezeichnung\s*\}\}/g, 'Café Sonnenblick')
+            .replace(/\{\{\s*ort\.name\s*\}\}/g, 'Kleve')
+            .replace(/\{\{\s*kreis\.name\s*\}\}/g, 'Kleve')
+            .replace(/\{\{\s*bundesland\.name\s*\}\}/g, 'NRW');
+    }
+
+    function updatePreview() {
+        if (previewTitle && titelInput) {
+            previewTitle.textContent = replacePlaceholders(titelInput.value) || 'Ihr Titel erscheint hier';
+        }
+        if (previewBeschreibung && beschreibungInput) {
+            previewBeschreibung.textContent = replacePlaceholders(beschreibungInput.value) || 'Ihre Beschreibung erscheint hier';
+        }
+    }
+
+    if (titelInput) titelInput.addEventListener('input', updatePreview);
+    if (beschreibungInput) beschreibungInput.addEventListener('input', updatePreview);
+});
+</script>
+{% endblock %}

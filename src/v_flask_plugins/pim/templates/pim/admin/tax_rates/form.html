@@ -1,0 +1,95 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}
+{{ 'Steuersatz bearbeiten' if tax_rate else 'Neuer Steuersatz' }} - PIM
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('pim_admin.list_tax_rates') }}">Steuersätze</a></li>
+        <li>{{ 'Bearbeiten' if tax_rate else 'Neu' }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl max-w-md">
+    <div class="card-body">
+        <h2 class="card-title mb-4">
+            {% if tax_rate %}
+            <i class="ti ti-edit text-primary mr-2"></i>
+            {{ tax_rate.name }}
+            {% else %}
+            <i class="ti ti-plus text-primary mr-2"></i>
+            Neuer Steuersatz
+            {% endif %}
+        </h2>
+
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            {# Name #}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Bezeichnung *</span>
+                </label>
+                <input type="text" name="name"
+                       value="{{ tax_rate.name if tax_rate else '' }}"
+                       class="input input-bordered"
+                       placeholder="z.B. MwSt. 19%"
+                       required>
+            </div>
+
+            {# Rate #}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Steuersatz *</span>
+                </label>
+                <label class="input-group">
+                    <input type="text" name="rate"
+                           value="{{ tax_rate.rate if tax_rate else '' }}"
+                           class="input input-bordered w-full font-mono text-right"
+                           placeholder="19,00"
+                           required>
+                    <span>%</span>
+                </label>
+            </div>
+
+            {# Default #}
+            <div class="form-control mb-4">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_default"
+                           class="checkbox checkbox-primary"
+                           {% if tax_rate and tax_rate.is_default %}checked{% endif %}>
+                    <span class="label-text">Als Standard für neue Produkte</span>
+                </label>
+            </div>
+
+            {# Active (only for edit) #}
+            {% if tax_rate %}
+            <div class="form-control mb-6">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" name="is_active"
+                           class="checkbox checkbox-success"
+                           {% if tax_rate.is_active %}checked{% endif %}>
+                    <span class="label-text">Aktiv</span>
+                </label>
+            </div>
+            {% endif %}
+
+            {# Buttons #}
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-check mr-2"></i>
+                    {{ 'Speichern' if tax_rate else 'Erstellen' }}
+                </button>
+                <a href="{{ url_for('pim_admin.list_tax_rates') }}" class="btn btn-ghost">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

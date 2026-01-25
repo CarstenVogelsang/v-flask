@@ -1,0 +1,225 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ customer.company_name }} - Kundendetails{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-briefcase mr-1"></i>Verwaltung</li>
+        <li><a href="{{ url_for('crm_admin.list_customers') }}">Kunden</a></li>
+        <li>{{ customer.customer_number }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-user text-primary"></i>
+        <span>{{ customer.company_name }}</span>
+        <span class="badge badge-neutral">{{ customer.customer_number }}</span>
+        {% if customer.status == 'active' %}
+        <span class="badge badge-success">Aktiv</span>
+        {% elif customer.status == 'inactive' %}
+        <span class="badge badge-warning">Inaktiv</span>
+        {% elif customer.status == 'blocked' %}
+        <span class="badge badge-error">Gesperrt</span>
+        {% endif %}
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('crm_admin.edit_customer', customer_id=customer.id) }}" class="btn btn-primary btn-sm">
+            <i class="ti ti-edit mr-1"></i> Bearbeiten
+        </a>
+        <a href="{{ url_for('crm_admin.list_customers') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zurück
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Main Content #}
+    <div class="lg:col-span-2 space-y-6">
+        {# Stammdaten Card #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg mb-4">
+                    <i class="ti ti-building text-primary"></i> Stammdaten
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-sm text-base-content/60">Firmenname</span>
+                        <p class="font-semibold">{{ customer.company_name }}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">Rechtsform</span>
+                        <p>{{ customer.legal_form or '-' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">E-Mail</span>
+                        <p><a href="mailto:{{ customer.email }}" class="link link-primary">{{ customer.email }}</a></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">Telefon</span>
+                        <p>{% if customer.phone %}<a href="tel:{{ customer.phone }}" class="link link-hover">{{ customer.phone }}</a>{% else %}-{% endif %}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">Website</span>
+                        <p>{% if customer.website %}<a href="{{ customer.website }}" target="_blank" class="link link-primary">{{ customer.website }}</a>{% else %}-{% endif %}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">USt-IdNr.</span>
+                        <p class="font-mono">{{ customer.vat_id or '-' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">Steuernummer</span>
+                        <p>{{ customer.tax_number or '-' }}</p>
+                    </div>
+                </div>
+
+                {% if customer.notes %}
+                <div class="mt-4 pt-4 border-t border-base-200">
+                    <span class="text-sm text-base-content/60">Interne Notizen</span>
+                    <p class="whitespace-pre-line">{{ customer.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Adressen Card #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg mb-4">
+                    <i class="ti ti-map-pin text-primary"></i> Adressen
+                </h2>
+
+                {% if addresses %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for address in addresses %}
+                    <div class="border border-base-200 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex gap-1">
+                                {% if address.is_default_billing %}
+                                <span class="badge badge-primary badge-sm">Rechnung</span>
+                                {% endif %}
+                                {% if address.is_default_shipping %}
+                                <span class="badge badge-secondary badge-sm">Lieferung</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="text-base-content/80">
+                            {{ address.street }}<br>
+                            {% if address.street2 %}{{ address.street2 }}<br>{% endif %}
+                            {{ address.zip_code }} {{ address.city }}<br>
+                            {{ address.country }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-base-content/60 text-center py-4">
+                    Noch keine Adressen vorhanden.
+                    <a href="{{ url_for('crm_admin.edit_customer', customer_id=customer.id) }}" class="link link-primary">
+                        Adresse hinzufügen
+                    </a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Sidebar #}
+    <div class="lg:col-span-1 space-y-6">
+        {# Info Card #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h3 class="card-title text-base mb-4">
+                    <i class="ti ti-info-circle text-primary"></i> Info
+                </h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Kundennummer</span>
+                        <span class="font-mono">{{ customer.customer_number }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Angelegt</span>
+                        <span>{{ customer.created_at.strftime('%d.%m.%Y') }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Geändert</span>
+                        <span>{{ customer.updated_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Shop-Zugang Card #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h3 class="card-title text-base mb-4">
+                    <i class="ti ti-key text-primary"></i> Shop-Zugang
+                </h3>
+
+                {% if customer.auth and customer.auth.is_active %}
+                <div class="alert alert-success mb-4">
+                    <i class="ti ti-check"></i>
+                    <span>Shop-Zugang aktiv</span>
+                </div>
+
+                <div class="space-y-2 text-sm mb-4">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Login-E-Mail</span>
+                        <span>{{ customer.auth.email }}</span>
+                    </div>
+                    {% if customer.auth.last_login %}
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Letzter Login</span>
+                        <span>{{ customer.auth.last_login.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Logins gesamt</span>
+                        <span>{{ customer.auth.login_count }}</span>
+                    </div>
+                    {% if customer.auth.is_locked() %}
+                    <div class="alert alert-warning text-xs py-2 px-3 mt-2">
+                        <i class="ti ti-lock"></i>
+                        <span>Account gesperrt</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-2">
+                    {% if customer.auth.is_locked() %}
+                    <form method="POST" action="{{ url_for('crm_admin.unlock_account', customer_id=customer.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-warning btn-sm w-full">
+                            <i class="ti ti-lock-open mr-1"></i> Account entsperren
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('crm_admin.disable_shop_access', customer_id=customer.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-ghost btn-sm w-full text-error">
+                            <i class="ti ti-ban mr-1"></i> Zugang deaktivieren
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div class="alert alert-warning mb-4">
+                    <i class="ti ti-alert-circle"></i>
+                    <span>Kein Shop-Zugang</span>
+                </div>
+
+                <a href="{{ url_for('crm_admin.enable_shop_access', customer_id=customer.id) }}" class="btn btn-primary btn-sm w-full">
+                    <i class="ti ti-key mr-1"></i> Shop-Zugang aktivieren
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ kategorie.name }} - Kataloge{% endblock %}
+{% block description %}{{ kategorie.description or 'PDF-Kataloge in der Kategorie ' + kategorie.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumb -->
+    <div class="text-sm breadcrumbs mb-4">
+        <ul>
+            <li><a href="{{ url_for('katalog.index') }}">Kataloge</a></li>
+            <li>{{ kategorie.name }}</li>
+        </ul>
+    </div>
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-2">
+        <i class="{{ kategorie.icon }} text-3xl text-primary"></i>
+        <h1 class="text-3xl font-bold">{{ kategorie.name }}</h1>
+    </div>
+
+    {% if kategorie.description %}
+    <p class="text-base-content/70 mb-8 max-w-2xl">{{ kategorie.description }}</p>
+    {% else %}
+    <div class="mb-8"></div>
+    {% endif %}
+
+    {% if pdfs %}
+    <!-- PDF Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for pdf in pdfs %}
+        {% include 'katalog/_pdf_card.html' %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty state -->
+    <div class="text-center py-16">
+        <i class="ti ti-book-off text-6xl text-base-content/30 mb-4"></i>
+        <h2 class="text-xl font-semibold mb-2">Keine Kataloge in dieser Kategorie</h2>
+        <p class="text-base-content/70 mb-4">
+            In der Kategorie "{{ kategorie.name }}" sind noch keine Kataloge verfügbar.
+        </p>
+        <a href="{{ url_for('katalog.index') }}" class="btn btn-primary">
+            <i class="ti ti-arrow-left mr-2"></i>Zurück zur Übersicht
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

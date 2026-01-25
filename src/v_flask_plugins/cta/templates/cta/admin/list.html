@@ -1,0 +1,93 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}CTA Sections{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">CTA Sections</h1>
+        <div class="flex gap-2">
+            <a href="{{ url_for('cta_admin.list_templates') }}" class="btn btn-ghost">
+                <i class="ti ti-template"></i>
+                Templates
+            </a>
+            <a href="{{ url_for('cta_admin.create_section') }}" class="btn btn-primary">
+                <i class="ti ti-plus"></i>
+                Neue CTA Section
+            </a>
+        </div>
+    </div>
+
+    {% if sections %}
+    <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Design</th>
+                    <th>Status</th>
+                    <th>Zuweisungen</th>
+                    <th class="text-right">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for section in sections %}
+                <tr class="{% if not section.active %}opacity-50{% endif %}">
+                    <td>
+                        <div class="font-semibold">{{ section.name }}</div>
+                        {% if section.template %}
+                        <div class="text-sm text-gray-500">
+                            Template: {{ section.template.name }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-ghost">{{ section.variant }}</span>
+                    </td>
+                    <td>
+                        {% if section.active %}
+                        <span class="badge badge-success">Aktiv</span>
+                        {% else %}
+                        <span class="badge badge-ghost">Inaktiv</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if section.assignments %}
+                        <span class="badge badge-info">{{ section.assignments | length }}</span>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        <a href="{{ url_for('cta_admin.edit_section', section_id=section.id) }}"
+                           class="btn btn-sm btn-ghost">
+                            <i class="ti ti-edit"></i>
+                            Bearbeiten
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body text-center py-12">
+            <div class="text-gray-500 mb-4">
+                <i class="ti ti-click text-5xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold">Keine CTA Sections vorhanden</h3>
+            <p class="text-gray-500 mb-4">
+                Erstelle deine erste CTA Section, um Besucher zu Aktionen zu motivieren.
+            </p>
+            <div>
+                <a href="{{ url_for('cta_admin.create_section') }}" class="btn btn-primary">
+                    <i class="ti ti-plus"></i>
+                    Erste CTA Section erstellen
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

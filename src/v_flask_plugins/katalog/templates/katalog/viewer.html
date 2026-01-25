@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pdf.title }}{% endblock %}
+{% block description %}{{ pdf.description or pdf.title + ' - Online durchblättern' }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    #pdf-container {
+        background: #525659;
+        min-height: 70vh;
+        position: relative;
+    }
+    #pdf-canvas {
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+    }
+    .pdf-loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Breadcrumb -->
+    <div class="text-sm breadcrumbs mb-4">
+        <ul>
+            <li><a href="{{ url_for('katalog.index') }}">Kataloge</a></li>
+            {% if pdf.kategorie %}
+            <li><a href="{{ url_for('katalog.category', slug=pdf.kategorie.slug) }}">{{ pdf.kategorie.name }}</a></li>
+            {% endif %}
+            <li>{{ pdf.title }}</li>
+        </ul>
+    </div>
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">{{ pdf.title }}</h1>
+            {% if pdf.description %}
+            <p class="text-base-content/70 mt-1">{{ pdf.description }}</p>
+            {% endif %}
+            <div class="flex items-center gap-3 text-sm text-base-content/60 mt-2">
+                {% if pdf.year %}
+                <span><i class="ti ti-calendar mr-1"></i>{{ pdf.year }}</span>
+                {% endif %}
+                <span><i class="ti ti-file mr-1"></i>{{ pdf.file_size_display }}</span>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ download_url }}" class="btn btn-primary">
+                <i class="ti ti-download mr-2"></i>PDF herunterladen
+            </a>
+        </div>
+    </div>
+
+    <!-- PDF Viewer -->
+    <div class="card bg-base-200 overflow-hidden">
+        <!-- Controls -->
+        <div class="flex items-center justify-between p-3 bg-base-300 border-b border-base-content/10">
+            <div class="flex items-center gap-2">
+                <button id="prev-page" class="btn btn-sm btn-ghost" disabled>
+                    <i class="ti ti-chevron-left"></i>
+                </button>
+                <span class="text-sm">
+                    Seite <span id="page-num">1</span> von <span id="page-count">?</span>
+                </span>
+                <button id="next-page" class="btn btn-sm btn-ghost" disabled>
+                    <i class="ti ti-chevron-right"></i>
+                </button>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="zoom-out" class="btn btn-sm btn-ghost">
+                    <i class="ti ti-zoom-out"></i>
+                </button>
+                <span id="zoom-level" class="text-sm min-w-[3rem] text-center">100%</span>
+                <button id="zoom-in" class="btn btn-sm btn-ghost">
+                    <i class="ti ti-zoom-in"></i>
+                </button>
+                <button id="zoom-fit" class="btn btn-sm btn-ghost" title="An Breite anpassen">
+                    <i class="ti ti-arrows-horizontal"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div id="pdf-container" class="overflow-auto">
+            <div class="pdf-loading">
+                <span class="loading loading-spinner loading-lg"></span>
+                <p class="mt-2">Katalog wird geladen...</p>
+            </div>
+            <canvas id="pdf-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Keyboard shortcuts hint -->
+    <div class="text-center text-sm text-base-content/50 mt-4">
+        <i class="ti ti-keyboard mr-1"></i>
+        Tastaturkürzel: ← → für Seiten, + - für Zoom
+    </div>
+</div>
+
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configure PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const url = '{{ pdf_url }}';
+    const container = document.getElementById('pdf-container');
+    const canvas = document.getElementById('pdf-canvas');
+    const ctx = canvas.getContext('2d');
+    const loading = container.querySelector('.pdf-loading');
+
+    let pdfDoc = null;
+    let pageNum = 1;
+    let pageRendering = false;
+    let pageNumPending = null;
+    let scale = 1.0;
+
+    // UI Elements
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    const pageNumSpan = document.getElementById('page-num');
+    const pageCountSpan = document.getElementById('page-count');
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const zoomFitBtn = document.getElementById('zoom-fit');
+    const zoomLevelSpan = document.getElementById('zoom-level');
+
+    function renderPage(num) {
+        pageRendering = true;
+
+        pdfDoc.getPage(num).then(function(page) {
+            const viewport = page.getViewport({ scale: scale });
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            const renderContext = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
+
+            const renderTask = page.render(renderContext);
+
+            renderTask.promise.then(function() {
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+            });
+        });
+
+        pageNumSpan.textContent = num;
+        updateButtons();
+    }
+
+    function queueRenderPage(num) {
+        if (pageRendering) {
+            pageNumPending = num;
+        } else {
+            renderPage(num);
+        }
+    }
+
+    function updateButtons() {
+        prevBtn.disabled = pageNum <= 1;
+        nextBtn.disabled = pageNum >= pdfDoc.numPages;
+    }
+
+    function updateZoomDisplay() {
+        zoomLevelSpan.textContent = Math.round(scale * 100) + '%';
+    }
+
+    function fitToWidth() {
+        if (!pdfDoc) return;
+
+        pdfDoc.getPage(pageNum).then(function(page) {
+            const viewport = page.getViewport({ scale: 1.0 });
+            const containerWidth = container.clientWidth - 32; // padding
+            scale = containerWidth / viewport.width;
+            updateZoomDisplay();
+            queueRenderPage(pageNum);
+        });
+    }
+
+    // Navigation
+    prevBtn.addEventListener('click', function() {
+        if (pageNum <= 1) return;
+        pageNum--;
+        queueRenderPage(pageNum);
+    });
+
+    nextBtn.addEventListener('click', function() {
+        if (pageNum >= pdfDoc.numPages) return;
+        pageNum++;
+        queueRenderPage(pageNum);
+    });
+
+    // Zoom
+    zoomInBtn.addEventListener('click', function() {
+        scale = Math.min(scale * 1.25, 3.0);
+        updateZoomDisplay();
+        queueRenderPage(pageNum);
+    });
+
+    zoomOutBtn.addEventListener('click', function() {
+        scale = Math.max(scale / 1.25, 0.25);
+        updateZoomDisplay();
+        queueRenderPage(pageNum);
+    });
+
+    zoomFitBtn.addEventListener('click', fitToWidth);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        switch(e.key) {
+            case 'ArrowLeft':
+                prevBtn.click();
+                e.preventDefault();
+                break;
+            case 'ArrowRight':
+                nextBtn.click();
+                e.preventDefault();
+                break;
+            case '+':
+            case '=':
+                zoomInBtn.click();
+                e.preventDefault();
+                break;
+            case '-':
+                zoomOutBtn.click();
+                e.preventDefault();
+                break;
+        }
+    });
+
+    // Load PDF
+    pdfjsLib.getDocument(url).promise.then(function(pdf) {
+        pdfDoc = pdf;
+        pageCountSpan.textContent = pdf.numPages;
+        loading.style.display = 'none';
+
+        // Initial fit to width
+        fitToWidth();
+    }).catch(function(error) {
+        loading.innerHTML = `
+            <i class="ti ti-alert-circle text-4xl text-error"></i>
+            <p class="mt-2">Fehler beim Laden des PDFs</p>
+            <p class="text-sm opacity-70">${error.message}</p>
+        `;
+        console.error('PDF loading error:', error);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,34 @@
+{#
+    CTA Variant: Card
+    A compact horizontal card with icon, text, and CTA button.
+    Suitable for inline placement between content sections.
+
+    Expected context:
+        - title: Rendered title text
+        - description: Rendered description text
+        - cta_text: Button text (optional)
+        - cta_link: Button URL (optional)
+#}
+<div class="card bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+    <div class="card-body flex flex-col md:flex-row items-center justify-between gap-4 py-6">
+        <div class="flex items-center gap-4">
+            <div class="text-3xl">☕</div>
+            <div>
+                <h3 class="font-bold text-amber-800">
+                    {{ title }}
+                </h3>
+                {% if description %}
+                <p class="text-sm text-amber-700">
+                    {{ description }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% if cta_text and cta_link %}
+        <a href="{{ cta_link }}" class="btn btn-primary gap-2 shrink-0">
+            <i class="ti ti-plus"></i>
+            {{ cta_text }}
+        </a>
+        {% endif %}
+    </div>
+</div>

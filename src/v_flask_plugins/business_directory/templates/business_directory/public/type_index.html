@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ directory_type.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumb -->
+    <div class="breadcrumbs text-sm mb-6">
+        <ul>
+            <li><a href="{{ url_for('business_directory_public.index') }}">Verzeichnis</a></li>
+            <li>{{ directory_type.name }}</li>
+        </ul>
+    </div>
+
+    <div class="text-center mb-12">
+        <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <i class="ti {{ directory_type.icon }} text-4xl text-primary"></i>
+        </div>
+        <h1 class="text-3xl font-bold mb-2">{{ directory_type.name }}</h1>
+        <p class="text-base-content/70">{{ directory_type.description or '' }}</p>
+    </div>
+
+    <!-- Search -->
+    <div class="max-w-xl mx-auto mb-8">
+        <form action="{{ url_for('business_directory_public.search', type_slug=directory_type.slug) }}" method="get">
+            <div class="join w-full">
+                <input type="text" name="q" placeholder="Name oder PLZ suchen..."
+                       class="input input-bordered join-item flex-1">
+                <button type="submit" class="btn btn-primary join-item">
+                    <i class="ti ti-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bundesländer Grid -->
+    <h2 class="text-xl font-semibold mb-4">Nach Bundesland durchsuchen</h2>
+
+    {% if bundeslaender %}
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {% for bundesland in bundeslaender %}
+        <a href="{{ url_for('business_directory_public.bundesland', type_slug=directory_type.slug, bundesland_slug=bundesland.slug) }}"
+           class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-3">
+                    {% if bundesland.icon %}
+                    <i class="ti {{ bundesland.icon }} text-xl"
+                       {% if bundesland.color %}style="color: {{ bundesland.color }}"{% endif %}></i>
+                    {% endif %}
+                    <div>
+                        <div class="font-medium">{{ bundesland.name }}</div>
+                        <div class="text-sm text-base-content/60">
+                            {{ bundesland.active_entry_count(directory_type.id) }} {{ directory_type.name_plural or 'Einträge' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert">
+        <i class="ti ti-info-circle"></i>
+        <span>Noch keine Einträge in diesem Verzeichnis vorhanden.</span>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

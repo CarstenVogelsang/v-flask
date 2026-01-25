@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Kataloge{% endblock %}
+{% block description %}Unsere PDF-Kataloge zum Blättern und Herunterladen{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-2">Unsere Kataloge</h1>
+    <p class="text-base-content/70 mb-8">
+        Blättern Sie online durch unsere Kataloge oder laden Sie sie als PDF herunter.
+    </p>
+
+    {% if categories %}
+    <!-- Categories with PDFs -->
+    {% for kategorie in categories %}
+    {% if kategorie.pdf_count > 0 %}
+    <section class="mb-12">
+        <div class="flex items-center gap-3 mb-4">
+            <i class="{{ kategorie.icon }} text-2xl text-primary"></i>
+            <h2 class="text-2xl font-semibold">{{ kategorie.name }}</h2>
+            <span class="badge badge-ghost">{{ kategorie.pdf_count }} Kataloge</span>
+        </div>
+
+        {% if kategorie.description %}
+        <p class="text-base-content/70 mb-4">{{ kategorie.description }}</p>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for pdf in kategorie.pdfs.filter_by(is_active=True).order_by(KatalogPDF.sort_order).all()[:8] %}
+            {% include 'katalog/_pdf_card.html' %}
+            {% endfor %}
+        </div>
+
+        {% if kategorie.pdf_count > 8 %}
+        <div class="mt-4">
+            <a href="{{ url_for('katalog.category', slug=kategorie.slug) }}"
+               class="btn btn-outline btn-sm">
+                Alle {{ kategorie.pdf_count }} Kataloge anzeigen
+                <i class="ti ti-arrow-right ml-1"></i>
+            </a>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    {% if uncategorized %}
+    <!-- Uncategorized PDFs -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4">Weitere Kataloge</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for pdf in uncategorized %}
+            {% include 'katalog/_pdf_card.html' %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if not categories and not uncategorized %}
+    <!-- Empty state -->
+    <div class="text-center py-16">
+        <i class="ti ti-book-off text-6xl text-base-content/30 mb-4"></i>
+        <h2 class="text-xl font-semibold mb-2">Noch keine Kataloge verfügbar</h2>
+        <p class="text-base-content/70">
+            Schauen Sie bald wieder vorbei – wir arbeiten an unseren Katalogen.
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

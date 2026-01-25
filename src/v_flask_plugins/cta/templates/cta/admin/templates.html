@@ -1,0 +1,124 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}CTA Vorlagen{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+            <i class="ti ti-template text-primary"></i>
+            <span>CTA Vorlagen</span>
+        </h1>
+        <div class="flex gap-2">
+            <a href="{{ url_for('cta_admin.list_sections') }}" class="btn btn-ghost btn-sm">
+                <i class="ti ti-arrow-left mr-1"></i> Zurück
+            </a>
+            <a href="{{ url_for('cta_admin.create_template') }}" class="btn btn-primary btn-sm">
+                <i class="ti ti-plus mr-1"></i> Neue Vorlage
+            </a>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            {% if templates %}
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Slug</th>
+                            <th>Titel</th>
+                            <th>Status</th>
+                            <th>Verwendet</th>
+                            <th class="text-right">Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for template in templates %}
+                        <tr class="{% if not template.active %}opacity-50{% endif %}">
+                            <td>
+                                <div class="font-medium">{{ template.name }}</div>
+                            </td>
+                            <td>
+                                <code class="text-sm bg-base-200 px-2 py-1 rounded">{{ template.slug }}</code>
+                            </td>
+                            <td>
+                                <span class="text-sm truncate max-w-xs inline-block">
+                                    {{ template.titel[:50] }}{% if template.titel|length > 50 %}...{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                {% if template.active %}
+                                <span class="badge badge-success badge-sm">Aktiv</span>
+                                {% else %}
+                                <span class="badge badge-ghost badge-sm">Inaktiv</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-outline badge-sm">
+                                    {{ template.cta_sections.count() }} Sections
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <div class="flex gap-2 justify-end">
+                                    <a href="{{ url_for('cta_admin.edit_template', template_id=template.id) }}"
+                                       class="btn btn-ghost btn-sm btn-square"
+                                       title="Bearbeiten">
+                                        <i class="ti ti-edit"></i>
+                                    </a>
+                                    {% if template.cta_sections.count() == 0 %}
+                                    <form action="{{ url_for('cta_admin.delete_template', template_id=template.id) }}"
+                                          method="post"
+                                          onsubmit="return confirm('Vorlage wirklich löschen?');">
+                                        <button type="submit"
+                                                class="btn btn-ghost btn-sm btn-square text-error"
+                                                title="Löschen">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <button class="btn btn-ghost btn-sm btn-square opacity-30"
+                                            title="Wird noch verwendet" disabled>
+                                        <i class="ti ti-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-base-content/60">
+                <i class="ti ti-template text-5xl mb-4"></i>
+                <h3 class="text-lg font-semibold mb-2">Keine Vorlagen vorhanden</h3>
+                <p class="text-sm mb-4">
+                    Erstelle Vorlagen mit Platzhaltern für wiederkehrende CTA-Texte.
+                </p>
+                <a href="{{ url_for('cta_admin.create_template') }}" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus mr-1"></i> Erste Vorlage erstellen
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-6">
+        <div class="alert alert-info">
+            <i class="ti ti-info-circle"></i>
+            <div>
+                <p class="font-medium">Platzhalter in Vorlagen</p>
+                <p class="text-sm">
+                    Vorlagen unterstützen Jinja2-Platzhalter wie
+                    <code class="bg-base-200 px-1 rounded">{{ '{{ plattform.name }}' }}</code>,
+                    <code class="bg-base-200 px-1 rounded">{{ '{{ ort.name }}' }}</code> und
+                    <code class="bg-base-200 px-1 rounded">{{ '{{ kreis.name }}' }}</code>.
+                    Diese werden beim Rendern dynamisch ersetzt.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

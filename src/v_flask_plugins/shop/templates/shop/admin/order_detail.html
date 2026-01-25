@@ -1,0 +1,270 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Bestellung {{ order.order_number }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Dashboard</a></li>
+        <li><a href="{{ url_for('shop_admin.orders_list') }}">Shop-Bestellungen</a></li>
+        <li>{{ order.order_number }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Bar #}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+            <i class="ti ti-receipt text-primary"></i>
+            Bestellung {{ order.order_number }}
+        </h1>
+        <p class="text-base-content/60 mt-1">
+            Aufgegeben am {{ order.created_at.strftime('%d.%m.%Y um %H:%M') }} Uhr
+        </p>
+    </div>
+    <div>
+        {% if order.status == 'new' %}
+        <span class="badge badge-info badge-lg">{{ order.status_label }}</span>
+        {% elif order.status == 'confirmed' %}
+        <span class="badge badge-primary badge-lg">{{ order.status_label }}</span>
+        {% elif order.status == 'processing' %}
+        <span class="badge badge-warning badge-lg">{{ order.status_label }}</span>
+        {% elif order.status == 'shipped' %}
+        <span class="badge badge-secondary badge-lg">{{ order.status_label }}</span>
+        {% elif order.status == 'completed' %}
+        <span class="badge badge-success badge-lg">{{ order.status_label }}</span>
+        {% elif order.status == 'cancelled' %}
+        <span class="badge badge-error badge-lg">{{ order.status_label }}</span>
+        {% else %}
+        <span class="badge badge-ghost badge-lg">{{ order.status_label }}</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Left Column: Order Details #}
+    <div class="lg:col-span-2 space-y-6">
+        {# Order Items #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-list text-primary"></i>
+                    Bestellpositionen
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Produkt</th>
+                                <th class="text-center">Menge</th>
+                                <th class="text-right">Einzelpreis</th>
+                                <th class="text-right">Gesamt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items %}
+                            <tr>
+                                <td>
+                                    <div class="font-medium">{{ item.name }}</div>
+                                    <div class="text-sm text-base-content/60">{{ item.sku }}</div>
+                                </td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td class="text-right">{{ "%.2f"|format(item.unit_price) }} EUR</td>
+                                <td class="text-right font-medium">{{ "%.2f"|format(item.total) }} EUR</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-right">Zwischensumme</td>
+                                <td class="text-right">{{ "%.2f"|format(order.subtotal) }} EUR</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-right">MwSt. ({{ "%.0f"|format(order.tax_rate) }}%)</td>
+                                <td class="text-right">{{ "%.2f"|format(order.tax_amount) }} EUR</td>
+                            </tr>
+                            <tr class="text-lg font-bold">
+                                <td colspan="3" class="text-right">Gesamt</td>
+                                <td class="text-right">{{ "%.2f"|format(order.total) }} EUR</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# Addresses #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-truck text-primary"></i>
+                    Lieferadresse
+                </h2>
+                {% if order.shipping_address %}
+                <div class="bg-base-200 rounded-lg p-4">
+                    <div class="font-medium">{{ order.shipping_address.company_name }}</div>
+                    <div>{{ order.shipping_address.street }}</div>
+                    {% if order.shipping_address.street2 %}
+                    <div>{{ order.shipping_address.street2 }}</div>
+                    {% endif %}
+                    <div>{{ order.shipping_address.zip_code }} {{ order.shipping_address.city }}</div>
+                    <div>{{ order.shipping_address.country }}</div>
+                </div>
+                {% else %}
+                <span class="text-base-content/40">Keine Adresse gespeichert</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Notes #}
+        {% if order.notes %}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-note text-primary"></i>
+                    Kundennotizen
+                </h2>
+                <p class="whitespace-pre-wrap">{{ order.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Status History #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-history text-primary"></i>
+                    Verlauf
+                </h2>
+                <ul class="timeline timeline-vertical">
+                    {% for entry in order.history %}
+                    <li>
+                        {% if not loop.first %}<hr>{% endif %}
+                        <div class="timeline-start text-sm text-base-content/60">
+                            {{ entry.created_at.strftime('%d.%m.%Y %H:%M') }}
+                        </div>
+                        <div class="timeline-middle">
+                            <i class="ti ti-circle-check text-primary"></i>
+                        </div>
+                        <div class="timeline-end timeline-box">
+                            <div class="font-medium">
+                                {% if entry.old_status %}
+                                {{ entry.old_status_label }} → {{ entry.new_status_label }}
+                                {% else %}
+                                {{ entry.new_status_label }}
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-base-content/60">{{ entry.changed_by }}</div>
+                            {% if entry.comment %}
+                            <div class="text-sm mt-1">{{ entry.comment }}</div>
+                            {% endif %}
+                        </div>
+                        {% if not loop.last %}<hr>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    {# Right Column: Actions & Customer Info #}
+    <div class="lg:col-span-1 space-y-6">
+        {# Status Change #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-edit text-primary"></i>
+                    Status ändern
+                </h2>
+                <form method="POST" action="{{ url_for('shop_admin.order_change_status', order_id=order.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text">Neuer Status</span>
+                        </label>
+                        <select name="status" class="select select-bordered" required>
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text">Kommentar (optional)</span>
+                        </label>
+                        <textarea name="comment"
+                                  class="textarea textarea-bordered"
+                                  rows="2"
+                                  placeholder="Interner Kommentar..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="ti ti-check"></i>
+                        Status aktualisieren
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {# Customer Info #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-user text-primary"></i>
+                    Kunde
+                </h2>
+                {% if customer %}
+                <div class="space-y-2">
+                    <div>
+                        <div class="text-sm text-base-content/60">Firma</div>
+                        <div class="font-medium">{{ customer.company_name }}</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-base-content/60">Kundennummer</div>
+                        <div>{{ customer.customer_number }}</div>
+                    </div>
+                    {% if customer.email %}
+                    <div>
+                        <div class="text-sm text-base-content/60">E-Mail</div>
+                        <div><a href="mailto:{{ customer.email }}" class="link link-primary">{{ customer.email }}</a></div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="mt-4">
+                    <a href="{{ url_for('crm_admin.show_customer', customer_id=customer.id) }}"
+                       class="btn btn-outline btn-sm btn-block">
+                        <i class="ti ti-external-link"></i>
+                        Kundenprofil öffnen
+                    </a>
+                </div>
+                {% else %}
+                <div class="text-base-content/40">
+                    Kunde nicht mehr vorhanden
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Internal Notes #}
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="ti ti-lock text-primary"></i>
+                    Interne Notizen
+                </h2>
+                {% if order.internal_notes %}
+                <p class="whitespace-pre-wrap text-sm">{{ order.internal_notes }}</p>
+                {% else %}
+                <p class="text-base-content/40 text-sm">Keine internen Notizen</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

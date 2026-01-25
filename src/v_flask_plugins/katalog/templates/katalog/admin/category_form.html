@@ -1,0 +1,116 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{{ 'Kategorie bearbeiten' if kategorie else 'Neue Kategorie' }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="text-sm breadcrumbs">
+        <ul>
+            <li><a href="{{ url_for('katalog_admin.list_pdfs') }}">Kataloge</a></li>
+            <li><a href="{{ url_for('katalog_admin.list_categories') }}">Kategorien</a></li>
+            <li>{{ 'Bearbeiten' if kategorie else 'Neu' }}</li>
+        </ul>
+    </div>
+    <h1 class="text-2xl font-bold mt-2">
+        {{ 'Kategorie bearbeiten' if kategorie else 'Neue Kategorie' }}
+    </h1>
+</div>
+
+<form method="POST" class="max-w-xl">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <!-- Name -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Name *</span>
+                </label>
+                <input type="text"
+                       name="name"
+                       value="{{ kategorie.name if kategorie else '' }}"
+                       class="input input-bordered"
+                       required
+                       placeholder="z.B. Hauptkatalog">
+            </div>
+
+            <!-- Description -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Beschreibung</span>
+                </label>
+                <textarea name="description"
+                          class="textarea textarea-bordered h-20"
+                          placeholder="Optionale Beschreibung">{{ kategorie.description if kategorie else '' }}</textarea>
+            </div>
+
+            <!-- Icon -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Icon</span>
+                </label>
+                <div class="flex items-center gap-3">
+                    <i id="icon-preview" class="{{ kategorie.icon if kategorie else 'ti ti-book' }} text-2xl text-primary"></i>
+                    <input type="text"
+                           name="icon"
+                           id="icon-input"
+                           value="{{ kategorie.icon if kategorie else 'ti ti-book' }}"
+                           class="input input-bordered flex-1"
+                           placeholder="ti ti-book">
+                </div>
+                <label class="label">
+                    <span class="label-text-alt">
+                        <a href="https://tabler.io/icons" target="_blank" class="link link-primary">
+                            Tabler Icons durchsuchen
+                            <i class="ti ti-external-link text-xs"></i>
+                        </a>
+                    </span>
+                </label>
+            </div>
+
+            <!-- Sort Order -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Sortierung</span>
+                </label>
+                <input type="number"
+                       name="sort_order"
+                       value="{{ kategorie.sort_order if kategorie else 0 }}"
+                       class="input input-bordered w-24"
+                       min="0">
+                <label class="label">
+                    <span class="label-text-alt">Niedrigere Zahlen werden zuerst angezeigt</span>
+                </label>
+            </div>
+
+            <!-- Active -->
+            <div class="form-control">
+                <label class="cursor-pointer label justify-start gap-4">
+                    <input type="checkbox"
+                           name="is_active"
+                           class="checkbox checkbox-primary"
+                           {{ 'checked' if not kategorie or kategorie.is_active }}>
+                    <span class="label-text">Aktiv (sichtbar in Navigation)</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-2 mt-6">
+        <a href="{{ url_for('katalog_admin.list_categories') }}" class="btn btn-ghost">
+            Abbrechen
+        </a>
+        <button type="submit" class="btn btn-primary">
+            <i class="ti ti-device-floppy mr-2"></i>Speichern
+        </button>
+    </div>
+</form>
+
+<script>
+// Live icon preview
+document.getElementById('icon-input').addEventListener('input', function(e) {
+    document.getElementById('icon-preview').className = e.target.value + ' text-2xl text-primary';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Verzeichnis{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold mb-4">Willkommen im Verzeichnis</h1>
+        <p class="text-lg text-base-content/70 max-w-2xl mx-auto">
+            Finden Sie lokale Unternehmen in Ihrer Nähe.
+        </p>
+    </div>
+
+    {% if types %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for type in types %}
+        <a href="{{ url_for('business_directory_public.type_index', type_slug=type.slug) }}"
+           class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
+            <div class="card-body items-center text-center">
+                <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <i class="ti {{ type.icon }} text-3xl text-primary"></i>
+                </div>
+                <h2 class="card-title">{{ type.name }}</h2>
+                <p class="text-base-content/70">{{ type.description or '' }}</p>
+                <div class="card-actions mt-4">
+                    <div class="badge badge-primary">
+                        {{ type.entries.filter_by(active=True).count() }} {{ type.name_plural or 'Einträge' }}
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <i class="ti ti-database-off text-6xl text-base-content/30 mb-4"></i>
+        <p class="text-lg text-base-content/50">Aktuell keine Verzeichnisse verfügbar.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
