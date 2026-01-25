@@ -19,9 +19,6 @@
         <i class="ti ti-puzzle mr-2"></i>Plugin-Verwaltung
     </h1>
     <div class="flex gap-2">
-        <a href="{{ url_for('plugins_admin.marketplace') }}" class="btn btn-sm btn-outline btn-primary">
-            <i class="ti ti-building-store mr-1"></i>Marketplace
-        </a>
         {% if restart_required %}
         <button class="btn btn-sm btn-outline" onclick="scheduleModal.showModal()">
             <i class="ti ti-clock mr-1"></i>Planen
@@ -36,6 +33,46 @@
         {% endif %}
     </div>
 </div>
+
+{# Marketplace Connection Status #}
+{% if marketplace_available %}
+{# Connected - compact green indicator #}
+<div class="alert alert-success shadow-sm mb-6">
+    <div class="flex items-center gap-2">
+        <span class="w-3 h-3 bg-success rounded-full animate-pulse"></span>
+        <span class="font-medium">Verbunden mit Marketplace</span>
+        {% if marketplace_url %}
+        <span class="text-sm opacity-70">{{ marketplace_url }}</span>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+{# Not connected - warning with retry #}
+<div class="alert alert-warning shadow-lg mb-6">
+    <div class="flex items-center gap-3">
+        <span class="w-4 h-4 bg-warning rounded-full"></span>
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="font-bold">Marketplace nicht erreichbar</span>
+                {% if marketplace_url %}
+                <span class="text-sm opacity-70">{{ marketplace_url }}</span>
+                {% endif %}
+            </div>
+            <p class="text-sm opacity-80">
+                Installierte Plugins werden mit gecachten Daten angezeigt.
+            </p>
+        </div>
+    </div>
+    <div class="flex-none">
+        <form action="{{ url_for('plugins_admin.refresh_marketplace') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline">
+                <i class="ti ti-refresh"></i> Erneut versuchen
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
 
 {# Restart Required Banner #}
 {% if restart_required %}
@@ -59,8 +96,8 @@
 </div>
 {% endif %}
 
-{# Pending Migrations Banner #}
-{% if pending_migrations %}
+{# Pending Migrations Banner - only show after restart completed #}
+{% if pending_migrations and not restart_required %}
 <div class="alert alert-info mb-6">
     <i class="ti ti-database text-xl"></i>
     <div>
@@ -74,62 +111,151 @@
 </div>
 {% endif %}
 
+{# Category Filter #}
+{% if categories %}
+<div class="flex flex-wrap gap-2 mb-6">
+    <a href="{{ url_for('plugins_admin.list_plugins') }}"
+       class="btn btn-sm {% if not current_category %}btn-primary{% else %}btn-ghost{% endif %}">
+        <i class="ti ti-apps"></i> Alle
+    </a>
+    {% for cat in categories %}
+    <a href="{{ url_for('plugins_admin.list_plugins', category=cat.code) }}"
+       class="btn btn-sm {% if current_category == cat.code %}btn-primary{% else %}btn-ghost{% endif %}"
+       style="{% if current_category == cat.code %}background-color: {{ cat.color_hex }}; border-color: {{ cat.color_hex }};{% endif %}">
+        <i class="{{ cat.icon }}"></i> {{ cat.name_de }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# Category Description when filtered #}
+{% if current_category_info %}
+<div class="alert mb-6" style="background-color: {{ current_category_info.color_hex }}15; border-color: {{ current_category_info.color_hex }};">
+    <i class="{{ current_category_info.icon }} text-xl" style="color: {{ current_category_info.color_hex }};"></i>
+    <div>
+        <h3 class="font-bold" style="color: {{ current_category_info.color_hex }};">{{ current_category_info.name_de }}</h3>
+        <div class="text-sm">{{ current_category_info.description_de }}</div>
+    </div>
+</div>
+{% endif %}
+
 {# Plugin Grid #}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {% for plugin in plugins %}
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
+            {# Header: Icon + Name + Badges #}
             <div class="flex justify-between items-start">
-                <h2 class="card-title">{{ plugin.name }}</h2>
-                {% if plugin.is_active %}
-                <span class="badge badge-success">Aktiv</span>
-                {% elif not plugin.is_installed %}
-                <span class="badge badge-error">Nicht installiert</span>
-                {% else %}
-                <span class="badge badge-neutral">Inaktiv</span>
-                {% endif %}
+                <div class="flex items-center gap-3">
+                    {# Plugin Icon #}
+                    {% set cat_color = plugin.category_info.color_hex if plugin.category_info else '#64748b' %}
+                    <div class="w-12 h-12 rounded-lg flex items-center justify-center"
+                         style="background-color: {{ cat_color }}20;">
+                        <i class="{{ plugin.icon or 'ti ti-puzzle' }} text-2xl"
+                           style="color: {{ cat_color }};"></i>
+                    </div>
+                    <div>
+                        <h2 class="card-title text-base">{{ plugin.display_name or plugin.name }}</h2>
+                        <span class="text-sm text-base-content/60">{{ plugin.version }}</span>
+                    </div>
+                </div>
+
+                {# Status + Phase Badges #}
+                <div class="flex flex-col gap-1 items-end">
+                    {# Phase Badge #}
+                    {% if plugin.phase_badge %}
+                    <span class="badge {{ plugin.phase_badge.color }} badge-sm">
+                        {{ plugin.phase_badge.label }}
+                    </span>
+                    {% endif %}
+
+                    {# Status Badge #}
+                    {% if plugin.status == 'active' %}
+                    <span class="badge badge-success badge-sm">Aktiv</span>
+                    {% elif plugin.status == 'inactive' %}
+                    <span class="badge badge-neutral badge-sm">Inaktiv</span>
+                    {% else %}
+                    <span class="badge badge-info badge-sm">Installierbar</span>
+                    {% endif %}
+                </div>
             </div>
 
-            <p class="text-sm text-base-content/60">Version {{ plugin.version }}</p>
-            <p>{{ plugin.description }}</p>
+            {# Description #}
+            <p class="text-sm mt-2">{{ plugin.description }}</p>
 
-            {% if plugin.categories %}
-            <div class="flex flex-wrap gap-1">
-                {% for category in plugin.categories %}
-                <span class="badge badge-primary badge-outline">{{ category }}</span>
-                {% endfor %}
+            {# Category Badge #}
+            {% if plugin.category_info %}
+            <div class="mt-2">
+                <span class="badge gap-1 badge-sm"
+                      style="background-color: {{ plugin.category_info.color_hex }}20;
+                             color: {{ plugin.category_info.color_hex }};
+                             border: none;">
+                    <i class="{{ plugin.category_info.icon }}"></i>
+                    {{ plugin.category_info.name_de }}
+                </span>
             </div>
             {% endif %}
 
-            {% if plugin.tags %}
-            <div class="flex flex-wrap gap-1">
-                {% for tag in plugin.tags %}
-                <span class="badge badge-ghost">{{ tag }}</span>
-                {% endfor %}
+            {# Dependencies #}
+            {% if plugin.dependencies %}
+            <div class="text-sm text-base-content/60 mt-2">
+                <i class="ti ti-git-branch"></i>
+                Benötigt: {{ plugin.dependencies | join(', ') }}
             </div>
             {% endif %}
 
-            <div class="card-actions justify-end mt-4">
-                {% if plugin.is_active %}
-                <form action="{{ url_for('plugins_admin.deactivate_plugin', name=plugin.name) }}" method="post">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-outline btn-error"
-                            onclick="return confirm('Plugin deaktivieren?')">
-                        Deaktivieren
-                    </button>
-                </form>
-                {% elif plugin.is_installed %}
-                <form action="{{ url_for('plugins_admin.activate_plugin', name=plugin.name) }}" method="post">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        Aktivieren
-                    </button>
-                </form>
+            {# Footer: Price + Actions #}
+            <div class="card-actions justify-between items-center mt-4">
+                {# Price (only for non-active plugins) #}
+                {% if plugin.status != 'active' %}
+                <div>
+                    {% if plugin.is_free or plugin.price_cents == 0 %}
+                    <span class="badge badge-success badge-outline">Kostenlos</span>
+                    {% elif plugin.price_display %}
+                    <span class="badge badge-warning badge-outline">{{ plugin.price_display }}</span>
+                    {% endif %}
+                </div>
                 {% else %}
-                <button class="btn btn-sm btn-disabled" disabled>
-                    Installation erforderlich
-                </button>
+                <div></div>
                 {% endif %}
+
+                {# Action Buttons #}
+                <div class="flex gap-2">
+                    {% if plugin.status == 'active' %}
+                    {# Active: Show deactivate button #}
+                    <form action="{{ url_for('plugins_admin.deactivate_plugin', name=plugin.name) }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline btn-error"
+                                onclick="return confirm('Plugin deaktivieren?')">
+                            Deaktivieren
+                        </button>
+                    </form>
+
+                    {% elif plugin.status == 'inactive' %}
+                    {# Inactive (installed): Show activate button with dependency count #}
+                    <form action="{{ url_for('plugins_admin.activate_plugin', name=plugin.name) }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            {% if plugin.dependencies %}
+                            <i class="ti ti-git-branch mr-1"></i>
+                            Aktivieren (+Deps)
+                            {% else %}
+                            Aktivieren
+                            {% endif %}
+                        </button>
+                    </form>
+
+                    {% else %}
+                    {# Installable: Show install button #}
+                    <form action="{{ url_for('plugins_admin.install_plugin', name=plugin.name) }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-info">
+                            <i class="ti ti-download mr-1"></i>
+                            Installieren
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -137,7 +263,14 @@
     <div class="col-span-full">
         <div class="alert">
             <i class="ti ti-info-circle"></i>
-            <span>Keine Plugins im Marktplatz verfügbar.</span>
+            <span>
+                {% if current_category %}
+                Keine Plugins in dieser Kategorie.
+                <a href="{{ url_for('plugins_admin.list_plugins') }}" class="link">Alle anzeigen</a>
+                {% else %}
+                Keine Plugins verfügbar.
+                {% endif %}
+            </span>
         </div>
     </div>
     {% endfor %}

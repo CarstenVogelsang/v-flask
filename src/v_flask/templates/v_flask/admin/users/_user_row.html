@@ -1,0 +1,88 @@
+{# Partial: Single User Table Row #}
+{# Expects: user #}
+
+<tr id="user-row-{{ user.id }}" class="{% if not user.aktiv %}opacity-50{% endif %}">
+    <td>
+        <label>
+            <input type="checkbox" name="user_ids" value="{{ user.id }}"
+                   class="checkbox checkbox-sm">
+        </label>
+    </td>
+    <td>
+        <div class="flex items-center gap-3">
+            <div class="avatar placeholder">
+                <div class="bg-neutral text-neutral-content rounded-full w-10">
+                    <span class="text-sm">{{ user.vorname[0] }}{{ user.nachname[0] }}</span>
+                </div>
+            </div>
+            <div>
+                <div class="font-medium">{{ user.full_name }}</div>
+                {% if user.is_ki %}
+                <span class="badge badge-xs badge-secondary">KI</span>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    <td class="font-mono text-sm">{{ user.email }}</td>
+    <td>
+        <span class="badge badge-outline badge-sm">
+            {{ user.rolle|title if user.rolle else 'Keine Rolle' }}
+        </span>
+    </td>
+    <td>
+        <form hx-post="{{ url_for('users_admin.toggle_active', user_id=user.id) }}"
+              hx-target="#user-row-{{ user.id }}"
+              hx-swap="outerHTML">
+            {% include 'v_flask/includes/_csrf.html' %}
+            <button type="submit" class="btn btn-ghost btn-xs">
+                {% if user.aktiv %}
+                <span class="badge badge-success badge-sm gap-1">
+                    <i class="ti ti-check text-xs"></i> Aktiv
+                </span>
+                {% else %}
+                <span class="badge badge-error badge-sm gap-1">
+                    <i class="ti ti-x text-xs"></i> Inaktiv
+                </span>
+                {% endif %}
+            </button>
+        </form>
+    </td>
+    <td>
+        {% if user.totp_enabled %}
+        <span class="badge badge-success badge-sm" title="2FA aktiviert am {{ user.totp_enabled_at.strftime('%d.%m.%Y') if user.totp_enabled_at else '' }}">
+            <i class="ti ti-shield-check text-xs mr-1"></i> Aktiv
+        </span>
+        {% else %}
+        <span class="badge badge-ghost badge-sm">
+            <i class="ti ti-shield-off text-xs mr-1"></i> Aus
+        </span>
+        {% endif %}
+    </td>
+    <td class="text-sm text-base-content/60">
+        {% if user.last_login %}
+        {{ user.last_login.strftime('%d.%m.%Y %H:%M') }}
+        {% else %}
+        <span class="italic">Nie</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="flex gap-1">
+            <a href="{{ url_for('users_admin.user_detail', user_id=user.id) }}"
+               class="btn btn-ghost btn-xs" title="Details">
+                <i class="ti ti-eye"></i>
+            </a>
+            <a href="{{ url_for('users_admin.edit_user', user_id=user.id) }}"
+               class="btn btn-ghost btn-xs" title="Bearbeiten">
+                <i class="ti ti-edit"></i>
+            </a>
+            <form method="post"
+                  action="{{ url_for('users_admin.delete_user', user_id=user.id) }}"
+                  onsubmit="return confirm('Benutzer \'{{ user.full_name }}\' wirklich löschen?')">
+                {% include 'v_flask/includes/_csrf.html' %}
+                <button type="submit" class="btn btn-ghost btn-xs text-error" title="Löschen">
+                    <i class="ti ti-trash"></i>
+                </button>
+            </form>
+        </div>
+    </td>
+</tr>

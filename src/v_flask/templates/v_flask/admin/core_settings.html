@@ -1,0 +1,762 @@
+{#
+Core Settings Template
+
+Provides a tabbed interface for platform settings:
+- Allgemein: Basic operator info
+- Branding: Colors, fonts, logos
+- Platzhalter: Template variables
+
+Extends the admin base layout. Apps can override by setting
+`admin_base_template` in the render context.
+#}
+{% extends admin_base_template|default("v_flask/admin/base.html") %}
+
+{% block title %}Einstellungen - Admin{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li>
+            <a href="{{ url_for('admin.dashboard') }}" class="text-base-content/60 hover:text-primary">
+                <i class="ti ti-home"></i> Start
+            </a>
+        </li>
+        <li>
+            <span class="text-base-content/40 mx-2">/</span>
+            <span class="text-base-content">Einstellungen</span>
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    {# Page Header with Central Save Button #}
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+            <i class="ti ti-settings text-primary"></i>
+            Einstellungen
+        </h1>
+        <button type="submit" form="settings-form" class="btn btn-primary">
+            <i class="ti ti-device-floppy"></i>
+            Speichern
+        </button>
+    </div>
+
+    {# Single Form wrapping all tabs #}
+    <form id="settings-form" method="POST" enctype="multipart/form-data">
+        <input type="hidden" id="active-tab" name="_tab" value="{{ active_tab }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" id="auto_favicon_data" name="auto_favicon_data" value="">
+
+    {# Tab Navigation #}
+    <div class="tabs tabs-boxed mb-6 bg-base-200">
+        <a href="#tab-allgemein"
+           class="tab {{ 'tab-active' if active_tab == 'allgemein' else '' }}"
+           data-tab="allgemein">
+            <i class="ti ti-info-circle mr-1"></i>
+            Allgemein
+        </a>
+        <a href="#tab-branding"
+           class="tab {{ 'tab-active' if active_tab == 'branding' else '' }}"
+           data-tab="branding">
+            <i class="ti ti-palette mr-1"></i>
+            Branding
+        </a>
+        <a href="#tab-platzhalter"
+           class="tab {{ 'tab-active' if active_tab == 'platzhalter' else '' }}"
+           data-tab="platzhalter">
+            <i class="ti ti-variable mr-1"></i>
+            Platzhalter
+        </a>
+    </div>
+
+    {# ===== TAB: ALLGEMEIN ===== #}
+    <div id="tab-allgemein" class="settings-tab-panel {{ '' if active_tab == 'allgemein' else 'hidden' }}">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg mb-4">
+                    <i class="ti ti-info-circle text-primary"></i>
+                    Allgemeine Informationen
+                </h2>
+
+                <div class="form-control mb-4">
+                    <label class="label" for="name">
+                        <span class="label-text font-medium">Betreiber-Name</span>
+                    </label>
+                    <input type="text" id="name" name="name"
+                           value="{{ betreiber.name or '' }}"
+                           class="input input-bordered w-full"
+                           placeholder="z.B. Meine Firma GmbH">
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            Name des Betreibers/Unternehmens
+                        </span>
+                    </label>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label" for="website">
+                        <span class="label-text font-medium">Website URL</span>
+                    </label>
+                    <input type="url" id="website" name="website"
+                           value="{{ betreiber.website or '' }}"
+                           class="input input-bordered w-full"
+                           placeholder="https://example.com">
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label" for="email">
+                        <span class="label-text font-medium">Kontakt E-Mail</span>
+                    </label>
+                    <input type="email" id="email" name="email"
+                           value="{{ betreiber.email or '' }}"
+                           class="input input-bordered w-full"
+                           placeholder="kontakt@example.com">
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            Wird für Benachrichtigungen und Kontaktformulare verwendet
+                        </span>
+                    </label>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {# ===== TAB: BRANDING ===== #}
+    <div id="tab-branding" class="settings-tab-panel {{ '' if active_tab == 'branding' else 'hidden' }}">
+        {# CSS for Popup Color Picker #}
+        <style>
+            .color-picker-wrapper { position: relative; }
+            .color-picker-popup {
+                position: absolute;
+                bottom: 100%;
+                left: 0;
+                z-index: 50;
+                background: oklch(var(--b1));
+                border: 1px solid oklch(var(--bc) / 0.2);
+                border-radius: 0.5rem;
+                padding: 1rem;
+                box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.1);
+                display: none;
+                min-width: 200px;
+                margin-bottom: 0.25rem;
+            }
+            .color-picker-popup.active { display: block; }
+            .color-suggestions { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem; }
+            .color-suggestion {
+                width: 1.5rem;
+                height: 1.5rem;
+                border-radius: 0.25rem;
+                cursor: pointer;
+                border: 2px solid transparent;
+                transition: border-color 0.15s;
+            }
+            .color-suggestion:hover { border-color: oklch(var(--p)); }
+        </style>
+
+        <div class="space-y-6">
+            {# 1. Live Preview (Top) #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-eye text-primary"></i>
+                        Vorschau
+                    </h2>
+
+                    <div id="preview-area" class="p-4 border rounded-lg bg-base-200/50">
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <button type="button" class="btn btn-primary btn-sm" id="preview-btn-primary">Primary</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="preview-btn-secondary">Secondary</button>
+                            <button type="button" class="btn btn-accent btn-sm" id="preview-btn-accent">Accent</button>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="badge badge-info" id="preview-badge-info">Info</span>
+                            <span class="badge badge-success" id="preview-badge-success">Success</span>
+                            <span class="badge badge-warning" id="preview-badge-warning">Warning</span>
+                            <span class="badge badge-error" id="preview-badge-error">Error</span>
+                        </div>
+                        <p class="text-base-content">
+                            Beispieltext mit <a href="#" class="link link-primary">Link</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {# 2. Color Palette Selection - Horizontal Scrollable #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-palette text-primary"></i>
+                        Farbpalette
+                    </h2>
+
+                    {% if palettes %}
+                    <div class="overflow-x-auto pb-2 -mx-2 px-2">
+                        <div class="flex gap-4" style="min-width: max-content;">
+                            {% for palette in palettes %}
+                            <label class="cursor-pointer flex-shrink-0 relative">
+                                <input type="radio" name="palette_id" value="{{ palette.id }}"
+                                       class="hidden peer"
+                                       {{ 'checked' if current_palette_id == palette.id else '' }}
+                                       data-colors='{{ palette.to_dict()|tojson }}'>
+                                {# Badge for selected palette - must be direct sibling of peer #}
+                                <div class="absolute -top-1 -right-1 z-10 hidden peer-checked:flex
+                                            w-5 h-5 bg-primary rounded-full items-center justify-center
+                                            shadow-sm">
+                                    <i class="ti ti-check text-primary-content text-xs"></i>
+                                </div>
+                                <div class="border-2 rounded-lg p-3 transition-all w-64
+                                            peer-checked:border-primary peer-checked:bg-primary/5
+                                            hover:border-primary/50 border-base-300">
+                                    {# Primary colors (Primär, Sekundär, Akzent, Neutral) - full height #}
+                                    <div class="grid grid-cols-4 gap-1 mb-1">
+                                        {% for item in palette.preview_colors()[:4] %}
+                                        <div class="flex flex-col items-center">
+                                            <div class="w-12 h-8 rounded-md shadow-sm border border-base-300"
+                                                 style="background-color: {{ item.color }}"
+                                                 title="{{ item.name }}"></div>
+                                            <span class="text-[10px] text-base-content/60 mt-0.5 truncate w-full text-center">
+                                                {{ item.name }}
+                                            </span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {# Secondary colors (Info, Erfolg, Warnung, Fehler) - reduced height #}
+                                    <div class="grid grid-cols-4 gap-1 mb-2">
+                                        {% for item in palette.preview_colors()[4:] %}
+                                        <div class="flex flex-col items-center">
+                                            <div class="w-12 h-5 rounded shadow-sm border border-base-300"
+                                                 style="background-color: {{ item.color }}"
+                                                 title="{{ item.name }}"></div>
+                                            <span class="text-[9px] text-base-content/40 mt-0.5 truncate w-full text-center">
+                                                {{ item.name }}
+                                            </span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+
+                                    {# Palette Name #}
+                                    <div class="text-sm font-medium">{{ palette.name }}</div>
+                                    <div class="text-xs text-base-content/60">{{ palette.category }}</div>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="ti ti-info-circle"></i>
+                        <span>Keine Farbpaletten vorhanden. Führe <code>flask seed-palettes</code> aus.</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# 3. Color Overrides with Popup Picker - always visible, closer to palette #}
+            <div class="card bg-base-100 shadow-sm -mt-3">
+                <div class="card-body pt-4">
+                    <h3 class="font-medium flex items-center gap-2 mb-3">
+                        <i class="ti ti-adjustments text-primary"></i>
+                        Farben anpassen
+                        <span class="text-sm text-base-content/60 font-normal">
+                            (überschreibt Palette)
+                        </span>
+                    </h3>
+                    {% set color_names = ['primary', 'secondary', 'accent', 'neutral', 'info', 'success', 'warning', 'error'] %}
+                    {% set color_labels = {
+                        'primary': 'Primär',
+                        'secondary': 'Sekundär',
+                        'accent': 'Akzent',
+                        'neutral': 'Neutral',
+                        'info': 'Info',
+                        'success': 'Erfolg',
+                        'warning': 'Warnung',
+                        'error': 'Fehler'
+                    } %}
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {% for color_name in color_names %}
+                        <div class="form-control">
+                            <label class="label py-1">
+                                <span class="label-text text-sm">{{ color_labels[color_name] }}</span>
+                            </label>
+                            <div class="color-picker-wrapper">
+                                {# Trigger Button #}
+                                <button type="button"
+                                        class="btn btn-sm w-full justify-start gap-2 color-picker-trigger"
+                                        data-color="{{ color_name }}"
+                                        onclick="toggleColorPopup('{{ color_name }}')">
+                                    <span class="w-5 h-5 rounded border border-base-300"
+                                          id="color_preview_{{ color_name }}"
+                                          style="background-color: {{ color_overrides.get(color_name) or '#cccccc' }}">
+                                    </span>
+                                    <span class="font-mono text-xs" id="color_hex_{{ color_name }}">
+                                        {{ color_overrides.get(color_name) or '(Palette)' }}
+                                    </span>
+                                </button>
+
+                                {# Popup #}
+                                <div class="color-picker-popup" id="popup_{{ color_name }}">
+                                    <input type="color"
+                                           id="color_picker_{{ color_name }}"
+                                           value="{{ color_overrides.get(color_name) or '#ffffff' }}"
+                                           class="w-full h-12 cursor-pointer rounded border-0">
+                                    <input type="hidden"
+                                           name="override_{{ color_name }}"
+                                           id="override_{{ color_name }}"
+                                           value="{{ color_overrides.get(color_name, '') }}">
+
+                                    <div class="text-xs mt-2 mb-1 text-base-content/60">Palette-Farben:</div>
+                                    <div class="color-suggestions" id="suggestions_{{ color_name }}">
+                                        {# Filled by JavaScript #}
+                                    </div>
+
+                                    <div class="flex gap-2 mt-3">
+                                        <button type="button" class="btn btn-xs btn-ghost"
+                                                onclick="resetColor('{{ color_name }}')">
+                                            <i class="ti ti-x"></i> Zurücksetzen
+                                        </button>
+                                        <button type="button" class="btn btn-xs btn-primary"
+                                                onclick="applyColor('{{ color_name }}')">
+                                            <i class="ti ti-check"></i> Übernehmen
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {# 4. Font Selection #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-typography text-primary"></i>
+                        Schriftart
+                    </h2>
+
+                    <div class="form-control">
+                        <select name="font_family" class="select select-bordered w-full max-w-xs">
+                            {% for value, label in font_families %}
+                            <option value="{{ value }}" {{ 'selected' if betreiber.font_family == value else '' }}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {# 5. Logo & Favicon #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <i class="ti ti-photo text-primary"></i>
+                        Logo & Favicon
+                    </h2>
+
+                    {# Logo Icon Selection #}
+                    <div class="mb-6">
+                        <label class="label">
+                            <span class="label-text font-medium">Logo-Icon</span>
+                        </label>
+                        <div class="grid grid-cols-5 md:grid-cols-10 gap-2">
+                            {% set current_icon = betreiber.get_setting('logo_icon', 'ti-coffee') %}
+                            {% for icon in logo_icons %}
+                            <label class="cursor-pointer">
+                                <input type="radio" name="logo_icon" value="{{ icon }}"
+                                       class="hidden peer"
+                                       {{ 'checked' if current_icon == icon else '' }}>
+                                <div class="w-10 h-10 flex items-center justify-center rounded-lg border-2 text-xl transition-all
+                                            peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-content
+                                            hover:border-primary/50">
+                                    <i class="ti {{ icon }}"></i>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# Logo Image Upload #}
+                    <div class="mb-6">
+                        <label class="label">
+                            <span class="label-text font-medium">Logo-Bild</span>
+                        </label>
+                        {% set logo_image = betreiber.get_setting('logo_image') %}
+                        {% if logo_image %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('static', filename=logo_image) }}"
+                                 alt="Aktuelles Logo" class="h-12 bg-base-200 rounded p-2">
+                        </div>
+                        {% endif %}
+                        <input type="file" name="logo_image"
+                               accept=".svg,.png,.jpg,.jpeg,.webp"
+                               class="file-input file-input-bordered w-full max-w-xs">
+                        <label class="label">
+                            <span class="label-text-alt">SVG, PNG, JPG oder WebP (max. 2MB)</span>
+                        </label>
+                    </div>
+
+                    {# Favicon Upload #}
+                    <div>
+                        <label class="label">
+                            <span class="label-text font-medium">Favicon</span>
+                        </label>
+                        {% set favicon = betreiber.get_setting('favicon') %}
+                        {% if favicon %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('static', filename=favicon) }}"
+                                 alt="Aktuelles Favicon" class="h-8 bg-base-200 rounded p-1">
+                        </div>
+                        {% endif %}
+                        <input type="file" name="favicon"
+                               accept=".ico,.png,.svg"
+                               class="file-input file-input-bordered w-full max-w-xs">
+                        <label class="label">
+                            <span class="label-text-alt">ICO, PNG oder SVG (32x32 empfohlen)</span>
+                        </label>
+
+                        <div class="mt-2">
+                            <button type="button" id="generate-favicon" class="btn btn-ghost btn-sm">
+                                <i class="ti ti-wand"></i>
+                                Favicon aus Icon generieren
+                            </button>
+                            <canvas id="favicon-canvas" width="32" height="32" class="hidden"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {# ===== TAB: PLATZHALTER ===== #}
+    <div id="tab-platzhalter" class="settings-tab-panel {{ '' if active_tab == 'platzhalter' else 'hidden' }}">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg mb-4">
+                    <i class="ti ti-variable text-primary"></i>
+                    Platzhalter-Variablen
+                </h2>
+
+                <div class="alert alert-info mb-6">
+                    <i class="ti ti-info-circle"></i>
+                    <div>
+                        <p class="font-medium">Diese Variablen sind überall in Templates verfügbar:</p>
+                        <code class="text-sm">{{ '{{ plattform.name }}' }}, {{ '{{ plattform.zielgruppe }}' }}, {{ '{{ plattform.location }}' }}</code>
+                    </div>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label" for="plattform_name">
+                        <span class="label-text font-medium">Plattform-Name</span>
+                    </label>
+                    <input type="text" id="plattform_name" name="plattform_name"
+                           value="{{ betreiber.get_setting('plattform_name', '') }}"
+                           class="input input-bordered w-full"
+                           placeholder="z.B. fruehstuecken.click">
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            Der Name der Plattform (für CTAs, E-Mails, etc.)
+                        </span>
+                    </label>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label" for="plattform_zielgruppe">
+                        <span class="label-text font-medium">Zielgruppe</span>
+                    </label>
+                    <input type="text" id="plattform_zielgruppe" name="plattform_zielgruppe"
+                           value="{{ betreiber.get_setting('plattform_zielgruppe', '') }}"
+                           class="input input-bordered w-full"
+                           placeholder="z.B. Café, Restaurant oder Hotel mit Frühstücksangebot">
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            Beschreibung der Zielgruppe für CTAs
+                        </span>
+                    </label>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label" for="location_bezeichnung">
+                        <span class="label-text font-medium">Bezeichnung für Einträge</span>
+                    </label>
+                    <input type="text" id="location_bezeichnung" name="location_bezeichnung"
+                           value="{{ betreiber.get_setting('location_bezeichnung', 'Eintrag') }}"
+                           class="input input-bordered w-full"
+                           placeholder="z.B. Lokal, Eintrag, Objekt, Betrieb">
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            Wie werden die Einträge genannt? (Singular)
+                        </span>
+                    </label>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Global state for palette colors
+const colorNames = ['primary', 'secondary', 'accent', 'neutral', 'info', 'success', 'warning', 'error'];
+let currentPaletteColors = {};
+
+// Toggle color picker popup
+function toggleColorPopup(colorName) {
+    const popup = document.getElementById('popup_' + colorName);
+    const allPopups = document.querySelectorAll('.color-picker-popup');
+
+    // Close all other popups
+    allPopups.forEach(p => {
+        if (p.id !== 'popup_' + colorName) {
+            p.classList.remove('active');
+        }
+    });
+
+    popup.classList.toggle('active');
+
+    // Fill suggestions with palette colors when opened
+    if (popup.classList.contains('active')) {
+        updateColorSuggestions(colorName);
+    }
+}
+
+// Update suggestions with current palette colors
+function updateColorSuggestions(colorName) {
+    const container = document.getElementById('suggestions_' + colorName);
+    if (!container) return;
+    container.innerHTML = '';
+
+    colorNames.forEach(name => {
+        if (currentPaletteColors[name]) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'color-suggestion';
+            btn.style.backgroundColor = currentPaletteColors[name];
+            btn.title = name.charAt(0).toUpperCase() + name.slice(1);
+            btn.onclick = function() {
+                document.getElementById('color_picker_' + colorName).value = currentPaletteColors[name];
+            };
+            container.appendChild(btn);
+        }
+    });
+}
+
+// Apply selected color
+function applyColor(colorName) {
+    const picker = document.getElementById('color_picker_' + colorName);
+    const hidden = document.getElementById('override_' + colorName);
+    const preview = document.getElementById('color_preview_' + colorName);
+    const hex = document.getElementById('color_hex_' + colorName);
+
+    if (picker && hidden) {
+        hidden.value = picker.value;
+        if (preview) preview.style.backgroundColor = picker.value;
+        if (hex) hex.textContent = picker.value;
+    }
+
+    document.getElementById('popup_' + colorName).classList.remove('active');
+    updatePreview();
+}
+
+// Reset color to palette default
+function resetColor(colorName) {
+    const hidden = document.getElementById('override_' + colorName);
+    const preview = document.getElementById('color_preview_' + colorName);
+    const hex = document.getElementById('color_hex_' + colorName);
+    const picker = document.getElementById('color_picker_' + colorName);
+
+    const paletteColor = currentPaletteColors[colorName] || '#cccccc';
+
+    if (hidden) hidden.value = '';
+    if (preview) preview.style.backgroundColor = paletteColor;
+    if (hex) hex.textContent = '(Palette)';
+    if (picker) picker.value = paletteColor;
+
+    document.getElementById('popup_' + colorName).classList.remove('active');
+    updatePreview();
+}
+
+// Live preview update
+function updatePreview() {
+    colorNames.forEach(name => {
+        const hidden = document.getElementById('override_' + name);
+        const color = (hidden && hidden.value) ? hidden.value : currentPaletteColors[name];
+
+        if (color) {
+            // Update preview elements directly with inline styles
+            const btnPreview = document.getElementById('preview-btn-' + name);
+            const badgePreview = document.getElementById('preview-badge-' + name);
+            if (btnPreview) btnPreview.style.backgroundColor = color;
+            if (badgePreview) badgePreview.style.backgroundColor = color;
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching
+    const tabs = document.querySelectorAll('[data-tab]');
+    const tabContents = document.querySelectorAll('.settings-tab-panel');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetTab = this.dataset.tab;
+
+            // Update tab styles
+            tabs.forEach(t => t.classList.remove('tab-active'));
+            this.classList.add('tab-active');
+
+            // Show/hide content
+            tabContents.forEach(content => {
+                if (content.id === 'tab-' + targetTab) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+
+            // Update hidden _tab field for form submission
+            document.getElementById('active-tab').value = targetTab;
+
+            // Update URL without reload
+            history.replaceState(null, '', '?tab=' + targetTab);
+        });
+    });
+
+    // Initialize palette colors from currently selected palette
+    const checkedPalette = document.querySelector('input[name="palette_id"]:checked');
+    if (checkedPalette && checkedPalette.dataset.colors) {
+        currentPaletteColors = JSON.parse(checkedPalette.dataset.colors);
+        // Update color previews with palette colors (for those without overrides)
+        colorNames.forEach(name => {
+            const hidden = document.getElementById('override_' + name);
+            const preview = document.getElementById('color_preview_' + name);
+            const picker = document.getElementById('color_picker_' + name);
+
+            if (!hidden || !hidden.value) {
+                // No override - show palette color
+                if (preview && currentPaletteColors[name]) {
+                    preview.style.backgroundColor = currentPaletteColors[name];
+                }
+                if (picker && currentPaletteColors[name]) {
+                    picker.value = currentPaletteColors[name];
+                }
+            }
+        });
+    }
+
+    // Palette selection changes
+    const paletteRadios = document.querySelectorAll('input[name="palette_id"]');
+    paletteRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            currentPaletteColors = JSON.parse(this.dataset.colors);
+
+            // Update color picker previews and pickers
+            colorNames.forEach(name => {
+                const hidden = document.getElementById('override_' + name);
+                const preview = document.getElementById('color_preview_' + name);
+                const hex = document.getElementById('color_hex_' + name);
+                const picker = document.getElementById('color_picker_' + name);
+
+                // Update picker value
+                if (picker && currentPaletteColors[name]) {
+                    picker.value = currentPaletteColors[name];
+                }
+
+                // Only update preview/hex if no override is set
+                if (!hidden || !hidden.value) {
+                    if (preview && currentPaletteColors[name]) {
+                        preview.style.backgroundColor = currentPaletteColors[name];
+                    }
+                    if (hex) {
+                        hex.textContent = '(Palette)';
+                    }
+                }
+            });
+
+            updatePreview();
+        });
+    });
+
+    // Close popups when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.color-picker-wrapper')) {
+            document.querySelectorAll('.color-picker-popup').forEach(p => {
+                p.classList.remove('active');
+            });
+        }
+    });
+
+    // Generate favicon from icon
+    const generateBtn = document.getElementById('generate-favicon');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', function() {
+            const selectedIcon = document.querySelector('input[name="logo_icon"]:checked');
+            if (!selectedIcon) {
+                alert('Bitte zuerst ein Icon auswählen.');
+                return;
+            }
+
+            const iconClass = selectedIcon.value;
+            const canvas = document.getElementById('favicon-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Clear canvas
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 32, 32);
+
+            // Get primary color
+            const primaryHidden = document.getElementById('override_primary');
+            const color = (primaryHidden && primaryHidden.value) ? primaryHidden.value : (currentPaletteColors.primary || '#3b82f6');
+
+            // Draw icon using Tabler Icons font
+            ctx.fillStyle = color;
+            ctx.font = '24px "tabler-icons"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Map icon class to unicode (simplified)
+            const iconMap = {
+                'ti-coffee': '\ueaab',
+                'ti-home': '\ueb1b',
+                'ti-building': '\uea3f',
+                'ti-building-store': '\uea42',
+                'ti-map-pin': '\ueb63',
+                'ti-star': '\uec2e',
+                'ti-heart': '\ueb0a',
+                'ti-leaf': '\ueb4b',
+                'ti-flame': '\uead2',
+                'ti-sun': '\uec58',
+                'ti-moon': '\ueb91',
+                'ti-bolt': '\uea38',
+                'ti-diamond': '\ueb4f',
+                'ti-crown': '\uea93',
+                'ti-rocket': '\uebeb',
+            };
+
+            const unicode = iconMap[iconClass] || '\uea3f';
+            ctx.fillText(unicode, 16, 16);
+
+            // Convert to data URL and store
+            const dataUrl = canvas.toDataURL('image/png');
+            document.getElementById('auto_favicon_data').value = dataUrl;
+
+            alert('Favicon wird beim Speichern generiert.');
+        });
+    }
+
+    // Initial preview update
+    updatePreview();
+});
+</script>
+{% endblock %}

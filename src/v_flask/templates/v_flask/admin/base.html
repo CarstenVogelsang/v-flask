@@ -78,7 +78,8 @@ Blocks available:
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
         // CSRF Token für HTMX POST-Requests automatisch hinzufügen
-        document.body.addEventListener('htmx:configRequest', function(evt) {
+        // Note: Use 'document' instead of 'document.body' since this runs in <head>
+        document.addEventListener('htmx:configRequest', function(evt) {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
             if (csrfToken) {
                 evt.detail.headers['X-CSRFToken'] = csrfToken;
@@ -96,10 +97,12 @@ Blocks available:
         {# Sidebar Header #}
         {% block sidebar_header %}
         <div class="p-4 border-b border-base-300">
-            <a href="{{ url_for(admin_dashboard_url|default('admin.dashboard')) }}"
+            {# admin_dashboard_url can be set via context processor or template #}
+            {% set dashboard_url = admin_dashboard_url|default(none) %}
+            <a href="{% if dashboard_url %}{{ url_for(dashboard_url) }}{% else %}/{% endif %}"
                class="text-xl font-bold flex items-center gap-2 hover:text-primary transition-colors">
-                <i class="ti ti-layout-dashboard"></i>
-                {{ site_name|default('Admin') }}
+                <i class="ti {{ logo_icon|default('ti-layout-dashboard') }}"></i>
+                <span class="sidebar-text">{{ site_name|default('Admin') }}</span>
             </a>
         </div>
         {% endblock %}
@@ -169,6 +172,16 @@ Blocks available:
                         <i class="ti ti-chevron-down text-xs"></i>
                     </div>
                     <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border border-base-200">
+                        <li>
+                            <a href="{{ url_for('two_fa.status') }}">
+                                <i class="ti ti-shield-lock"></i>
+                                2FA-Einstellungen
+                                {% if current_user.totp_enabled %}
+                                <span class="badge badge-success badge-xs">Aktiv</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li><hr class="my-1 border-base-200"></li>
                         <li>
                             <a href="{{ url_for('auth.logout') }}">
                                 <i class="ti ti-logout"></i>

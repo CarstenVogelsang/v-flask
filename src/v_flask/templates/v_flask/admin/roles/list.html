@@ -1,0 +1,120 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Rollen{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('users_admin.list_users') }}"><i class="ti ti-users mr-1"></i>Benutzer</a></li>
+        <li><i class="ti ti-shield mr-1"></i>Rollen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-shield text-primary"></i>
+        <span>Rollen & Berechtigungen</span>
+        <span class="badge badge-neutral">{{ roles|length }}</span>
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('users_admin.list_users') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zu Benutzern
+        </a>
+        <a href="{{ url_for('roles_admin.create_role') }}" class="btn btn-primary btn-sm">
+            <i class="ti ti-plus mr-1"></i> Neue Rolle
+        </a>
+    </div>
+</div>
+
+{# Info Card #}
+<div class="alert alert-info mb-6">
+    <i class="ti ti-info-circle"></i>
+    <div>
+        <h3 class="font-bold">Rollen & Berechtigungen</h3>
+        <p class="text-sm">
+            Rollen definieren, welche Aktionen Benutzer im System ausführen können.
+            Jeder Benutzer hat genau eine Rolle zugewiesen.
+        </p>
+    </div>
+</div>
+
+{# Roles Grid #}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for rolle in roles %}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <div class="flex items-center justify-between">
+                <h2 class="card-title">
+                    <i class="ti ti-shield text-primary"></i>
+                    {{ rolle.name|title }}
+                </h2>
+                {% if rolle.name in ['admin', 'betreiber', 'mitarbeiter', 'kunde'] %}
+                <span class="badge badge-ghost badge-sm">System</span>
+                {% endif %}
+            </div>
+
+            {% if rolle.beschreibung %}
+            <p class="text-sm text-base-content/60">{{ rolle.beschreibung }}</p>
+            {% endif %}
+
+            <div class="divider my-2"></div>
+
+            {# Stats #}
+            <div class="flex justify-between text-sm">
+                <span class="text-base-content/60">Benutzer:</span>
+                <span class="font-medium">{{ role_user_counts.get(rolle.id, 0) }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-base-content/60">Berechtigungen:</span>
+                <span class="font-medium">{{ rolle.permissions.count() }}</span>
+            </div>
+
+            {# Permission Preview #}
+            {% set perms = rolle.permissions.all()[:3] %}
+            {% if perms %}
+            <div class="mt-2">
+                <div class="flex flex-wrap gap-1">
+                    {% for perm in perms %}
+                    <span class="badge badge-outline badge-xs">{{ perm.code }}</span>
+                    {% endfor %}
+                    {% if rolle.permissions.count() > 3 %}
+                    <span class="badge badge-ghost badge-xs">+{{ rolle.permissions.count() - 3 }} weitere</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {# Actions #}
+            <div class="card-actions justify-end mt-4">
+                <a href="{{ url_for('roles_admin.edit_role', role_id=rolle.id) }}"
+                   class="btn btn-ghost btn-sm">
+                    <i class="ti ti-edit"></i> Bearbeiten
+                </a>
+                {% if rolle.name not in ['admin', 'betreiber', 'mitarbeiter', 'kunde'] and role_user_counts.get(rolle.id, 0) == 0 %}
+                <form method="post"
+                      action="{{ url_for('roles_admin.delete_role', role_id=rolle.id) }}"
+                      onsubmit="return confirm('Rolle \'{{ rolle.name }}\' wirklich löschen?')">
+                    {% include 'v_flask/includes/_csrf.html' %}
+                    <button type="submit" class="btn btn-ghost btn-sm text-error">
+                        <i class="ti ti-trash"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-span-full text-center py-12 text-base-content/60">
+        <i class="ti ti-shield-off text-4xl mb-2"></i>
+        <p>Keine Rollen vorhanden.</p>
+        <a href="{{ url_for('roles_admin.create_role') }}" class="btn btn-primary btn-sm mt-4">
+            <i class="ti ti-plus mr-1"></i> Erste Rolle erstellen
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

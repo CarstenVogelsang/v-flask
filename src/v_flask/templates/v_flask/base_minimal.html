@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +7,10 @@
 
     <title>{% block title %}{{ get_betreiber().name if get_betreiber() else 'v-flask App' }}{% endblock %}</title>
 
-    {# CSS: Bootstrap 5, Tabler Icons, v-flask.css #}
+    {# CSS: DaisyUI + Tailwind, Tabler Icons, v-flask.css #}
     {% block head_css %}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     {% set betreiber = get_betreiber() %}
     {% if betreiber and betreiber.google_fonts_url %}
     <link href="{{ betreiber.google_fonts_url }}" rel="stylesheet">
@@ -29,32 +30,27 @@
     {# Additional CSS from child templates #}
     {% block extra_css %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="min-h-screen flex flex-col bg-base-100">
     {% block body_start %}{% endblock %}
 
     {# Toast Container for Flash Messages #}
     {% block toast_container %}
-    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="toast toast-top toast-end z-50">
         {% for category, message in messages %}
-        <div class="toast align-items-center text-bg-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} border-0"
-             role="alert" aria-live="assertive" aria-atomic="true"
-             data-bs-autohide="true" data-bs-delay="5000">
-            <div class="d-flex">
-                <div class="toast-body">{{ message }}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Schließen"></button>
-            </div>
+        <div class="alert alert-{{ 'success' if category == 'success' else 'info' if category == 'info' else 'warning' if category == 'warning' else 'error' if category in ['error', 'danger'] else 'info' }}">
+            <span>{{ message }}</span>
         </div>
         {% endfor %}
-        {% endif %}
-        {% endwith %}
     </div>
+    {% endif %}
+    {% endwith %}
     {% endblock %}
 
     {# Main Content - Full page, no container #}
     {% block main %}
-    <main class="flex-grow-1">
+    <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>
     {% endblock %}
@@ -64,11 +60,8 @@
 
     {% block body_end %}{% endblock %}
 
-    {# JavaScript #}
-    {% block scripts_base %}
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('v_flask_static.static', filename='js/toast-init.js') }}"></script>
-    {% endblock %}
+    {# No JavaScript needed - DaisyUI components work without JS #}
+    {% block scripts_base %}{% endblock %}
 
     {% block extra_js %}{% endblock %}
 </body>

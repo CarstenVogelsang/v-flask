@@ -1,0 +1,85 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Neue Backup-Codes{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('two_fa.status') }}"><i class="ti ti-shield-lock mr-1"></i>2FA</a></li>
+        <li>Neue Backup-Codes</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-lg mx-auto">
+    {# Warning Card #}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-full bg-warning/20 flex items-center justify-center">
+                    <i class="ti ti-refresh text-warning text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">Neue Backup-Codes generieren</h1>
+                    <p class="text-sm text-base-content/60">
+                        Deine alten Codes werden dabei ungueltig.
+                    </p>
+                </div>
+            </div>
+
+            <div class="alert alert-warning mb-4">
+                <i class="ti ti-alert-triangle"></i>
+                <div>
+                    <h4 class="font-bold">Hinweis</h4>
+                    <p class="text-sm">
+                        Wenn du neue Backup-Codes generierst, werden alle bisherigen
+                        Codes ungueltig. Stelle sicher, dass du die neuen Codes
+                        sicher abspeicherst.
+                    </p>
+                </div>
+            </div>
+
+            <p class="text-sm text-base-content/70 mb-4">
+                Um fortzufahren, gib den aktuellen 6-stelligen Code aus deiner
+                Authenticator-App ein.
+            </p>
+
+            <form method="post">
+                {% include 'v_flask/includes/_csrf.html' %}
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Authenticator-Code</span>
+                    </label>
+                    <input type="text" name="code"
+                           class="input input-bordered text-center text-2xl font-mono tracking-widest"
+                           placeholder="000000"
+                           pattern="[0-9]{6}"
+                           maxlength="6"
+                           inputmode="numeric"
+                           autocomplete="one-time-code"
+                           autofocus
+                           required>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            6-stelliger Code
+                        </span>
+                    </label>
+                </div>
+
+                <div class="card-actions justify-end mt-6">
+                    <a href="{{ url_for('two_fa.status') }}" class="btn btn-ghost">
+                        Abbrechen
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-refresh mr-1"></i>
+                        Neue Codes generieren
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

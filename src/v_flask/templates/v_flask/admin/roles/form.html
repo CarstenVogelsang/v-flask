@@ -1,0 +1,177 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% set is_edit = role is not none %}
+
+{% block title %}{{ 'Rolle bearbeiten' if is_edit else 'Neue Rolle' }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('users_admin.list_users') }}"><i class="ti ti-users mr-1"></i>Benutzer</a></li>
+        <li><a href="{{ url_for('roles_admin.list_roles') }}"><i class="ti ti-shield mr-1"></i>Rollen</a></li>
+        <li>{{ 'Bearbeiten' if is_edit else 'Neu' }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-{{ 'edit' if is_edit else 'shield-plus' }} text-primary"></i>
+        <span>{{ 'Rolle bearbeiten' if is_edit else 'Neue Rolle' }}</span>
+    </h1>
+    <a href="{{ url_for('roles_admin.list_roles') }}" class="btn btn-ghost btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Zurück
+    </a>
+</div>
+
+<form method="post">
+    {% include 'v_flask/includes/_csrf.html' %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {# Main Form #}
+        <div class="lg:col-span-1">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">
+                        <i class="ti ti-shield text-base-content/60"></i>
+                        Rollendetails
+                    </h2>
+
+                    {# Name #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Name <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="name"
+                               value="{{ form_data.get('name', role.name if role else '') }}"
+                               class="input input-bordered"
+                               placeholder="z.B. redakteur"
+                               pattern="[a-z0-9_]+"
+                               required>
+                        <label class="label">
+                            <span class="label-text-alt">Kleinbuchstaben, Zahlen, Unterstriche</span>
+                        </label>
+                    </div>
+
+                    {# Description #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Beschreibung</span>
+                        </label>
+                        <textarea name="beschreibung" class="textarea textarea-bordered" rows="3"
+                                  placeholder="Kurze Beschreibung der Rolle...">{{ form_data.get('beschreibung', role.beschreibung if role else '') }}</textarea>
+                    </div>
+
+                    {% if is_edit %}
+                    {# Info #}
+                    <div class="alert mt-4">
+                        <i class="ti ti-info-circle"></i>
+                        <div class="text-sm">
+                            <div>Benutzer mit dieser Rolle: <strong>{{ role.users.count() }}</strong></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# Submit Button (Desktop) #}
+                    <div class="card-actions justify-end mt-6 hidden lg:flex">
+                        <a href="{{ url_for('roles_admin.list_roles') }}" class="btn btn-ghost">
+                            Abbrechen
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-device-floppy mr-1"></i>
+                            {{ 'Speichern' if is_edit else 'Erstellen' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Permissions #}
+        <div class="lg:col-span-2">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">
+                        <i class="ti ti-key text-base-content/60"></i>
+                        Berechtigungen
+                    </h2>
+
+                    <p class="text-sm text-base-content/60 mb-4">
+                        Wähle die Berechtigungen, die Benutzer mit dieser Rolle haben sollen.
+                    </p>
+
+                    {# Permission Groups #}
+                    <div class="space-y-6">
+                        {% for module, perms in permissions_by_module.items() %}
+                        <div class="border border-base-300 rounded-lg p-4">
+                            <h3 class="font-medium text-sm uppercase text-base-content/60 mb-3 flex items-center gap-2">
+                                <i class="ti ti-folder"></i>
+                                {{ module|title }}
+                                <span class="badge badge-ghost badge-xs">{{ perms|length }}</span>
+
+                                {# Select All Button #}
+                                <button type="button"
+                                        class="btn btn-ghost btn-xs ml-auto"
+                                        onclick="toggleModulePerms('{{ module }}', true)">
+                                    Alle
+                                </button>
+                                <button type="button"
+                                        class="btn btn-ghost btn-xs"
+                                        onclick="toggleModulePerms('{{ module }}', false)">
+                                    Keine
+                                </button>
+                            </h3>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {% for perm in perms %}
+                                <label class="flex items-start gap-3 p-2 rounded hover:bg-base-200 cursor-pointer">
+                                    <input type="checkbox"
+                                           name="permissions"
+                                           value="{{ perm.id }}"
+                                           data-module="{{ module }}"
+                                           class="checkbox checkbox-sm checkbox-primary mt-0.5"
+                                           {% if perm.id|string in selected_permissions %}checked{% endif %}>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-mono text-sm">{{ perm.code }}</div>
+                                        {% if perm.beschreibung %}
+                                        <div class="text-xs text-base-content/60">{{ perm.beschreibung }}</div>
+                                        {% endif %}
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-8 text-base-content/60">
+                            <i class="ti ti-key-off text-4xl mb-2"></i>
+                            <p>Keine Berechtigungen definiert.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {# Submit Button (Mobile) #}
+                    <div class="card-actions justify-end mt-6 lg:hidden">
+                        <a href="{{ url_for('roles_admin.list_roles') }}" class="btn btn-ghost">
+                            Abbrechen
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-device-floppy mr-1"></i>
+                            {{ 'Speichern' if is_edit else 'Erstellen' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+function toggleModulePerms(module, checked) {
+    document.querySelectorAll(`input[data-module="${module}"]`).forEach(cb => {
+        cb.checked = checked;
+    });
+}
+</script>
+{% endblock %}

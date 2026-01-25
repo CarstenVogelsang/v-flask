@@ -1,14 +1,13 @@
 /**
- * Tabler Icon Picker
+ * Tabler Icon Picker (DaisyUI Version)
  *
  * Central icon picker for selecting Tabler Icons.
- * Displayed as an offcanvas dialog that can be opened from modals.
+ * Displayed as a DaisyUI drawer that can be opened from modals.
  */
 
 // State
 let iconPickerTargetInput = null;
 let tablerIcons = [];
-let iconPickerOffcanvas = null;
 let iconsLoaded = false;
 
 /**
@@ -23,15 +22,11 @@ async function openIconPicker(inputId) {
         return;
     }
 
-    // Create offcanvas instance if not exists
-    const offcanvasEl = document.getElementById('iconPickerOffcanvas');
-    if (!offcanvasEl) {
-        console.error('Icon Picker: Offcanvas element not found');
+    // Find the drawer toggle checkbox
+    const drawerToggle = document.getElementById('iconPickerToggle');
+    if (!drawerToggle) {
+        console.error('Icon Picker: Drawer toggle not found');
         return;
-    }
-
-    if (!iconPickerOffcanvas) {
-        iconPickerOffcanvas = new bootstrap.Offcanvas(offcanvasEl);
     }
 
     // Load icons if not already done
@@ -52,14 +47,23 @@ async function openIconPicker(inputId) {
     // Show all icons
     renderIcons(tablerIcons);
 
-    // Open offcanvas
-    iconPickerOffcanvas.show();
+    // Open drawer by checking the toggle
+    drawerToggle.checked = true;
 
-    // Focus search field after opening
-    offcanvasEl.addEventListener('shown.bs.offcanvas', function onShown() {
+    // Focus search field after a short delay
+    setTimeout(() => {
         searchInput?.focus();
-        offcanvasEl.removeEventListener('shown.bs.offcanvas', onShown);
-    });
+    }, 100);
+}
+
+/**
+ * Closes the icon picker drawer
+ */
+function closeIconPicker() {
+    const drawerToggle = document.getElementById('iconPickerToggle');
+    if (drawerToggle) {
+        drawerToggle.checked = false;
+    }
 }
 
 /**
@@ -120,8 +124,8 @@ function renderIcons(icons) {
 
     if (icons.length === 0) {
         grid.innerHTML = `
-            <div class="text-center text-muted py-4">
-                <i class="ti ti-mood-sad fs-1"></i>
+            <div class="text-center text-base-content/50 py-4 col-span-full">
+                <i class="ti ti-mood-sad text-4xl"></i>
                 <p class="mt-2 mb-0">Keine Icons gefunden</p>
             </div>
         `;
@@ -137,12 +141,12 @@ function renderIcons(icons) {
 
         const item = document.createElement('button');
         item.type = 'button';
-        item.className = 'icon-grid-item';
+        item.className = 'icon-grid-item btn btn-ghost btn-sm aspect-square';
         item.title = iconName;
         item.onclick = () => selectIcon(iconName);
 
         const icon = document.createElement('i');
-        icon.className = `ti ${iconName}`;
+        icon.className = `ti ${iconName} text-xl`;
         item.appendChild(icon);
 
         fragment.appendChild(item);
@@ -232,10 +236,8 @@ function selectIcon(iconName) {
     // Trigger change event (for other event handlers)
     iconPickerTargetInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-    // Close offcanvas
-    if (iconPickerOffcanvas) {
-        iconPickerOffcanvas.hide();
-    }
+    // Close drawer
+    closeIconPicker();
 }
 
 /**
@@ -268,8 +270,9 @@ function updateIconPreviewFor(inputId) {
  */
 function highlightSelectedIcon(iconName) {
     // Remove all highlights
-    document.querySelectorAll('.icon-grid-item.selected').forEach(el => {
-        el.classList.remove('selected');
+    document.querySelectorAll('.icon-grid-item.btn-primary').forEach(el => {
+        el.classList.remove('btn-primary');
+        el.classList.add('btn-ghost');
     });
 
     if (!iconName) return;
@@ -287,7 +290,8 @@ function highlightSelectedIcon(iconName) {
     const items = grid.querySelectorAll('.icon-grid-item');
     items.forEach(item => {
         if (item.title === normalizedName) {
-            item.classList.add('selected');
+            item.classList.remove('btn-ghost');
+            item.classList.add('btn-primary');
             // Scroll into view
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -311,9 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (searchInput) {
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                if (iconPickerOffcanvas) {
-                    iconPickerOffcanvas.hide();
-                }
+                closeIconPicker();
             }
         });
     }

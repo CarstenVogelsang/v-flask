@@ -1,0 +1,143 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Benutzer{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-users mr-1"></i>Benutzer</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-users text-primary"></i>
+        <span>Benutzer</span>
+        <span class="badge badge-neutral">{{ users|length }}</span>
+    </h1>
+    <a href="{{ url_for('users_admin.create_user') }}" class="btn btn-primary btn-sm">
+        <i class="ti ti-plus mr-1"></i> Neuer Benutzer
+    </a>
+</div>
+
+{# Filter Bar #}
+<div class="card bg-base-100 shadow-sm mb-6">
+    <div class="card-body py-4">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            {# Search #}
+            <div class="form-control flex-1 min-w-48">
+                <label class="label py-1">
+                    <span class="label-text text-sm">Suche</span>
+                </label>
+                <input type="text" name="q" value="{{ current_filters.q }}"
+                       placeholder="Name oder E-Mail..."
+                       class="input input-bordered input-sm"
+                       hx-get="{{ url_for('users_admin.list_users') }}"
+                       hx-target="#users-table"
+                       hx-trigger="input changed delay:300ms"
+                       hx-include="[name='role'], [name='status']">
+            </div>
+
+            {# Role Filter #}
+            <div class="form-control">
+                <label class="label py-1">
+                    <span class="label-text text-sm">Rolle</span>
+                </label>
+                <select name="role" class="select select-bordered select-sm w-40"
+                        hx-get="{{ url_for('users_admin.list_users') }}"
+                        hx-target="#users-table"
+                        hx-trigger="change"
+                        hx-include="[name='q'], [name='status']">
+                    <option value="">Alle Rollen</option>
+                    {% for role in roles %}
+                    <option value="{{ role.id }}" {% if current_filters.role == role.id|string %}selected{% endif %}>
+                        {{ role.name|title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Status Filter #}
+            <div class="form-control">
+                <label class="label py-1">
+                    <span class="label-text text-sm">Status</span>
+                </label>
+                <select name="status" class="select select-bordered select-sm w-32"
+                        hx-get="{{ url_for('users_admin.list_users') }}"
+                        hx-target="#users-table"
+                        hx-trigger="change"
+                        hx-include="[name='q'], [name='role']">
+                    <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>Alle</option>
+                    <option value="active" {% if current_filters.status == 'active' %}selected{% endif %}>Aktiv</option>
+                    <option value="inactive" {% if current_filters.status == 'inactive' %}selected{% endif %}>Inaktiv</option>
+                </select>
+            </div>
+
+            {# Reset #}
+            <a href="{{ url_for('users_admin.list_users') }}" class="btn btn-sm btn-ghost">
+                <i class="ti ti-x"></i> Zurücksetzen
+            </a>
+        </form>
+    </div>
+</div>
+
+{# Users Table #}
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <div class="overflow-x-auto">
+            <form id="bulk-form" method="post" action="{{ url_for('users_admin.bulk_action') }}">
+                {% include 'v_flask/includes/_csrf.html' %}
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>
+                                <label>
+                                    <input type="checkbox" class="checkbox checkbox-sm"
+                                           onchange="toggleAll(this)">
+                                </label>
+                            </th>
+                            <th>Name</th>
+                            <th>E-Mail</th>
+                            <th>Rolle</th>
+                            <th>Status</th>
+                            <th>2FA</th>
+                            <th>Letzter Login</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table">
+                        {% include 'v_flask/admin/users/_user_list.html' %}
+                    </tbody>
+                </table>
+
+                {# Bulk Actions #}
+                <div class="flex items-center gap-4 mt-4 pt-4 border-t border-base-300">
+                    <span class="text-sm text-base-content/60">Mit ausgewählten:</span>
+                    <select name="action" class="select select-bordered select-sm w-40">
+                        <option value="">Aktion wählen...</option>
+                        <option value="activate">Aktivieren</option>
+                        <option value="deactivate">Deaktivieren</option>
+                        <option value="delete">Löschen</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline"
+                            onclick="return confirm('Aktion auf ausgewählte Benutzer anwenden?')">
+                        Ausführen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAll(checkbox) {
+    document.querySelectorAll('input[name="user_ids"]').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+}
+</script>
+{% endblock %}

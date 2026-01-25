@@ -47,7 +47,7 @@
         let preview = container.querySelector('.markdown-preview');
         if (!preview) {
             preview = document.createElement('div');
-            preview.className = 'markdown-preview d-none';
+            preview.className = 'markdown-preview hidden';
             textarea.parentNode.insertBefore(preview, textarea.nextSibling);
         }
 
@@ -55,7 +55,7 @@
         let dropzone = container.querySelector('.markdown-dropzone');
         if (!dropzone) {
             dropzone = document.createElement('div');
-            dropzone.className = 'markdown-dropzone d-none';
+            dropzone.className = 'markdown-dropzone hidden';
             dropzone.innerHTML = '<i class="ti ti-upload"></i> Bild hier ablegen';
             container.appendChild(dropzone);
         }
@@ -75,14 +75,14 @@
         function setMode(mode) {
             isPreviewMode = mode === 'preview';
 
-            // Update buttons
+            // Update buttons (DaisyUI: btn-active for active state)
             toolbar.querySelectorAll('button').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.mode === mode);
+                btn.classList.toggle('btn-active', btn.dataset.mode === mode);
             });
 
-            // Toggle visibility
-            textarea.classList.toggle('d-none', isPreviewMode);
-            preview.classList.toggle('d-none', !isPreviewMode);
+            // Toggle visibility (Tailwind: hidden class)
+            textarea.classList.toggle('hidden', isPreviewMode);
+            preview.classList.toggle('hidden', !isPreviewMode);
 
             // Render preview
             if (isPreviewMode) {
@@ -137,7 +137,7 @@
             e.preventDefault();
             e.stopPropagation();
             if (hasImageFile(e.dataTransfer)) {
-                dropzone.classList.remove('d-none');
+                dropzone.classList.remove('hidden');
             }
         });
 
@@ -146,14 +146,14 @@
             e.stopPropagation();
             // Only hide if leaving the container entirely
             if (!container.contains(e.relatedTarget)) {
-                dropzone.classList.add('d-none');
+                dropzone.classList.add('hidden');
             }
         });
 
         container.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            dropzone.classList.add('d-none');
+            dropzone.classList.add('hidden');
 
             const files = e.dataTransfer.files;
             if (files.length > 0) {
@@ -256,42 +256,47 @@
         }
 
         function showError(message) {
-            // Use Bootstrap toast if available
-            if (typeof bootstrap !== 'undefined' && document.querySelector('.toast-container')) {
-                const toastEl = document.createElement('div');
-                toastEl.className = 'toast align-items-center text-white bg-danger border-0';
-                toastEl.setAttribute('role', 'alert');
-                toastEl.innerHTML = `
-                    <div class="d-flex">
-                        <div class="toast-body">${message}</div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                    </div>
-                `;
-                document.querySelector('.toast-container').appendChild(toastEl);
-                const toast = new bootstrap.Toast(toastEl);
-                toast.show();
-                toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+            // Use DaisyUI toast (no JavaScript needed for display)
+            const toastContainer = document.querySelector('.toast');
+            if (toastContainer) {
+                const alertEl = document.createElement('div');
+                alertEl.className = 'alert alert-error';
+                alertEl.innerHTML = `<span>${message}</span>`;
+                toastContainer.appendChild(alertEl);
+
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    alertEl.remove();
+                }, 5000);
             } else {
-                alert(message);
+                // Fallback: create temporary toast container
+                const toast = document.createElement('div');
+                toast.className = 'toast toast-top toast-end z-50';
+                toast.innerHTML = `<div class="alert alert-error"><span>${message}</span></div>`;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 5000);
             }
         }
     }
 
     function createToolbar() {
         const toolbar = document.createElement('div');
-        toolbar.className = 'markdown-editor-toolbar mb-2';
+        toolbar.className = 'markdown-editor-toolbar mb-2 flex items-center gap-2';
         toolbar.innerHTML = `
-            <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-outline-secondary active" data-mode="edit">
+            <div class="join">
+                <button type="button" class="btn btn-sm btn-outline join-item btn-active" data-mode="edit">
                     <i class="ti ti-pencil"></i> Bearbeiten
                 </button>
-                <button type="button" class="btn btn-outline-secondary" data-mode="preview">
+                <button type="button" class="btn btn-sm btn-outline join-item" data-mode="preview">
                     <i class="ti ti-eye"></i> Preview
                 </button>
             </div>
-            <small class="text-muted ms-2">
+            <span class="text-sm text-base-content/50">
                 <i class="ti ti-photo"></i> Bilder: Drag & Drop oder Einfügen (Strg+V)
-            </small>
+            </span>
         `;
         return toolbar;
     }

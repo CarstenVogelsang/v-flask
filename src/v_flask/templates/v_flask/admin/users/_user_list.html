@@ -1,0 +1,13 @@
+{# Partial: Users Table Body #}
+{# Expects: users #}
+
+{% for user in users %}
+{% include 'v_flask/admin/users/_user_row.html' %}
+{% else %}
+<tr>
+    <td colspan="8" class="text-center text-base-content/60 py-8">
+        <i class="ti ti-users-group text-4xl mb-2"></i>
+        <p>Keine Benutzer gefunden.</p>
+    </td>
+</tr>
+{% endfor %}

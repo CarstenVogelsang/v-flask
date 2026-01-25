@@ -1,15 +1,15 @@
 {#
-    Icon Picker Macros
+    Icon Picker Macros (DaisyUI)
 
     Usage:
-        from "v_flask/macros/icon_picker.html" import icon_input, icon_picker_offcanvas
+        from "v_flask/macros/icon_picker.html" import icon_input, icon_picker_drawer
 
         In form:
         icon_input('icon', modul.icon, label='Icon', strip_prefix=true)
 
         Once per page in modals block:
         block modals:
-            icon_picker_offcanvas()
+            icon_picker_drawer()
 
         Include JavaScript:
         block extra_js:
@@ -31,15 +31,17 @@
 {% set preview_icon = value if value and value.startswith('ti-') else ('ti-' ~ value if value else placeholder) %}
 
 {% if label %}
-<label class="form-label" for="{{ field_id }}">{{ label }}</label>
+<label class="label" for="{{ field_id }}">
+    <span class="label-text">{{ label }}</span>
+</label>
 {% endif %}
 
-<div class="input-group icon-input-group">
-    <span class="input-group-text icon-preview" id="preview-{{ field_id }}">
+<div class="join w-full">
+    <span class="join-item btn btn-square" id="preview-{{ field_id }}">
         <i class="ti {{ preview_icon }}"></i>
     </span>
     <input type="text"
-           class="form-control icon-input"
+           class="input input-bordered join-item flex-1"
            name="{{ name }}"
            id="{{ field_id }}"
            value="{{ display_value }}"
@@ -48,7 +50,7 @@
            {% if required %}required{% endif %}
            onchange="updateIconPreviewFor('{{ field_id }}')">
     <button type="button"
-            class="btn btn-outline-secondary"
+            class="btn join-item"
             onclick="openIconPicker('{{ field_id }}')"
             title="Icon auswählen">
         <i class="ti ti-search"></i>
@@ -58,45 +60,64 @@
 
 
 {#
-    Icon Picker Offcanvas
+    Icon Picker Drawer
 
     Include this once per page (e.g., in modals block).
+    Note: renamed from icon_picker_offcanvas to icon_picker_drawer for DaisyUI
 #}
 
-{% macro icon_picker_offcanvas() %}
-<div class="offcanvas offcanvas-end" tabindex="-1" id="iconPickerOffcanvas" style="width: 450px;">
-    <div class="offcanvas-header border-bottom">
-        <h5 class="offcanvas-title">
-            <i class="ti ti-icons me-2"></i>Icon auswählen
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Schließen"></button>
-    </div>
-    <div class="offcanvas-body p-0">
-        <div class="p-3 border-bottom bg-light sticky-top">
-            <div class="input-group">
-                <span class="input-group-text"><i class="ti ti-search"></i></span>
-                <input type="text"
-                       class="form-control"
-                       id="iconSearchInput"
-                       placeholder="Icon suchen..."
-                       oninput="filterIcons(this.value)">
-                <button type="button" class="btn btn-outline-secondary" onclick="clearIconSearch()">
+{% macro icon_picker_drawer() %}
+<div class="drawer drawer-end z-50" id="iconPickerDrawer">
+    <input id="iconPickerToggle" type="checkbox" class="drawer-toggle">
+    <div class="drawer-side">
+        <label for="iconPickerToggle" aria-label="close sidebar" class="drawer-overlay"></label>
+        <div class="bg-base-100 min-h-full w-96 flex flex-col">
+            {# Header #}
+            <div class="p-4 border-b border-base-300 flex justify-between items-center">
+                <h3 class="font-bold text-lg flex items-center gap-2">
+                    <i class="ti ti-icons"></i>Icon auswählen
+                </h3>
+                <label for="iconPickerToggle" class="btn btn-sm btn-circle btn-ghost">
                     <i class="ti ti-x"></i>
-                </button>
+                </label>
             </div>
-            <div class="mt-2 d-flex justify-content-between align-items-center">
-                <small class="text-muted"><span id="iconCount">0</span> Icons</small>
-                <small class="text-muted" id="iconLoadingStatus"></small>
+
+            {# Search #}
+            <div class="p-4 border-b border-base-300 bg-base-200">
+                <div class="join w-full">
+                    <span class="join-item btn btn-square btn-sm">
+                        <i class="ti ti-search"></i>
+                    </span>
+                    <input type="text"
+                           class="input input-bordered input-sm join-item flex-1"
+                           id="iconSearchInput"
+                           placeholder="Icon suchen..."
+                           oninput="filterIcons(this.value)">
+                    <button type="button" class="btn btn-sm join-item" onclick="clearIconSearch()">
+                        <i class="ti ti-x"></i>
+                    </button>
+                </div>
+                <div class="mt-2 flex justify-between items-center text-sm text-base-content/60">
+                    <span><span id="iconCount">0</span> Icons</span>
+                    <span id="iconLoadingStatus"></span>
+                </div>
             </div>
-        </div>
-        <div id="iconGrid" class="p-3">
-            <div class="text-center text-muted py-5">
-                <i class="ti ti-loader ti-spin fs-1"></i>
-                <p class="mt-2">Icons werden geladen...</p>
+
+            {# Icon Grid #}
+            <div id="iconGrid" class="p-4 flex-1 overflow-y-auto">
+                <div class="text-center text-base-content/50 py-8">
+                    <i class="ti ti-loader animate-spin text-4xl"></i>
+                    <p class="mt-2">Icons werden geladen...</p>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endmacro %}
+
+{# Legacy alias for backwards compatibility #}
+{% macro icon_picker_offcanvas() %}
+{{ icon_picker_drawer() }}
 {% endmacro %}
 
 
@@ -109,8 +130,8 @@
         {{ icon_preview('ti-users', 'Benutzer') }}
 #}
 
-{% macro icon_preview(icon, label=none, size='fs-4') %}
-<span class="d-inline-flex align-items-center gap-2">
+{% macro icon_preview(icon, label=none, size='text-2xl') %}
+<span class="inline-flex items-center gap-2">
     <i class="ti {{ icon }} {{ size }}"></i>
     {% if label %}<span>{{ label }}</span>{% endif %}
 </span>

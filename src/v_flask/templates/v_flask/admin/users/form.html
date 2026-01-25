@@ -1,0 +1,269 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% set is_edit = user is not none %}
+
+{% block title %}{{ 'Benutzer bearbeiten' if is_edit else 'Neuer Benutzer' }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('users_admin.list_users') }}"><i class="ti ti-users mr-1"></i>Benutzer</a></li>
+        <li>{{ 'Bearbeiten' if is_edit else 'Neu' }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-{{ 'edit' if is_edit else 'user-plus' }} text-primary"></i>
+        <span>{{ 'Benutzer bearbeiten' if is_edit else 'Neuer Benutzer' }}</span>
+    </h1>
+    <a href="{{ url_for('users_admin.list_users') }}" class="btn btn-ghost btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Zurück
+    </a>
+</div>
+
+{# User Form #}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Main Form #}
+    <div class="lg:col-span-2">
+        <form method="post" class="card bg-base-100 shadow-xl">
+            {% include 'v_flask/includes/_csrf.html' %}
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="ti ti-user text-base-content/60"></i>
+                    Benutzerinformationen
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {# Vorname #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Vorname <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="vorname"
+                               value="{{ form_data.get('vorname', user.vorname if user else '') }}"
+                               class="input input-bordered" required>
+                    </div>
+
+                    {# Nachname #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Nachname <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="nachname"
+                               value="{{ form_data.get('nachname', user.nachname if user else '') }}"
+                               class="input input-bordered" required>
+                    </div>
+                </div>
+
+                {# E-Mail #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">E-Mail <span class="text-error">*</span></span>
+                    </label>
+                    <input type="email" name="email"
+                           value="{{ form_data.get('email', user.email if user else '') }}"
+                           class="input input-bordered" required>
+                </div>
+
+                {# Rolle #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Rolle <span class="text-error">*</span></span>
+                    </label>
+                    <select name="rolle_id" class="select select-bordered" required>
+                        <option value="">Rolle auswählen...</option>
+                        {% for role in roles %}
+                        <option value="{{ role.id }}"
+                                {% if form_data.get('rolle_id') == role.id|string or (user and user.rolle_id == role.id) %}selected{% endif %}>
+                            {{ role.name|title }}
+                            {% if role.beschreibung %} - {{ role.beschreibung }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {# Password (only for new users, or as separate section for edit) #}
+                {% if not is_edit %}
+                <div class="divider">Passwort</div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Passwort <span class="text-error">*</span></span>
+                        </label>
+                        <input type="password" name="password"
+                               class="input input-bordered" required minlength="8">
+                        <label class="label">
+                            <span class="label-text-alt">Mindestens 8 Zeichen</span>
+                        </label>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Passwort bestätigen <span class="text-error">*</span></span>
+                        </label>
+                        <input type="password" name="password_confirm"
+                               class="input input-bordered" required minlength="8">
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Status #}
+                <div class="divider">Status</div>
+
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-4">
+                        <input type="checkbox" name="aktiv" class="toggle toggle-success"
+                               {% if form_data.get('aktiv') == 'on' or (user and user.aktiv) or not is_edit %}checked{% endif %}>
+                        <span class="label-text">Benutzer ist aktiv</span>
+                    </label>
+                    <label class="label">
+                        <span class="label-text-alt">Inaktive Benutzer können sich nicht anmelden</span>
+                    </label>
+                </div>
+
+                {# Submit #}
+                <div class="card-actions justify-end mt-6">
+                    <a href="{{ url_for('users_admin.list_users') }}" class="btn btn-ghost">
+                        Abbrechen
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-device-floppy mr-1"></i>
+                        {{ 'Speichern' if is_edit else 'Erstellen' }}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {# Side Panel (only for edit) #}
+    {% if is_edit %}
+    <div class="space-y-6">
+        {# Password Change #}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-base">
+                    <i class="ti ti-key text-warning"></i>
+                    Passwort ändern
+                </h2>
+                <form method="post" action="{{ url_for('users_admin.set_password', user_id=user.id) }}">
+                    {% include 'v_flask/includes/_csrf.html' %}
+                    <div class="form-control mb-3">
+                        <label class="label py-1">
+                            <span class="label-text text-sm">Neues Passwort</span>
+                        </label>
+                        <input type="password" name="password"
+                               class="input input-bordered input-sm" required minlength="8">
+                    </div>
+                    <div class="form-control mb-4">
+                        <label class="label py-1">
+                            <span class="label-text text-sm">Bestätigen</span>
+                        </label>
+                        <input type="password" name="password_confirm"
+                               class="input input-bordered input-sm" required minlength="8">
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm w-full">
+                        <i class="ti ti-refresh mr-1"></i> Passwort setzen
+                    </button>
+                </form>
+                {% if user.last_password_change %}
+                <p class="text-xs text-base-content/60 mt-2">
+                    Letzte Änderung: {{ user.last_password_change.strftime('%d.%m.%Y %H:%M') }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# 2FA Status #}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-base">
+                    <i class="ti ti-shield-check text-success"></i>
+                    Zwei-Faktor-Authentifizierung
+                </h2>
+                {% if user.totp_enabled %}
+                <div class="alert alert-success py-2">
+                    <i class="ti ti-check"></i>
+                    <span class="text-sm">2FA ist aktiviert</span>
+                </div>
+                <p class="text-sm text-base-content/60">
+                    Aktiviert am: {{ user.totp_enabled_at.strftime('%d.%m.%Y') if user.totp_enabled_at else 'Unbekannt' }}<br>
+                    Backup-Codes: {{ user.get_backup_codes_count() }} verbleibend
+                </p>
+                <form method="post" action="{{ url_for('users_admin.reset_2fa', user_id=user.id) }}"
+                      onsubmit="return confirm('2FA für diesen Benutzer wirklich zurücksetzen?')">
+                    {% include 'v_flask/includes/_csrf.html' %}
+                    <button type="submit" class="btn btn-error btn-sm w-full mt-2">
+                        <i class="ti ti-shield-off mr-1"></i> 2FA zurücksetzen
+                    </button>
+                </form>
+                {% else %}
+                <div class="alert alert-warning py-2">
+                    <i class="ti ti-alert-triangle"></i>
+                    <span class="text-sm">2FA ist nicht aktiviert</span>
+                </div>
+                <p class="text-xs text-base-content/60 mt-2">
+                    Der Benutzer kann 2FA selbst in seinen Einstellungen aktivieren.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Account Security #}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-base">
+                    <i class="ti ti-lock text-info"></i>
+                    Kontosicherheit
+                </h2>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Fehlgeschlagene Logins:</span>
+                        <span class="font-mono">{{ user.failed_login_attempts }}</span>
+                    </div>
+                    {% if user.is_locked() %}
+                    <div class="alert alert-error py-2">
+                        <i class="ti ti-lock"></i>
+                        <span class="text-sm">Konto gesperrt bis {{ user.locked_until.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Erstellt:</span>
+                        <span>{{ user.created_at.strftime('%d.%m.%Y') if user.created_at else '-' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Letzter Login:</span>
+                        <span>{{ user.last_login.strftime('%d.%m.%Y %H:%M') if user.last_login else 'Nie' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Delete User #}
+        <div class="card bg-error/10 border border-error/20">
+            <div class="card-body">
+                <h2 class="card-title text-base text-error">
+                    <i class="ti ti-trash"></i>
+                    Benutzer löschen
+                </h2>
+                <p class="text-sm text-base-content/60">
+                    Diese Aktion kann nicht rückgängig gemacht werden.
+                </p>
+                <form method="post" action="{{ url_for('users_admin.delete_user', user_id=user.id) }}"
+                      onsubmit="return confirm('Benutzer \'{{ user.full_name }}\' wirklich unwiderruflich löschen?')">
+                    {% include 'v_flask/includes/_csrf.html' %}
+                    <button type="submit" class="btn btn-error btn-sm w-full mt-2">
+                        <i class="ti ti-trash mr-1"></i> Endgültig löschen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

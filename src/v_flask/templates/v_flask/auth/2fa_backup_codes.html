@@ -1,0 +1,180 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Backup-Codes{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('two_fa.status') }}"><i class="ti ti-shield-lock mr-1"></i>2FA</a></li>
+        <li>Backup-Codes</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-2xl mx-auto">
+    {# Success Alert #}
+    <div class="alert alert-success mb-6">
+        <i class="ti ti-shield-check text-xl"></i>
+        <span>Zwei-Faktor-Authentifizierung wurde erfolgreich aktiviert!</span>
+    </div>
+
+    {# Backup Codes Card #}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title mb-2">
+                <i class="ti ti-key text-warning"></i>
+                Deine Backup-Codes
+            </h2>
+
+            <div class="alert alert-warning mb-4">
+                <i class="ti ti-alert-triangle"></i>
+                <div>
+                    <h3 class="font-bold">Wichtig!</h3>
+                    <p class="text-sm">
+                        Speichere diese Codes sicher ab. Jeder Code kann nur einmal
+                        verwendet werden. Du benoetigst sie, falls du keinen Zugriff
+                        auf deine Authenticator-App hast.
+                    </p>
+                </div>
+            </div>
+
+            {# Codes Grid #}
+            <div class="bg-base-200 rounded-lg p-6 mb-4" id="backup-codes-container">
+                <div class="grid grid-cols-2 gap-3 font-mono text-lg">
+                    {% for code in backup_codes %}
+                    <div class="bg-base-100 rounded px-4 py-2 text-center">
+                        {{ code }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Actions #}
+            <div class="flex flex-wrap gap-2 justify-center">
+                <button type="button"
+                        class="btn btn-ghost btn-sm"
+                        onclick="copyAllCodes()">
+                    <i class="ti ti-copy mr-1"></i>
+                    Kopieren
+                </button>
+                <button type="button"
+                        class="btn btn-ghost btn-sm"
+                        onclick="printCodes()">
+                    <i class="ti ti-printer mr-1"></i>
+                    Drucken
+                </button>
+                <button type="button"
+                        class="btn btn-ghost btn-sm"
+                        onclick="downloadCodes()">
+                    <i class="ti ti-download mr-1"></i>
+                    Herunterladen
+                </button>
+            </div>
+
+            <div class="divider"></div>
+
+            {# Confirmation #}
+            <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3">
+                    <input type="checkbox" id="confirm-saved" class="checkbox checkbox-primary">
+                    <span class="label-text">
+                        Ich habe die Backup-Codes sicher gespeichert
+                    </span>
+                </label>
+            </div>
+
+            <div class="card-actions justify-end mt-4">
+                <a href="{{ url_for('two_fa.status') }}"
+                   id="continue-btn"
+                   class="btn btn-primary btn-disabled"
+                   onclick="return document.getElementById('confirm-saved').checked">
+                    <i class="ti ti-check mr-1"></i>
+                    Weiter
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enable continue button when checkbox is checked
+document.getElementById('confirm-saved').addEventListener('change', function() {
+    const btn = document.getElementById('continue-btn');
+    if (this.checked) {
+        btn.classList.remove('btn-disabled');
+    } else {
+        btn.classList.add('btn-disabled');
+    }
+});
+
+// Copy all codes
+function copyAllCodes() {
+    const codes = [{% for code in backup_codes %}'{{ code }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+    const text = codes.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Codes in die Zwischenablage kopiert');
+    });
+}
+
+// Print codes
+function printCodes() {
+    const codes = [{% for code in backup_codes %}'{{ code }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>2FA Backup-Codes</title>
+            <style>
+                body { font-family: monospace; padding: 40px; }
+                h1 { font-size: 18px; margin-bottom: 20px; }
+                .code { font-size: 16px; margin: 8px 0; padding: 8px; background: #f0f0f0; }
+                .warning { color: #b45309; margin-top: 20px; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <h1>Backup-Codes fuer {{ current_user.email }}</h1>
+            ${codes.map(c => '<div class="code">' + c + '</div>').join('')}
+            <p class="warning">
+                Jeder Code kann nur einmal verwendet werden.
+                Bewahre diese Seite sicher auf.
+            </p>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Download codes as text file
+function downloadCodes() {
+    const codes = [{% for code in backup_codes %}'{{ code }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+    const text = 'Backup-Codes fuer {{ current_user.email }}\n' +
+                 '================================\n\n' +
+                 codes.join('\n') +
+                 '\n\n================================\n' +
+                 'Jeder Code kann nur einmal verwendet werden.';
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'backup-codes.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function showToast(message) {
+    // Try to use existing toast system or create simple one
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, 'success');
+    } else {
+        alert(message);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}2FA-Status{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-shield-lock mr-1"></i>2FA</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-2xl mx-auto">
+    {# Title #}
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+            <i class="ti ti-shield-lock text-primary"></i>
+            <span>Zwei-Faktor-Authentifizierung</span>
+        </h1>
+    </div>
+
+    {# Status Card #}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            {# Status Indicator #}
+            <div class="flex items-center gap-4 mb-6">
+                {% if is_enabled %}
+                <div class="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
+                    <i class="ti ti-shield-check text-success text-3xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-success">2FA ist aktiviert</h2>
+                    <p class="text-sm text-base-content/60">
+                        Dein Konto ist durch Zwei-Faktor-Authentifizierung geschuetzt.
+                    </p>
+                </div>
+                {% else %}
+                <div class="w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center">
+                    <i class="ti ti-shield-off text-warning text-3xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-warning">2FA ist nicht aktiviert</h2>
+                    <p class="text-sm text-base-content/60">
+                        Aktiviere 2FA, um dein Konto besser zu schuetzen.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if is_enabled %}
+            {# Enabled State - Show Details #}
+            <div class="divider"></div>
+
+            <div class="space-y-4">
+                {# Enabled At #}
+                {% if enabled_at %}
+                <div class="flex justify-between items-center">
+                    <span class="text-base-content/70">Aktiviert am</span>
+                    <span class="font-medium">
+                        {{ enabled_at.strftime('%d.%m.%Y um %H:%M Uhr') }}
+                    </span>
+                </div>
+                {% endif %}
+
+                {# Account #}
+                <div class="flex justify-between items-center">
+                    <span class="text-base-content/70">Konto</span>
+                    <span class="font-medium">{{ current_user.email }}</span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            {# Actions for Enabled State #}
+            <h3 class="font-medium mb-3">Verwaltung</h3>
+            <div class="space-y-3">
+                {# Regenerate Backup Codes #}
+                <a href="{{ url_for('two_fa.regenerate_codes') }}"
+                   class="btn btn-ghost btn-block justify-start">
+                    <i class="ti ti-refresh text-lg mr-2"></i>
+                    <div class="text-left">
+                        <div class="font-medium">Neue Backup-Codes generieren</div>
+                        <div class="text-xs text-base-content/60">
+                            Ersetzt deine alten Backup-Codes durch neue
+                        </div>
+                    </div>
+                </a>
+
+                {# Disable 2FA #}
+                <a href="{{ url_for('two_fa.disable') }}"
+                   class="btn btn-ghost btn-block justify-start text-error">
+                    <i class="ti ti-shield-x text-lg mr-2"></i>
+                    <div class="text-left">
+                        <div class="font-medium">2FA deaktivieren</div>
+                        <div class="text-xs text-base-content/60">
+                            Entfernt den zusaetzlichen Schutz (nicht empfohlen)
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            {% else %}
+            {# Disabled State - Show Setup Button #}
+            <div class="divider"></div>
+
+            <div class="alert alert-info mb-4">
+                <i class="ti ti-info-circle"></i>
+                <div>
+                    <h4 class="font-bold">Vorteile der Zwei-Faktor-Authentifizierung:</h4>
+                    <ul class="list-disc list-inside text-sm mt-1">
+                        <li>Schuetzt dein Konto auch bei kompromittiertem Passwort</li>
+                        <li>Benoetigt physischen Zugriff auf dein Smartphone</li>
+                        <li>Backup-Codes fuer Notfaelle</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card-actions justify-center">
+                <a href="{{ url_for('two_fa.setup') }}" class="btn btn-primary btn-lg">
+                    <i class="ti ti-shield-plus mr-2"></i>
+                    2FA jetzt aktivieren
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Info Box #}
+    <div class="alert mt-6">
+        <i class="ti ti-bulb text-info"></i>
+        <div>
+            <h3 class="font-bold">Empfohlene Authenticator-Apps</h3>
+            <p class="text-sm">
+                Google Authenticator, Microsoft Authenticator, Authy, 1Password, Bitwarden
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

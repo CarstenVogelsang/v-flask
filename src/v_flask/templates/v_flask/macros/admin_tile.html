@@ -1,5 +1,5 @@
 {#
-    Admin Tile Macros for Dashboard/Overview Pages
+    Admin Tile Macros for Dashboard/Overview Pages (DaisyUI)
 
     Usage:
         from "v_flask/macros/admin_tile.html" import admin_tile, admin_tile_grid
@@ -22,38 +22,36 @@
 #}
 
 {% macro admin_tile(name, description, icon, url, color_hex='#3b82f6', settings_url=None, badge=None) %}
-<div class="col">
-    <div class="card h-100 admin-tile">
-        <a href="{{ url }}" class="card-body text-decoration-none d-block">
-            <div class="d-flex align-items-center mb-3">
-                <div class="rounded-circle p-3 me-3" style="background-color: {{ color_hex }}20;">
-                    <i class="ti {{ icon }} fs-2" style="color: {{ color_hex }};"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h5 class="card-title mb-0 text-dark d-flex align-items-center">
-                        {{ name }}
-                        {% if badge is not none %}
-                        <span class="badge rounded-pill ms-2" style="background-color: {{ color_hex }};">{{ badge }}</span>
-                        {% endif %}
-                    </h5>
-                </div>
+<a href="{{ url }}" class="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+    <div class="card-body">
+        <div class="flex items-center gap-3 mb-2">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: {{ color_hex }}20;">
+                <i class="ti {{ icon }} text-2xl" style="color: {{ color_hex }};"></i>
             </div>
-            <p class="card-text text-muted small mb-0">{{ description }}</p>
-        </a>
-        {% if settings_url %}
-        <div class="card-footer bg-transparent border-0 pt-0">
-            <a href="{{ settings_url }}" class="btn btn-sm btn-outline-secondary w-100">
-                <i class="ti ti-settings me-1"></i> Einstellungen
-            </a>
+            <div class="flex-1">
+                <h3 class="card-title text-base flex items-center gap-2">
+                    {{ name }}
+                    {% if badge is not none %}
+                    <span class="badge badge-sm" style="background-color: {{ color_hex }}; color: white;">{{ badge }}</span>
+                    {% endif %}
+                </h3>
+            </div>
         </div>
-        {% endif %}
+        <p class="text-sm text-base-content/60">{{ description }}</p>
     </div>
-</div>
+    {% if settings_url %}
+    <div class="card-actions px-4 pb-4">
+        <a href="{{ settings_url }}" class="btn btn-sm btn-outline w-full" onclick="event.stopPropagation()">
+            <i class="ti ti-settings"></i> Einstellungen
+        </a>
+    </div>
+    {% endif %}
+</a>
 {% endmacro %}
 
 
 {% macro admin_tile_grid(cols_sm=1, cols_md=2, cols_lg=3, cols_xl=4) %}
-<div class="row row-cols-{{ cols_sm }} row-cols-md-{{ cols_md }} row-cols-lg-{{ cols_lg }} row-cols-xl-{{ cols_xl }} g-4">
+<div class="grid grid-cols-{{ cols_sm }} md:grid-cols-{{ cols_md }} lg:grid-cols-{{ cols_lg }} xl:grid-cols-{{ cols_xl }} gap-4">
     {{ caller() }}
 </div>
 {% endmacro %}

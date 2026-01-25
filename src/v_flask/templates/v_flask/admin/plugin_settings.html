@@ -1,0 +1,176 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{{ plugin.name|title }} Einstellungen{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('plugins_admin.list_plugins') }}">Plugins</a></li>
+        <li>{{ plugin.name|title }} Einstellungen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-adjustments text-primary"></i>
+        {{ plugin.name|title }} Einstellungen
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('plugin_settings.plugin_help', plugin_name=plugin.name) }}"
+           class="btn btn-ghost btn-sm"
+           title="Hilfe">
+            <i class="ti ti-info-circle mr-1"></i>
+            Hilfe
+        </a>
+    </div>
+</div>
+
+{# Plugin Info #}
+<div class="alert alert-info mb-6 shadow-sm">
+    <i class="ti ti-info-circle"></i>
+    <div>
+        <div class="font-medium">{{ plugin.description }}</div>
+        <div class="text-sm opacity-80">Version {{ plugin.version }} von {{ plugin.author }}</div>
+    </div>
+</div>
+
+{# Settings Form #}
+<form method="post" class="card bg-base-100 shadow-xl">
+    {% include 'v_flask/includes/_csrf.html' %}
+    <div class="card-body">
+        {% for field in schema %}
+        <div class="form-control mb-4">
+            <label class="label" for="{{ field.key }}">
+                <span class="label-text font-medium">
+                    {{ field.label }}
+                    {% if field.required %}
+                    <span class="text-error">*</span>
+                    {% endif %}
+                </span>
+            </label>
+
+            {% if field.type == 'password' %}
+            {# Password field - show placeholder for existing values #}
+            <div class="join w-full">
+                <input type="password"
+                       name="{{ field.key }}"
+                       id="{{ field.key }}"
+                       value="{{ settings[field.key] or '' }}"
+                       class="input input-bordered join-item flex-1"
+                       placeholder="{% if settings[field.key] %}••••••••{% else %}API Key eingeben{% endif %}"
+                       autocomplete="off">
+                <button type="button"
+                        class="btn btn-square join-item"
+                        onclick="togglePasswordVisibility(this)"
+                        title="Anzeigen/Verbergen">
+                    <i class="ti ti-eye"></i>
+                </button>
+            </div>
+
+            {% elif field.type == 'bool' %}
+            {# Boolean toggle #}
+            <div class="flex items-center gap-3">
+                <input type="checkbox"
+                       name="{{ field.key }}"
+                       id="{{ field.key }}"
+                       class="toggle toggle-primary"
+                       {% if settings[field.key] %}checked{% endif %}>
+                <span class="label-text">{{ field.description|default('Aktivieren') }}</span>
+            </div>
+
+            {% elif field.type == 'textarea' %}
+            {# Multiline text #}
+            <textarea name="{{ field.key }}"
+                      id="{{ field.key }}"
+                      class="textarea textarea-bordered w-full"
+                      rows="4"
+                      placeholder="{{ field.get('placeholder', '') }}">{{ settings[field.key] or '' }}</textarea>
+
+            {% elif field.type == 'select' %}
+            {# Dropdown select #}
+            <select name="{{ field.key }}"
+                    id="{{ field.key }}"
+                    class="select select-bordered w-full">
+                {% for option in field.options %}
+                <option value="{{ option.value }}"
+                        {% if settings[field.key] == option.value %}selected{% endif %}>
+                    {{ option.label }}
+                </option>
+                {% endfor %}
+            </select>
+
+            {% elif field.type == 'int' %}
+            {# Integer input #}
+            <input type="number"
+                   name="{{ field.key }}"
+                   id="{{ field.key }}"
+                   value="{{ settings[field.key]|default(field.get('default', '')) }}"
+                   class="input input-bordered w-full"
+                   step="1"
+                   {% if field.get('min') is not none %}min="{{ field.min }}"{% endif %}
+                   {% if field.get('max') is not none %}max="{{ field.max }}"{% endif %}>
+
+            {% elif field.type == 'float' %}
+            {# Float input #}
+            <input type="number"
+                   name="{{ field.key }}"
+                   id="{{ field.key }}"
+                   value="{{ settings[field.key]|default(field.get('default', '')) }}"
+                   class="input input-bordered w-full"
+                   step="0.01"
+                   {% if field.get('min') is not none %}min="{{ field.min }}"{% endif %}
+                   {% if field.get('max') is not none %}max="{{ field.max }}"{% endif %}>
+
+            {% else %}
+            {# Default: string input #}
+            <input type="text"
+                   name="{{ field.key }}"
+                   id="{{ field.key }}"
+                   value="{{ settings[field.key] or '' }}"
+                   class="input input-bordered w-full"
+                   placeholder="{{ field.get('placeholder', '') }}">
+            {% endif %}
+
+            {# Description/Help text #}
+            {% if field.description and field.type != 'bool' %}
+            <label class="label">
+                <span class="label-text-alt text-base-content/60">
+                    {{ field.description }}
+                </span>
+            </label>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        {# Submit Button #}
+        <div class="card-actions justify-end mt-6 pt-4 border-t border-base-200">
+            <a href="{{ url_for('plugins_admin.list_plugins') }}" class="btn btn-ghost">
+                Abbrechen
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="ti ti-device-floppy mr-1"></i>
+                Speichern
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+function togglePasswordVisibility(button) {
+    const input = button.previousElementSibling;
+    const icon = button.querySelector('i');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'ti ti-eye-off';
+    } else {
+        input.type = 'password';
+        icon.className = 'ti ti-eye';
+    }
+}
+</script>
+{% endblock %}

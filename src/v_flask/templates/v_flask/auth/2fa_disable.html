@@ -1,0 +1,85 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}2FA deaktivieren{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('two_fa.status') }}"><i class="ti ti-shield-lock mr-1"></i>2FA</a></li>
+        <li>Deaktivieren</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-lg mx-auto">
+    {# Warning Card #}
+    <div class="card bg-base-100 shadow-xl border-2 border-error/30">
+        <div class="card-body">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-full bg-error/20 flex items-center justify-center">
+                    <i class="ti ti-shield-x text-error text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-error">2FA deaktivieren</h1>
+                    <p class="text-sm text-base-content/60">
+                        Diese Aktion verringert die Sicherheit deines Kontos.
+                    </p>
+                </div>
+            </div>
+
+            <div class="alert alert-warning mb-4">
+                <i class="ti ti-alert-triangle"></i>
+                <div>
+                    <h4 class="font-bold">Achtung!</h4>
+                    <p class="text-sm">
+                        Wenn du 2FA deaktivierst, ist dein Konto nur noch durch
+                        dein Passwort geschuetzt. Bei einem Datenleck koennten
+                        Angreifer Zugriff auf dein Konto erhalten.
+                    </p>
+                </div>
+            </div>
+
+            <p class="text-sm text-base-content/70 mb-4">
+                Um fortzufahren, gib den aktuellen 6-stelligen Code aus deiner
+                Authenticator-App ein.
+            </p>
+
+            <form method="post">
+                {% include 'v_flask/includes/_csrf.html' %}
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Authenticator-Code</span>
+                    </label>
+                    <input type="text" name="code"
+                           class="input input-bordered text-center text-2xl font-mono tracking-widest"
+                           placeholder="000000"
+                           pattern="[0-9]{6}"
+                           maxlength="6"
+                           inputmode="numeric"
+                           autocomplete="one-time-code"
+                           autofocus
+                           required>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            6-stelliger Code
+                        </span>
+                    </label>
+                </div>
+
+                <div class="card-actions justify-end mt-6">
+                    <a href="{{ url_for('two_fa.status') }}" class="btn btn-ghost">
+                        Abbrechen
+                    </a>
+                    <button type="submit" class="btn btn-error">
+                        <i class="ti ti-shield-x mr-1"></i>
+                        2FA deaktivieren
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 {#
-    Markdown Editor with Image Upload Support
+    Markdown Editor with Image Upload Support (DaisyUI)
 
     Usage:
         from "v_flask/macros/markdown_editor.html" import markdown_editor, markdown_editor_assets
@@ -34,7 +34,7 @@
     <textarea
         name="{{ name }}"
         id="{{ field_id }}"
-        class="form-control font-monospace"
+        class="textarea textarea-bordered w-full font-mono"
         rows="{{ rows }}"
         placeholder="{{ placeholder }}"
         {% if required %}required{% endif %}
@@ -67,7 +67,7 @@
 
 {% macro markdown_display(content, class='') %}
 {% if content %}
-<div class="markdown-content {{ class }}">
+<div class="prose max-w-none {{ class }}">
     {{ content|markdown|safe }}
 </div>
 {% endif %}

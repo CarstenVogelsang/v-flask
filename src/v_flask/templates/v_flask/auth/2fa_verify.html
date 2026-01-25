@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Zwei-Faktor-Authentifizierung{% endblock %}
+
+{% block content %}
+<div class="flex justify-center items-center min-h-[60vh]">
+    <div class="card w-full max-w-sm bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title justify-center text-2xl mb-2">
+                <i class="ti ti-shield-lock text-primary"></i>
+                2FA-Verifizierung
+            </h2>
+
+            <p class="text-center text-base-content/70 text-sm mb-4">
+                Gib den 6-stelligen Code aus deiner Authenticator-App ein.
+            </p>
+
+            <form method="post" id="2fa-form">
+                {% include 'v_flask/includes/_csrf.html' %}
+                <input type="hidden" name="use_backup" id="use_backup" value="0">
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text" id="code-label">Authenticator-Code</span>
+                    </label>
+                    <input type="text" name="code" id="code-input"
+                           class="input input-bordered text-center text-2xl font-mono tracking-widest"
+                           placeholder="000000"
+                           pattern="[0-9]{6}"
+                           maxlength="6"
+                           inputmode="numeric"
+                           autocomplete="one-time-code"
+                           autofocus
+                           required>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60" id="code-hint">
+                            6-stelliger Code
+                        </span>
+                    </label>
+                </div>
+
+                <div class="form-control mt-6">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-check"></i>
+                        Verifizieren
+                    </button>
+                </div>
+            </form>
+
+            <div class="divider text-xs">ODER</div>
+
+            <button type="button"
+                    class="btn btn-ghost btn-sm"
+                    id="toggle-backup"
+                    onclick="toggleBackupMode()">
+                <i class="ti ti-key"></i>
+                Backup-Code verwenden
+            </button>
+
+            <div class="mt-4 text-center">
+                <a href="{{ url_for('two_fa.cancel_verify') }}"
+                   class="link link-hover text-sm text-base-content/60">
+                    <i class="ti ti-arrow-left"></i>
+                    Anmeldung abbrechen
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let isBackupMode = false;
+
+function toggleBackupMode() {
+    isBackupMode = !isBackupMode;
+    const input = document.getElementById('code-input');
+    const label = document.getElementById('code-label');
+    const hint = document.getElementById('code-hint');
+    const hidden = document.getElementById('use_backup');
+    const btn = document.getElementById('toggle-backup');
+
+    if (isBackupMode) {
+        input.placeholder = 'xxxx-xxxx';
+        input.pattern = '[a-zA-Z0-9-]+';
+        input.maxLength = 9;
+        input.inputMode = 'text';
+        label.textContent = 'Backup-Code';
+        hint.textContent = 'Einmaliger Backup-Code';
+        hidden.value = '1';
+        btn.innerHTML = '<i class="ti ti-device-mobile"></i> Authenticator-Code verwenden';
+    } else {
+        input.placeholder = '000000';
+        input.pattern = '[0-9]{6}';
+        input.maxLength = 6;
+        input.inputMode = 'numeric';
+        label.textContent = 'Authenticator-Code';
+        hint.textContent = '6-stelliger Code';
+        hidden.value = '0';
+        btn.innerHTML = '<i class="ti ti-key"></i> Backup-Code verwenden';
+    }
+    input.value = '';
+    input.focus();
+}
+</script>
+{% endblock %}

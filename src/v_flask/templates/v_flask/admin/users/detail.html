@@ -1,0 +1,272 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Benutzer: {{ user.full_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('users_admin.list_users') }}"><i class="ti ti-users mr-1"></i>Benutzer</a></li>
+        <li>{{ user.full_name }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+    <div class="flex items-center gap-4">
+        <div class="avatar placeholder">
+            <div class="bg-primary text-primary-content rounded-full w-16">
+                <span class="text-2xl">{{ user.vorname[0] }}{{ user.nachname[0] }}</span>
+            </div>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold">{{ user.full_name }}</h1>
+            <p class="text-base-content/60">{{ user.email }}</p>
+        </div>
+    </div>
+    <div class="flex gap-2">
+        <a href="{{ url_for('users_admin.list_users') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zurück
+        </a>
+        <a href="{{ url_for('users_admin.edit_user', user_id=user.id) }}" class="btn btn-primary btn-sm">
+            <i class="ti ti-edit mr-1"></i> Bearbeiten
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Main Content #}
+    <div class="lg:col-span-2 space-y-6">
+        {# User Info Card #}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="ti ti-user text-primary"></i>
+                    Benutzerinformationen
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-sm text-base-content/60">Vorname</span>
+                        <p class="font-medium">{{ user.vorname }}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">Nachname</span>
+                        <p class="font-medium">{{ user.nachname }}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">E-Mail</span>
+                        <p class="font-mono">{{ user.email }}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">Rolle</span>
+                        <p>
+                            <span class="badge badge-outline">{{ user.rolle|title if user.rolle else 'Keine Rolle' }}</span>
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">User-Typ</span>
+                        <p>
+                            {% if user.is_ki %}
+                            <span class="badge badge-secondary">{{ user.user_typ }}</span>
+                            {% else %}
+                            <span class="badge badge-ghost">Mensch</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-base-content/60">Status</span>
+                        <p>
+                            {% if user.aktiv %}
+                            <span class="badge badge-success">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-error">Inaktiv</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Activity Log #}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="ti ti-history text-info"></i>
+                    Aktivitäts-Log
+                </h2>
+                {% if recent_logs %}
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra table-sm">
+                        <thead>
+                            <tr>
+                                <th>Zeitpunkt</th>
+                                <th>Modul</th>
+                                <th>Aktion</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_logs %}
+                            <tr>
+                                <td class="text-sm text-base-content/60 whitespace-nowrap">
+                                    {{ log.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                </td>
+                                <td>
+                                    <span class="badge badge-ghost badge-sm">{{ log.modul }}</span>
+                                </td>
+                                <td class="font-mono text-sm">{{ log.aktion }}</td>
+                                <td class="text-sm max-w-xs truncate" title="{{ log.details }}">
+                                    {{ log.details|truncate(50) if log.details else '-' }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8 text-base-content/60">
+                    <i class="ti ti-history-off text-4xl mb-2"></i>
+                    <p>Keine Aktivitäten protokolliert</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Side Panel #}
+    <div class="space-y-6">
+        {# Security Status #}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-base">
+                    <i class="ti ti-shield text-success"></i>
+                    Sicherheit
+                </h2>
+                <div class="space-y-3">
+                    {# 2FA Status #}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">2FA</span>
+                        {% if user.totp_enabled %}
+                        <span class="badge badge-success badge-sm">
+                            <i class="ti ti-check text-xs mr-1"></i> Aktiviert
+                        </span>
+                        {% else %}
+                        <span class="badge badge-warning badge-sm">
+                            <i class="ti ti-x text-xs mr-1"></i> Deaktiviert
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {# Account Lock Status #}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Kontosperre</span>
+                        {% if user.is_locked() %}
+                        <span class="badge badge-error badge-sm">Gesperrt</span>
+                        {% else %}
+                        <span class="badge badge-ghost badge-sm">Nicht gesperrt</span>
+                        {% endif %}
+                    </div>
+
+                    {# Failed Logins #}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Fehlversuche</span>
+                        <span class="font-mono text-sm {% if user.failed_login_attempts > 0 %}text-warning{% endif %}">
+                            {{ user.failed_login_attempts }}
+                        </span>
+                    </div>
+
+                    {% if user.totp_enabled %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Backup-Codes</span>
+                        <span class="font-mono text-sm">{{ user.get_backup_codes_count() }} übrig</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Timestamps #}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-base">
+                    <i class="ti ti-clock text-info"></i>
+                    Zeitstempel
+                </h2>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Erstellt:</span>
+                        <span>{{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '-' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Letzter Login:</span>
+                        <span>{{ user.last_login.strftime('%d.%m.%Y %H:%M') if user.last_login else 'Nie' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Passwort geändert:</span>
+                        <span>{{ user.last_password_change.strftime('%d.%m.%Y') if user.last_password_change else 'Nie' }}</span>
+                    </div>
+                    {% if user.totp_enabled_at %}
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">2FA aktiviert:</span>
+                        <span>{{ user.totp_enabled_at.strftime('%d.%m.%Y') }}</span>
+                    </div>
+                    {% endif %}
+                    {% if user.locked_until %}
+                    <div class="flex justify-between text-error">
+                        <span>Gesperrt bis:</span>
+                        <span>{{ user.locked_until.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Quick Actions #}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-base">
+                    <i class="ti ti-bolt text-warning"></i>
+                    Schnellaktionen
+                </h2>
+                <div class="space-y-2">
+                    <a href="{{ url_for('users_admin.edit_user', user_id=user.id) }}"
+                       class="btn btn-outline btn-sm w-full justify-start">
+                        <i class="ti ti-edit"></i> Bearbeiten
+                    </a>
+
+                    <form method="post" action="{{ url_for('users_admin.toggle_active', user_id=user.id) }}">
+                        {% include 'v_flask/includes/_csrf.html' %}
+                        <button type="submit" class="btn btn-outline btn-sm w-full justify-start">
+                            {% if user.aktiv %}
+                            <i class="ti ti-user-off"></i> Deaktivieren
+                            {% else %}
+                            <i class="ti ti-user-check"></i> Aktivieren
+                            {% endif %}
+                        </button>
+                    </form>
+
+                    {% if user.totp_enabled %}
+                    <form method="post" action="{{ url_for('users_admin.reset_2fa', user_id=user.id) }}"
+                          onsubmit="return confirm('2FA wirklich zurücksetzen?')">
+                        {% include 'v_flask/includes/_csrf.html' %}
+                        <button type="submit" class="btn btn-outline btn-warning btn-sm w-full justify-start">
+                            <i class="ti ti-shield-off"></i> 2FA zurücksetzen
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <form method="post" action="{{ url_for('users_admin.delete_user', user_id=user.id) }}"
+                          onsubmit="return confirm('Benutzer wirklich löschen?')">
+                        {% include 'v_flask/includes/_csrf.html' %}
+                        <button type="submit" class="btn btn-outline btn-error btn-sm w-full justify-start">
+                            <i class="ti ti-trash"></i> Löschen
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

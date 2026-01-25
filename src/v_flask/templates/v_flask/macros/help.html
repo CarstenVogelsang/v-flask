@@ -1,5 +1,5 @@
 {#
-    Help Icon Macro with Modal
+    Help Icon Macro with Modal (DaisyUI)
 
     IMPORTANT: Import with "with context" to access template context!
 
@@ -23,35 +23,38 @@
 {% macro help_icon(schluessel, titel=None, light=false) %}
 {% if get_help_text is defined %}
 {% set help = get_help_text(schluessel) %}
+{% set modal_id = 'helpModal_' ~ schluessel|replace('.', '_') %}
 {% if help and help.aktiv %}
 <button type="button"
-        class="btn btn-sm btn-link text-decoration-none p-0 ms-2 help-icon-btn"
-        data-bs-toggle="modal"
-        data-bs-target="#helpModal_{{ schluessel|replace('.', '_') }}"
+        class="btn btn-ghost btn-xs p-0 ml-2"
+        onclick="document.getElementById('{{ modal_id }}').showModal()"
         title="Hilfe anzeigen">
-    <i class="ti ti-info-circle fs-5 {{ 'text-white-50' if light else 'text-muted' }}"></i>
+    <i class="ti ti-info-circle text-lg {{ 'text-base-content/50' if light else 'text-base-content/60' }}"></i>
 </button>
 
-<div class="modal fade help-modal" id="helpModal_{{ schluessel|replace('.', '_') }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="ti ti-info-circle text-info me-2"></i>
-                    {{ help.titel or titel or 'Hilfe' }}
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
-            </div>
-            <div class="modal-body help-content">
-                {% if help.inhalt_markdown %}
-                {{ help.inhalt_markdown|markdown|safe }}
-                {% else %}
-                <p class="text-muted">Keine Hilfe verfügbar.</p>
-                {% endif %}
-            </div>
+<dialog id="{{ modal_id }}" class="modal">
+    <div class="modal-box max-w-2xl">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                <i class="ti ti-x"></i>
+            </button>
+        </form>
+        <h3 class="font-bold text-lg flex items-center gap-2">
+            <i class="ti ti-info-circle text-info"></i>
+            {{ help.titel or titel or 'Hilfe' }}
+        </h3>
+        <div class="py-4 prose max-w-none">
+            {% if help.inhalt_markdown %}
+            {{ help.inhalt_markdown|markdown|safe }}
+            {% else %}
+            <p class="text-base-content/50">Keine Hilfe verfügbar.</p>
+            {% endif %}
         </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
 {% endif %}
 {% endif %}
 {% endmacro %}
@@ -67,7 +70,7 @@
 
         help_modal('kunden.detail.branchen')
 
-        <button data-bs-toggle="modal" data-bs-target="#helpModal_kunden_detail_branchen">
+        <button onclick="document.getElementById('helpModal_kunden_detail_branchen').showModal()">
             Custom trigger
         </button>
 #}
@@ -75,27 +78,31 @@
 {% macro help_modal(schluessel, titel=None) %}
 {% if get_help_text is defined %}
 {% set help = get_help_text(schluessel) %}
+{% set modal_id = 'helpModal_' ~ schluessel|replace('.', '_') %}
 {% if help and help.aktiv %}
-<div class="modal fade help-modal" id="helpModal_{{ schluessel|replace('.', '_') }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="ti ti-info-circle text-info me-2"></i>
-                    {{ help.titel or titel or 'Hilfe' }}
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
-            </div>
-            <div class="modal-body help-content">
-                {% if help.inhalt_markdown %}
-                {{ help.inhalt_markdown|markdown|safe }}
-                {% else %}
-                <p class="text-muted">Keine Hilfe verfügbar.</p>
-                {% endif %}
-            </div>
+<dialog id="{{ modal_id }}" class="modal">
+    <div class="modal-box max-w-2xl">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                <i class="ti ti-x"></i>
+            </button>
+        </form>
+        <h3 class="font-bold text-lg flex items-center gap-2">
+            <i class="ti ti-info-circle text-info"></i>
+            {{ help.titel or titel or 'Hilfe' }}
+        </h3>
+        <div class="py-4 prose max-w-none">
+            {% if help.inhalt_markdown %}
+            {{ help.inhalt_markdown|markdown|safe }}
+            {% else %}
+            <p class="text-base-content/50">Keine Hilfe verfügbar.</p>
+            {% endif %}
         </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
 {% endif %}
 {% endif %}
 {% endmacro %}
@@ -113,7 +120,7 @@
 #}
 
 {% macro info_tooltip(text, light=false) %}
-<span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ text }}">
-    <i class="ti ti-info-circle {{ 'text-white-50' if light else 'text-muted' }}"></i>
+<span class="ml-1 tooltip" data-tip="{{ text }}">
+    <i class="ti ti-info-circle {{ 'text-base-content/50' if light else 'text-base-content/60' }}"></i>
 </span>
 {% endmacro %}

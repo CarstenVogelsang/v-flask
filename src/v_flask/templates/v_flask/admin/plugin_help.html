@@ -1,0 +1,136 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{{ plugin.name|title }} Hilfe{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('plugins_admin.list_plugins') }}">Plugins</a></li>
+        <li>{{ plugin.name|title }} Hilfe</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-info-circle text-primary"></i>
+        {{ plugin.name|title }} Hilfe
+    </h1>
+    <div class="flex gap-2">
+        {% if plugin.has_settings() %}
+        <a href="{{ url_for('plugin_settings.plugin_settings', plugin_name=plugin.name) }}"
+           class="btn btn-ghost btn-sm"
+           title="Einstellungen">
+            <i class="ti ti-adjustments mr-1"></i>
+            Einstellungen
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{# Plugin Info Card #}
+<div class="card bg-base-100 shadow-xl mb-6">
+    <div class="card-body">
+        <h2 class="card-title">
+            <i class="ti ti-puzzle text-primary"></i>
+            {{ plugin.name|title }}
+            <span class="badge badge-outline">v{{ plugin.version }}</span>
+        </h2>
+        <p>{{ plugin.description }}</p>
+
+        <div class="flex flex-wrap gap-2 mt-4">
+            <div class="badge badge-ghost">
+                <i class="ti ti-user mr-1"></i>
+                {{ plugin.author }}
+            </div>
+            {% if plugin.license %}
+            <div class="badge badge-ghost">
+                <i class="ti ti-license mr-1"></i>
+                {{ plugin.license }}
+            </div>
+            {% endif %}
+            {% if plugin.homepage %}
+            <a href="{{ plugin.homepage }}" target="_blank" class="badge badge-ghost hover:badge-primary">
+                <i class="ti ti-external-link mr-1"></i>
+                Homepage
+            </a>
+            {% endif %}
+            {% if plugin.repository %}
+            <a href="{{ plugin.repository }}" target="_blank" class="badge badge-ghost hover:badge-primary">
+                <i class="ti ti-brand-github mr-1"></i>
+                Repository
+            </a>
+            {% endif %}
+        </div>
+
+        {% if plugin.dependencies %}
+        <div class="mt-4">
+            <span class="text-sm font-medium">Abhängigkeiten:</span>
+            <div class="flex flex-wrap gap-1 mt-1">
+                {% for dep in plugin.dependencies %}
+                <span class="badge badge-outline badge-sm">{{ dep }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Help Content #}
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        {% if help_text %}
+        {# Custom help text from database #}
+        <div class="flex justify-between items-start mb-4">
+            <h2 class="card-title">{{ help_text.titel }}</h2>
+            {% if can_edit %}
+            <a href="#" class="btn btn-ghost btn-sm" title="Bearbeiten (noch nicht implementiert)">
+                <i class="ti ti-edit"></i>
+            </a>
+            {% endif %}
+        </div>
+        <div class="prose max-w-none">
+            {{ help_text.inhalt_markdown|markdown }}
+        </div>
+
+        {% elif readme_content %}
+        {# Plugin README.md #}
+        <h2 class="card-title mb-4">Dokumentation</h2>
+        <div class="prose max-w-none">
+            {{ readme_content|markdown }}
+        </div>
+
+        {% else %}
+        {# No help available #}
+        <div class="text-center py-8">
+            <i class="ti ti-file-text text-6xl text-base-content/20 mb-4"></i>
+            <p class="text-base-content/60">
+                Für dieses Plugin ist noch keine Hilfe verfügbar.
+            </p>
+            {% if plugin.homepage or plugin.repository %}
+            <div class="mt-4">
+                <span class="text-sm">Externe Ressourcen:</span>
+                <div class="flex justify-center gap-2 mt-2">
+                    {% if plugin.homepage %}
+                    <a href="{{ plugin.homepage }}" target="_blank" class="btn btn-sm btn-outline">
+                        <i class="ti ti-external-link mr-1"></i>
+                        Homepage
+                    </a>
+                    {% endif %}
+                    {% if plugin.repository %}
+                    <a href="{{ plugin.repository }}" target="_blank" class="btn btn-sm btn-outline">
+                        <i class="ti ti-brand-github mr-1"></i>
+                        Repository
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
