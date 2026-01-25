@@ -14,11 +14,28 @@
 
 {% block admin_content %}
 <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">
-        <i class="ti ti-mail text-primary mr-2"></i>Kontaktanfragen
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-mail text-primary"></i>
+        <span>Kontaktanfragen</span>
         {% if unread_count > 0 %}
-        <span class="badge badge-primary ml-2">{{ unread_count }} ungelesen</span>
+        <span class="badge badge-primary">{{ unread_count }} ungelesen</span>
         {% endif %}
+
+        {# Settings Button #}
+        {% if plugin_has_settings('kontakt') %}
+        <a href="{{ plugin_settings_url('kontakt') }}"
+           class="btn btn-ghost btn-sm btn-circle ml-2"
+           title="Einstellungen">
+            <i class="ti ti-adjustments text-lg"></i>
+        </a>
+        {% endif %}
+
+        {# Help Button #}
+        <a href="{{ plugin_help_url('kontakt') }}"
+           class="btn btn-ghost btn-sm btn-circle"
+           title="Hilfe">
+            <i class="ti ti-info-circle text-lg"></i>
+        </a>
     </h1>
 </div>
 

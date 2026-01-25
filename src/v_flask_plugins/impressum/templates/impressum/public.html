@@ -3,6 +3,9 @@
 {% block title %}Impressum{% endblock %}
 
 {% block content %}
+{# Hero Slot: hero_top #}
+{{ render_hero_slot('hero_top')|safe }}
+
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
@@ -39,4 +42,7 @@
     text-decoration: underline;
 }
 </style>
+
+{# Hero Slot: below_content #}
+{{ render_hero_slot('below_content')|safe }}
 {% endblock %}

@@ -13,15 +13,32 @@
 {% endblock %}
 
 {% block admin_content %}
-{# Title Bar with Help Icon #}
+{# Title Bar with Settings/Help Icons #}
 <div class="flex justify-between items-center mb-4">
     <h1 class="text-2xl font-bold flex items-center gap-2">
         <i class="ti ti-file-certificate text-primary"></i>
         <span>Impressum Editor</span>
-        {# Help Icon #}
+
+        {# Settings Button #}
+        {% if plugin_has_settings('impressum') %}
+        <a href="{{ plugin_settings_url('impressum') }}"
+           class="btn btn-ghost btn-sm btn-circle ml-2"
+           title="Einstellungen">
+            <i class="ti ti-adjustments text-lg"></i>
+        </a>
+        {% endif %}
+
+        {# Help Button (page-based) #}
+        <a href="{{ plugin_help_url('impressum') }}"
+           class="btn btn-ghost btn-sm btn-circle"
+           title="Hilfe">
+            <i class="ti ti-info-circle text-lg"></i>
+        </a>
+
+        {# Legacy Help Modal Button #}
         {% set help = get_help_text('impressum.editor') %}
         {% if help and help.aktiv %}
-        <button type="button" class="btn btn-ghost btn-sm btn-circle" onclick="help_modal_impressum.showModal()" title="Hilfe anzeigen">
+        <button type="button" class="btn btn-ghost btn-sm btn-circle" onclick="help_modal_impressum.showModal()" title="Schnellhilfe">
             <i class="ti ti-help text-base-content/60 text-lg"></i>
         </button>
         {% endif %}

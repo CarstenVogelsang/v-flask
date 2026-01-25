@@ -7,8 +7,27 @@
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold">API Marketplace</h1>
-            <p class="text-gray-600">{{ active_count }} aktive APIs</p>
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i class="ti ti-api text-primary"></i>
+                <span>API Marketplace</span>
+
+                {# Settings Button #}
+                {% if plugin_has_settings('api_market') %}
+                <a href="{{ plugin_settings_url('api_market') }}"
+                   class="btn btn-ghost btn-sm btn-circle ml-2"
+                   title="Einstellungen">
+                    <i class="ti ti-adjustments text-lg"></i>
+                </a>
+                {% endif %}
+
+                {# Help Button #}
+                <a href="{{ plugin_help_url('api_market') }}"
+                   class="btn btn-ghost btn-sm btn-circle"
+                   title="Hilfe">
+                    <i class="ti ti-info-circle text-lg"></i>
+                </a>
+            </h1>
+            <p class="text-gray-600 mt-1">{{ active_count }} aktive APIs</p>
         </div>
         <a href="{{ url_for('api_market_admin.add_api') }}" class="btn btn-primary">
             <i class="ti ti-plus mr-2"></i>

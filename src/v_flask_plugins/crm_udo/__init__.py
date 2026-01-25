@@ -67,6 +67,78 @@ class CrmUdoPlugin(PluginManifest):
         """Return template directory path."""
         return Path(__file__).parent / 'templates'
 
+    def get_settings_schema(self) -> list[dict]:
+        """Define available settings for the CRM UDO plugin.
+
+        Returns:
+            List of setting definitions for CRM UDO options.
+        """
+        return [
+            {
+                'key': 'udo_api_base_url',
+                'label': 'UDO API Base URL',
+                'type': 'string',
+                'description': 'Basis-URL der UDO API (z.B. https://api.unternehmensdaten.org)',
+                'required': True,
+            },
+            {
+                'key': 'udo_api_key',
+                'label': 'UDO API Key',
+                'type': 'password',
+                'description': 'API-Key für die Authentifizierung',
+                'required': False,
+            },
+            {
+                'key': 'cache_ttl',
+                'label': 'Cache-Dauer (Sekunden)',
+                'type': 'int',
+                'description': 'Wie lange API-Antworten gecached werden',
+                'default': 300,
+                'min': 0,
+                'max': 3600,
+            },
+            {
+                'key': 'page_size',
+                'label': 'Standard-Seitengröße',
+                'type': 'int',
+                'description': 'Anzahl Einträge pro Seite in Listen',
+                'default': 25,
+                'min': 10,
+                'max': 100,
+            },
+        ]
+
+    def get_help_texts(self):
+        """Return help texts for the CRM UDO plugin."""
+        return [
+            {
+                'schluessel': 'crm_udo.overview',
+                'titel': 'CRM UDO Hilfe',
+                'inhalt_markdown': '''## CRM für UDO
+
+Dieses Plugin verbindet sich mit der UDO API (unternehmensdaten.org) und ermöglicht
+die Verwaltung von Unternehmen, Organisationen und Kontakten.
+
+### Konfiguration
+
+In den Einstellungen muss die UDO API Base URL konfiguriert werden:
+- **API Base URL**: z.B. `https://api.unternehmensdaten.org`
+- **API Key**: Falls die API Authentifizierung erfordert
+
+### Funktionen
+
+- **Unternehmen**: Erstellen, Bearbeiten, Suchen von Unternehmen
+- **Organisationen**: Verbindungen zwischen Unternehmen (Coming Soon)
+- **Kontakte**: Ansprechpartner verwalten (Coming Soon)
+
+### API-Status
+
+Falls die API nicht erreichbar ist, werden entsprechende Fehlermeldungen angezeigt.
+Prüfen Sie in diesem Fall die Einstellungen und Netzwerkverbindung.
+''',
+            },
+        ]
+
     def on_init(self, app):
         """Called during app initialization."""
         # Verify UDO_API_BASE_URL is configured

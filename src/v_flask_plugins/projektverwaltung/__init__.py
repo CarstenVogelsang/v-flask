@@ -139,6 +139,49 @@ Ein vollständiges Projektmanagement-Plugin für v-flask Anwendungen.
         """Return path to plugin static files."""
         return Path(__file__).parent / 'static'
 
+    def get_settings_schema(self) -> list[dict]:
+        """Define available settings for the Projektverwaltung plugin.
+
+        Returns:
+            List of setting definitions for project management options.
+        """
+        return [
+            {
+                'key': 'default_task_status',
+                'label': 'Standard-Status für neue Tasks',
+                'type': 'select',
+                'description': 'Status, mit dem neue Tasks erstellt werden',
+                'options': [
+                    {'value': 'backlog', 'label': 'Backlog'},
+                    {'value': 'geplant', 'label': 'Geplant'},
+                ],
+                'default': 'backlog',
+            },
+            {
+                'key': 'changelog_auto_generate',
+                'label': 'Changelog automatisch erstellen',
+                'type': 'bool',
+                'description': 'Bei Task-Abschluss automatisch Changelog-Eintrag erstellen',
+                'default': True,
+            },
+            {
+                'key': 'archive_completed_after_days',
+                'label': 'Erledigte Tasks archivieren nach (Tage)',
+                'type': 'int',
+                'description': 'Erledigte Tasks nach X Tagen automatisch archivieren (0 = nie)',
+                'default': 30,
+                'min': 0,
+                'max': 365,
+            },
+            {
+                'key': 'api_enabled',
+                'label': 'REST-API aktivieren',
+                'type': 'bool',
+                'description': 'API-Endpoints für Claude Code Integration aktivieren',
+                'default': True,
+            },
+        ]
+
     def on_init(self, app):
         """Initialize plugin: seed LookupWerte for task types."""
         self._seed_lookup_werte(app)

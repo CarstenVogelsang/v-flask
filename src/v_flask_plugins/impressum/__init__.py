@@ -106,6 +106,36 @@ Ein Plugin zur Erstellung eines gesetzeskonformen deutschen Impressums nach § 5
         """Return path to plugin templates."""
         return Path(__file__).parent / 'templates'
 
+    def get_settings_schema(self) -> list[dict]:
+        """Define available settings for the Impressum plugin.
+
+        Returns:
+            List of setting definitions for display and legal options.
+        """
+        return [
+            {
+                'key': 'show_visdp',
+                'label': 'V.i.S.d.P. anzeigen',
+                'type': 'bool',
+                'description': 'Verantwortlicher im Sinne des Presserechts (§ 55 Abs. 2 RStV)',
+                'default': False,
+            },
+            {
+                'key': 'show_streitschlichtung',
+                'label': 'Streitschlichtung anzeigen',
+                'type': 'bool',
+                'description': 'Hinweis auf EU-Streitschlichtungsplattform anzeigen',
+                'default': True,
+            },
+            {
+                'key': 'custom_disclaimer',
+                'label': 'Eigener Disclaimer',
+                'type': 'textarea',
+                'description': 'Optionaler zusätzlicher Haftungsausschluss am Ende des Impressums',
+                'default': '',
+            },
+        ]
+
     def get_help_texts(self):
         """Return help texts for the Impressum editor."""
         return [{

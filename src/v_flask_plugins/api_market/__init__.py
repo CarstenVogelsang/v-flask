@@ -124,6 +124,75 @@ daraus benutzerfreundliche Dokumentation mit Code-Beispielen.
         """Return path to plugin static files."""
         return Path(__file__).parent / 'static'
 
+    def get_settings_schema(self) -> list[dict]:
+        """Define available settings for the API Market plugin.
+
+        Returns:
+            List of setting definitions for API marketplace options.
+        """
+        return [
+            {
+                'key': 'cache_ttl',
+                'label': 'Cache-Gültigkeit (Sekunden)',
+                'type': 'int',
+                'description': 'Wie lange OpenAPI-Specs gecached werden',
+                'default': 3600,
+                'min': 60,
+                'max': 86400,
+            },
+            {
+                'key': 'code_languages',
+                'label': 'Code-Beispiel-Sprachen',
+                'type': 'textarea',
+                'description': 'Komma-separierte Liste der Programmiersprachen für Code-Beispiele (python, csharp, delphi)',
+                'default': 'python, csharp, delphi',
+            },
+            {
+                'key': 'public_access',
+                'label': 'Öffentlicher Zugang',
+                'type': 'bool',
+                'description': 'API-Dokumentation ohne Login zugänglich machen',
+                'default': True,
+            },
+            {
+                'key': 'show_usage_stats',
+                'label': 'Usage-Statistiken anzeigen',
+                'type': 'bool',
+                'description': 'API-Nutzungsstatistiken öffentlich anzeigen',
+                'default': False,
+            },
+        ]
+
+    def get_help_texts(self):
+        """Return help texts for the API Market plugin."""
+        return [
+            {
+                'schluessel': 'api_market.overview',
+                'titel': 'API Marketplace Hilfe',
+                'inhalt_markdown': '''## API Marketplace
+
+Der API Marketplace ermöglicht die Dokumentation und Verwaltung von APIs.
+
+### APIs hinzufügen
+
+1. Klicke auf "API hinzufügen"
+2. Gib Name, Slug und OpenAPI-Spec-URL ein
+3. Die Dokumentation wird automatisch generiert
+
+### Code-Beispiele
+
+Für jede API werden automatisch Code-Beispiele in verschiedenen Sprachen generiert:
+- Python (requests)
+- C# (HttpClient)
+- Delphi (Indy)
+
+### Spec-Aktualisierung
+
+Die OpenAPI-Specs werden gecached. Klicke auf das Refresh-Icon, um die Spec manuell zu aktualisieren.
+''',
+            },
+        ]
+
     def on_init(self, app):
         """Initialize plugin with Flask app."""
         # Register configuration defaults

@@ -116,6 +116,60 @@ UNSPLASH_ACCESS_KEY=xxx     # Optional
         """Return path to plugin templates."""
         return Path(__file__).parent / 'templates'
 
+    def get_settings_schema(self) -> list[dict]:
+        """Define available settings for the Media plugin.
+
+        Returns:
+            List of setting definitions for Pexels/Unsplash API keys
+            and upload configuration.
+        """
+        return [
+            {
+                'key': 'pexels_api_key',
+                'label': 'Pexels API Key',
+                'type': 'password',
+                'description': 'API Key von pexels.com/api - Ermöglicht Stock-Foto-Suche',
+                'required': False,
+            },
+            {
+                'key': 'unsplash_access_key',
+                'label': 'Unsplash Access Key',
+                'type': 'password',
+                'description': 'Access Key von unsplash.com/developers - Ermöglicht Stock-Foto-Suche',
+                'required': False,
+            },
+            {
+                'key': 'max_upload_size_mb',
+                'label': 'Max. Upload-Größe (MB)',
+                'type': 'int',
+                'description': 'Maximale Dateigröße für Uploads in Megabyte',
+                'default': 10,
+                'min': 1,
+                'max': 50,
+            },
+            {
+                'key': 'auto_resize',
+                'label': 'Automatisches Resizing',
+                'type': 'bool',
+                'description': 'Bilder automatisch in verschiedene Größen konvertieren',
+                'default': True,
+            },
+        ]
+
+    def on_settings_saved(self, settings: dict) -> None:
+        """Clear cached API clients when settings change.
+
+        Args:
+            settings: Dictionary of saved settings.
+        """
+        # Clear cached clients so they're recreated with new keys
+        try:
+            from v_flask_plugins.media.services import pexels_service, unsplash_service
+            pexels_service._client = None
+            unsplash_service._client = None
+        except (ImportError, AttributeError):
+            pass
+
     def on_init(self, app):
         """Register context processors and public media route."""
         from flask import send_from_directory

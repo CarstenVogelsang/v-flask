@@ -3,6 +3,9 @@
 {% block title %}Kontakt{% endblock %}
 
 {% block content %}
+{# Hero Slot: hero_top #}
+{{ render_hero_slot('hero_top')|safe }}
+
 <div class="container mx-auto px-4 py-6">
     <div class="flex justify-center">
         <div class="w-full max-w-lg">
@@ -65,4 +68,7 @@
         </div>
     </div>
 </div>
+
+{# Hero Slot: below_content #}
+{{ render_hero_slot('below_content')|safe }}
 {% endblock %}

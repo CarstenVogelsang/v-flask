@@ -22,7 +22,27 @@ PEXELS_API_URL = "https://api.pexels.com/v1"
 
 
 def get_api_key() -> str | None:
-    """Get Pexels API key from config."""
+    """Get Pexels API key with fallback chain.
+
+    Priority order:
+    1. Database (PluginConfig) - set via admin UI
+    2. Flask config (.env) - PEXELS_API_KEY
+    3. None - not configured
+
+    Returns:
+        API key string or None if not configured.
+    """
+    # Try database first
+    try:
+        from v_flask.models import PluginConfig
+        db_key = PluginConfig.get_value('media', 'pexels_api_key')
+        if db_key:
+            return db_key
+    except Exception:
+        # PluginConfig might not exist yet (during migrations)
+        pass
+
+    # Fallback to Flask config
     return current_app.config.get('PEXELS_API_KEY')
 
 

@@ -26,7 +26,27 @@ UNSPLASH_API_URL = "https://api.unsplash.com"
 
 
 def get_access_key() -> str | None:
-    """Get Unsplash access key from config."""
+    """Get Unsplash access key with fallback chain.
+
+    Priority order:
+    1. Database (PluginConfig) - set via admin UI
+    2. Flask config (.env) - UNSPLASH_ACCESS_KEY
+    3. None - not configured
+
+    Returns:
+        Access key string or None if not configured.
+    """
+    # Try database first
+    try:
+        from v_flask.models import PluginConfig
+        db_key = PluginConfig.get_value('media', 'unsplash_access_key')
+        if db_key:
+            return db_key
+    except Exception:
+        # PluginConfig might not exist yet (during migrations)
+        pass
+
+    # Fallback to Flask config
     return current_app.config.get('UNSPLASH_ACCESS_KEY')
 
 

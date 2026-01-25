@@ -31,6 +31,24 @@
     <h1 class="text-2xl font-bold flex items-center gap-2">
         <i class="ti ti-photo text-primary"></i>
         <span>{% if picker_mode %}Bild auswählen{% else %}Medienbibliothek{% endif %}</span>
+
+        {# Settings Button (A) #}
+        {% if plugin_has_settings('media') and not picker_mode %}
+        <a href="{{ plugin_settings_url('media') }}"
+           class="btn btn-ghost btn-sm btn-circle ml-2"
+           title="Einstellungen">
+            <i class="ti ti-adjustments text-lg"></i>
+        </a>
+        {% endif %}
+
+        {# Help Button (B) #}
+        {% if not picker_mode %}
+        <a href="{{ plugin_help_url('media') }}"
+           class="btn btn-ghost btn-sm btn-circle"
+           title="Hilfe">
+            <i class="ti ti-info-circle text-lg"></i>
+        </a>
+        {% endif %}
     </h1>
     <div class="flex gap-2">
         {% if picker_mode %}
@@ -87,17 +105,17 @@
         <div class="flex flex-wrap items-center gap-4">
             {# Search #}
             <div class="form-control flex-1 min-w-[200px]">
-                <div class="input-group">
+                <div class="join w-full">
                     <input type="text"
                            name="q"
                            placeholder="Suchen..."
-                           class="input input-bordered input-sm w-full"
+                           class="input input-bordered input-sm join-item flex-1"
                            value="{{ search_query or '' }}"
                            hx-get="{{ url_for('media_admin.search') }}"
                            hx-trigger="keyup changed delay:300ms"
                            hx-target="#media-grid"
                            hx-include="[name='type'], [name='source']">
-                    <button class="btn btn-sm btn-square">
+                    <button class="btn btn-sm btn-square join-item">
                         <i class="ti ti-search"></i>
                     </button>
                 </div>

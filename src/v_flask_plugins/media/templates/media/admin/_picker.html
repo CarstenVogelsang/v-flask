@@ -3,16 +3,16 @@
 <div class="p-4">
     {# Search #}
     <div class="form-control mb-4">
-        <div class="input-group">
+        <div class="join w-full">
             <input type="text"
                    name="q"
                    placeholder="Medien suchen..."
-                   class="input input-bordered input-sm w-full"
+                   class="input input-bordered input-sm join-item flex-1"
                    value="{{ search_query or '' }}"
                    hx-get="{{ url_for('media_admin.picker', field=field_name, accept=accept) }}"
                    hx-trigger="keyup changed delay:300ms"
                    hx-target="#picker-grid">
-            <button class="btn btn-sm btn-square">
+            <button class="btn btn-sm btn-square join-item">
                 <i class="ti ti-search"></i>
             </button>
         </div>
@@ -38,7 +38,7 @@
             <div class="grid grid-cols-4 gap-2">
                 {% for media in media_items %}
                 <div class="aspect-square bg-base-200 rounded overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all picker-item"
-                     onclick="selectMedia({{ media.id }}, '{{ media.get_url('medium') }}', '{{ media.alt_text or media.filename }}', '{{ field_name }}')"
+                     onclick="pickMedia({{ media.id }}, '{{ media.get_url('medium') }}', '{{ media.alt_text or media.filename }}', '{{ field_name }}')"
                      title="{{ media.original_filename }}">
                     {% if media.is_image %}
                     <img src="{{ media.get_url('thumbnail') }}"
@@ -116,23 +116,15 @@ function showPickerTab(tab) {
     event.target.classList.add('tab-active');
 }
 
-function selectMedia(mediaId, url, altText, fieldName) {
-    // Update hidden input
-    const input = document.querySelector(`input[name="${fieldName}"]`);
-    if (input) input.value = mediaId;
-
-    // Update preview if exists
-    const preview = document.getElementById(`${fieldName}-preview`);
-    if (preview) {
-        preview.innerHTML = `<img src="${url}" alt="${altText}" class="w-full h-full object-cover">`;
-    }
+function pickMedia(mediaId, url, altText, fieldName) {
+    // Dispatch custom event for host page to handle
+    document.dispatchEvent(new CustomEvent('media-selected', {
+        detail: { mediaId, url, altText, fieldName }
+    }));
 
     // Close modal
     const modal = document.getElementById('media-picker-modal');
     if (modal) modal.close();
-
-    // Trigger change event
-    if (input) input.dispatchEvent(new Event('change'));
 }
 
 function handlePickerUpload(input, fieldName) {
@@ -141,18 +133,22 @@ function handlePickerUpload(input, fieldName) {
     const form = document.getElementById('picker-upload-form');
     const formData = new FormData(form);
 
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
     fetch('{{ url_for('media_admin.upload') }}', {
         method: 'POST',
         headers: {
             'HX-Request': 'true',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-CSRFToken': csrfToken || ''
         },
         body: formData
     })
     .then(response => response.json())
     .then(data => {
         if (data.success && data.media) {
-            selectMedia(
+            pickMedia(
                 data.media.id,
                 data.media.url_medium || data.media.url,
                 data.media.alt_text || data.media.filename,

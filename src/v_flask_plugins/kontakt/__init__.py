@@ -118,6 +118,43 @@ Das Plugin funktioniert standalone ohne externe Abhängigkeiten.
         """Return path to plugin templates."""
         return Path(__file__).parent / 'templates'
 
+    def get_settings_schema(self) -> list[dict]:
+        """Define available settings for the Kontakt plugin.
+
+        Returns:
+            List of setting definitions for contact form options.
+        """
+        return [
+            {
+                'key': 'email_recipient',
+                'label': 'E-Mail Empfänger',
+                'type': 'string',
+                'description': 'E-Mail-Adresse für Benachrichtigungen bei neuen Anfragen',
+                'default': '',
+            },
+            {
+                'key': 'email_notifications',
+                'label': 'E-Mail-Benachrichtigung',
+                'type': 'bool',
+                'description': 'Bei neuen Kontaktanfragen per E-Mail benachrichtigen',
+                'default': False,
+            },
+            {
+                'key': 'require_phone',
+                'label': 'Telefon Pflichtfeld',
+                'type': 'bool',
+                'description': 'Telefonnummer als Pflichtfeld im Kontaktformular',
+                'default': False,
+            },
+            {
+                'key': 'success_message',
+                'label': 'Erfolgs-Nachricht',
+                'type': 'textarea',
+                'description': 'Nachricht nach erfolgreichem Absenden des Formulars',
+                'default': 'Vielen Dank für Ihre Nachricht! Wir melden uns schnellstmöglich.',
+            },
+        ]
+
     def on_init(self, app):
         """Register nl2br Jinja filter if not already available."""
         from markupsafe import Markup

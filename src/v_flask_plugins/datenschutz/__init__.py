@@ -117,6 +117,43 @@ Ein Plugin zur Erstellung einer DSGVO-konformen Datenschutzerklärung.
         """Return path to plugin templates."""
         return Path(__file__).parent / 'templates'
 
+    def get_settings_schema(self) -> list[dict]:
+        """Define available settings for the Datenschutz plugin.
+
+        Returns:
+            List of setting definitions for privacy policy options.
+        """
+        return [
+            {
+                'key': 'auto_detect_services',
+                'label': 'Dienste automatisch erkennen',
+                'type': 'bool',
+                'description': 'Automatische Erkennung eingebundener Dienste (Analytics, Videos, etc.)',
+                'default': True,
+            },
+            {
+                'key': 'show_version_date',
+                'label': 'Versionsdatum anzeigen',
+                'type': 'bool',
+                'description': 'Datum der letzten Aktualisierung öffentlich anzeigen',
+                'default': True,
+            },
+            {
+                'key': 'cookie_banner_enabled',
+                'label': 'Cookie-Banner aktivieren',
+                'type': 'bool',
+                'description': 'Cookie-Einwilligungsbanner auf allen Seiten anzeigen',
+                'default': False,
+            },
+            {
+                'key': 'dsb_contact',
+                'label': 'Datenschutzbeauftragter',
+                'type': 'textarea',
+                'description': 'Kontaktdaten des Datenschutzbeauftragten (falls vorhanden)',
+                'default': '',
+            },
+        ]
+
     def get_help_texts(self):
         """Return help texts for the Datenschutz editor."""
         return [{
