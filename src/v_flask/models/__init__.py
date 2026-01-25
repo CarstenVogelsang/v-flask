@@ -5,7 +5,7 @@ All SQLAlchemy models for the core system.
 
 Usage:
     from v_flask.models import User, Rolle, Permission, Config, Betreiber, AuditLog
-    from v_flask.models import LookupWert, Modul
+    from v_flask.models import LookupWert, Modul, ColorPalette
 
     # Create a role with permissions
     admin = Rolle(name='admin', beschreibung='Administrator')
@@ -44,6 +44,8 @@ from v_flask.models.modul import Modul
 from v_flask.models.plugin_activation import PluginActivation
 from v_flask.models.system_status import SystemStatus
 from v_flask.models.help_text import HelpText
+from v_flask.models.plugin_config import PluginConfig
+from v_flask.models.color_palette import ColorPalette
 
 __all__ = [
     # Core user system
@@ -65,4 +67,8 @@ __all__ = [
     'SystemStatus',
     # Help system
     'HelpText',
+    # Plugin settings
+    'PluginConfig',
+    # Theming
+    'ColorPalette',
 ]

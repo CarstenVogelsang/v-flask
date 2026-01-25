@@ -1,7 +1,7 @@
 """
 v-flask Services
 
-Logging, Email und andere Dienste.
+Logging, Email, Two-Factor Authentication und andere Dienste.
 
 Usage:
     # Logging
@@ -23,6 +23,22 @@ Usage:
         )
         if result.success:
             print(f'Gesendet! Message ID: {result.message_id}')
+
+    # Two-Factor Authentication (2FA)
+    from v_flask.services import TwoFAService
+
+    # Generate secret and QR code
+    secret = TwoFAService.generate_secret()
+    qr_uri = TwoFAService.get_provisioning_uri(secret, 'user@example.com', 'MyApp')
+    qr_base64 = TwoFAService.generate_qr_code_base64(qr_uri)
+
+    # Verify code from authenticator
+    if TwoFAService.verify_code(secret, user_code):
+        print('2FA code valid!')
+
+    # Generate and hash backup codes
+    codes = TwoFAService.generate_backup_codes()
+    hashed = TwoFAService.hash_backup_codes(codes)
 
     # Exception logging decorator
     from v_flask.services import log_exceptions
@@ -65,6 +81,11 @@ from v_flask.services.brevo_service import (
     reset_email_service,
 )
 
+from v_flask.services.two_fa_service import (
+    TwoFAService,
+    log_2fa_event,
+)
+
 __all__ = [
     # Logging - Main function
     'log_event',
@@ -92,4 +113,7 @@ __all__ = [
     # Email - Factory
     'get_email_service',
     'reset_email_service',
+    # Two-Factor Authentication
+    'TwoFAService',
+    'log_2fa_event',
 ]

@@ -42,6 +42,13 @@ from flask_login import LoginManager
 from v_flask.extensions import db
 from v_flask.plugins import PluginManifest, PluginRegistry, PluginManager, RestartManager
 from v_flask.plugins.slots import PluginSlotManager
+from v_flask.content_slots import (
+    ContentSlotRegistry,
+    content_slot_registry,
+    create_context_processor,
+)
+from v_flask.bundles import BundleManifest, BundleRegistry
+from v_flask.themes import ThemeManifest, ThemeRegistry
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -55,7 +62,14 @@ __all__ = [
     'PluginRegistry',
     'PluginManager',
     'PluginSlotManager',
+    'ContentSlotRegistry',
+    'content_slot_registry',
     'RestartManager',
+    # Bundle system
+    'BundleManifest',
+    'BundleRegistry',
+    'ThemeManifest',
+    'ThemeRegistry',
 ]
 
 
@@ -103,7 +117,13 @@ class VFlask:
         self.plugin_manager = PluginManager()
         self.restart_manager = RestartManager()
         self.slot_manager = PluginSlotManager()
+        self.content_slot_registry = content_slot_registry  # Global instance
         self._initialized = False
+
+        # Bundle system
+        self.theme_registry = ThemeRegistry()
+        self.bundle_registry = BundleRegistry(self.theme_registry)
+        self._active_bundle_name: str | None = None
 
         if app is not None:
             self.init_app(app)
@@ -131,6 +151,61 @@ class VFlask:
                 "Cannot register plugins after initialization"
             )
         self.plugin_registry.register(plugin)
+
+    def use_bundle(self, bundle_name: str) -> 'VFlask':
+        """Configure the application to use a bundle.
+
+        Bundles combine a theme with a set of plugins for a complete starter kit.
+        The bundle will be activated during init_app().
+
+        Must be called before init_app().
+
+        Args:
+            bundle_name: Name of the bundle to use.
+
+        Returns:
+            Self for method chaining.
+
+        Raises:
+            RuntimeError: If init_app() was already called.
+
+        Example:
+            v_flask = VFlask()
+            v_flask.use_bundle('mfr')  # Activate MFR bundle
+            v_flask.register_plugin(CRMPlugin())  # Required by bundle
+            v_flask.init_app(app)
+        """
+        if self._initialized:
+            raise RuntimeError(
+                "Cannot set bundle after initialization. "
+                "Call use_bundle() before init_app()."
+            )
+        self._active_bundle_name = bundle_name
+        return self
+
+    def register_bundle(self, bundle: BundleManifest) -> None:
+        """Register a bundle manually before initialization.
+
+        Use this to register bundles that are not discovered via entry points.
+
+        Args:
+            bundle: BundleManifest instance to register.
+
+        Raises:
+            RuntimeError: If init_app() was already called.
+
+        Example:
+            v_flask = VFlask()
+            v_flask.register_bundle(MFRBundle())
+            v_flask.use_bundle('mfr')
+            v_flask.init_app(app)
+        """
+        if self._initialized:
+            raise RuntimeError(
+                "Cannot register bundles after initialization. "
+                "Call register_bundle() before init_app()."
+            )
+        self.bundle_registry.register(bundle)
 
     def init_app(self, app: Flask) -> None:
         """Initialize the extension with a Flask app.
@@ -253,6 +328,42 @@ class VFlask:
                 except (ImportError, RuntimeError):
                     return ''
 
+            def plugin_has_settings(plugin_name: str) -> bool:
+                """Check if a plugin has configurable settings.
+
+                Args:
+                    plugin_name: The plugin identifier.
+
+                Returns:
+                    True if the plugin has settings, False otherwise.
+                """
+                plugin = self.plugin_registry.get(plugin_name)
+                return bool(plugin and plugin.has_settings())
+
+            def plugin_settings_url(plugin_name: str) -> str:
+                """Get the URL for a plugin's settings page.
+
+                Args:
+                    plugin_name: The plugin identifier.
+
+                Returns:
+                    URL string for the settings page.
+                """
+                from flask import url_for
+                return url_for('plugin_settings.plugin_settings', plugin_name=plugin_name)
+
+            def plugin_help_url(plugin_name: str) -> str:
+                """Get the URL for a plugin's help page.
+
+                Args:
+                    plugin_name: The plugin identifier.
+
+                Returns:
+                    URL string for the help page.
+                """
+                from flask import url_for
+                return url_for('plugin_settings.plugin_help', plugin_name=plugin_name)
+
             return {
                 'get_betreiber': get_betreiber,
                 'get_plugin_slots': get_plugin_slots,
@@ -264,6 +375,10 @@ class VFlask:
                 'v_flask_version': __version__,
                 'restart_required': get_restart_required,
                 'scheduled_restart': get_scheduled_restart,
+                # Plugin settings helpers
+                'plugin_has_settings': plugin_has_settings,
+                'plugin_settings_url': plugin_settings_url,
+                'plugin_help_url': plugin_help_url,
             }
 
         # Register templates and static files
@@ -277,6 +392,15 @@ class VFlask:
         if not hasattr(app, 'extensions'):
             app.extensions = {}
         app.extensions['v_flask_slots'] = self.slot_manager
+        app.extensions['v_flask_content_slots'] = self.content_slot_registry
+
+        # Activate bundle if configured (before plugin init so theme is available)
+        if self._active_bundle_name:
+            self._activate_bundle(app)
+
+        # Register content slot context processor
+        content_slot_processor = create_context_processor(self.content_slot_registry)
+        app.context_processor(content_slot_processor)
 
         # Initialize registered plugins
         self._init_plugins(app)
@@ -458,13 +582,31 @@ class VFlask:
         register_commands(app, db)
 
     def _register_plugin_admin_routes(self, app: Flask) -> None:
-        """Register admin routes for plugin management.
+        """Register admin routes for plugin management and user administration.
 
-        Routes are available under /admin/plugins/ and require
-        'plugins.manage' or 'plugins.restart' permissions.
+        Routes include:
+        - /admin/ - Core admin dashboard (redirects to plugins)
+        - /admin/plugins/ - Plugin management (requires plugins.* permissions)
+        - /admin/settings/ - Core platform settings (requires admin permissions)
+        - /admin/users/ - User management (requires user.* permissions)
+        - /admin/roles/ - Role management (requires user.* permissions)
+        - /auth/2fa/ - Two-factor authentication routes
         """
+        from v_flask.admin.routes import register_admin_routes
         from v_flask.plugins.admin_routes import register_plugin_admin_routes
+        from v_flask.plugins.settings_routes import register_settings_routes
+        from v_flask.plugins.admin_users import register_user_admin_routes
+        from v_flask.plugins.admin_roles import register_role_admin_routes
+        from v_flask.plugins.admin_core_settings import register_core_settings_routes
+        from v_flask.auth.routes import register_2fa_routes
+
+        register_admin_routes(app)  # Core admin dashboard - must be first
         register_plugin_admin_routes(app)
+        register_settings_routes(app)
+        register_user_admin_routes(app)
+        register_role_admin_routes(app)
+        register_core_settings_routes(app)
+        register_2fa_routes(app)
 
     def _init_plugins(self, app: Flask) -> None:
         """Initialize all registered plugins.
@@ -502,3 +644,51 @@ class VFlask:
                 self.restart_manager.clear_restart_flag()
         except Exception:
             pass  # Ignore if DB not ready
+
+    def _activate_bundle(self, app: Flask) -> None:
+        """Activate the configured bundle.
+
+        This method:
+        1. Discovers bundles from entry points
+        2. Activates the bundle (which activates its theme)
+        3. Logs any missing required plugins as warnings
+
+        Called automatically during init_app() if use_bundle() was called.
+        """
+        if not self._active_bundle_name:
+            return
+
+        try:
+            # Discover bundles from entry points
+            self.bundle_registry.discover_bundles()
+
+            # Activate the bundle
+            bundle = self.bundle_registry.activate(
+                self._active_bundle_name,
+                app,
+                plugin_registry=self.plugin_registry
+            )
+
+            app.logger.info(
+                f"Activated bundle '{bundle.name}' v{bundle.version}"
+            )
+
+            # Log theme info if present
+            theme = bundle.get_theme()
+            if theme:
+                app.logger.info(
+                    f"  Theme: {theme.name} ({theme.css_framework})"
+                )
+
+            # Log recommended plugins that are not registered
+            recommended = set(bundle.get_recommended_plugins())
+            registered = {p.name for p in self.plugin_registry.all()}
+            missing_recommended = recommended - registered
+            if missing_recommended:
+                app.logger.info(
+                    f"  Recommended plugins not registered: {', '.join(missing_recommended)}"
+                )
+
+        except ValueError as e:
+            app.logger.error(f"Failed to activate bundle: {e}")
+            raise

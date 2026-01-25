@@ -264,6 +264,101 @@ Dieses Tool ersetzt keine Rechtsberatung.
         """
         return []
 
+    def get_settings_schema(self) -> list[dict]:
+        """Define available settings for this plugin.
+
+        Settings defined here will be automatically rendered as a form
+        in the admin UI. Values are stored in PluginConfig table.
+
+        Returns:
+            List of setting definitions with the following fields:
+            - key (required): Unique setting key within the plugin
+            - label (required): Display label in admin UI
+            - type (required): Field type ('string', 'password', 'int', 'bool',
+                              'float', 'textarea', 'select')
+            - description: Help text shown below the field
+            - required: Whether the field is required (default: False)
+            - default: Default value if not set
+            - options: For 'select' type, list of {value, label} dicts
+
+        Example:
+            def get_settings_schema(self):
+                return [
+                    {
+                        'key': 'api_key',
+                        'label': 'API Key',
+                        'type': 'password',
+                        'description': 'Your API key from example.com',
+                        'required': False,
+                    },
+                    {
+                        'key': 'max_items',
+                        'label': 'Maximum Items',
+                        'type': 'int',
+                        'default': 10,
+                    },
+                    {
+                        'key': 'theme',
+                        'label': 'Theme',
+                        'type': 'select',
+                        'options': [
+                            {'value': 'light', 'label': 'Light'},
+                            {'value': 'dark', 'label': 'Dark'},
+                        ],
+                        'default': 'light',
+                    },
+                ]
+        """
+        return []
+
+    def get_settings_template(self) -> str | None:
+        """Return custom template path for plugin settings.
+
+        Override this method to provide a custom settings UI instead of
+        the auto-generated form based on get_settings_schema().
+
+        The template will receive:
+        - plugin: The PluginManifest instance
+        - schema: The settings schema from get_settings_schema()
+        - settings: Dict of current setting values
+
+        Returns:
+            Template path (e.g., 'my_plugin/admin/settings.html') or None
+            for auto-generated UI.
+
+        Example:
+            def get_settings_template(self):
+                return 'my_plugin/admin/custom_settings.html'
+        """
+        return None
+
+    def on_settings_saved(self, settings: dict) -> None:
+        """Called after plugin settings are saved.
+
+        Use this hook to perform actions when settings change, such as:
+        - Clearing cached API clients
+        - Validating API keys
+        - Reinitializing services
+
+        Args:
+            settings: Dictionary of all current settings for this plugin.
+
+        Example:
+            def on_settings_saved(self, settings):
+                # Clear cached API client so it's recreated with new key
+                from .services import api_client
+                api_client._client = None
+        """
+        pass
+
+    def has_settings(self) -> bool:
+        """Check if this plugin has configurable settings.
+
+        Returns:
+            True if the plugin defines any settings, False otherwise.
+        """
+        return bool(self.get_settings_schema())
+
     def to_marketplace_dict(self) -> dict:
         """Return plugin metadata as dictionary for marketplace APIs.
 
@@ -283,6 +378,7 @@ Dieses Tool ersetzt keine Rechtsberatung.
             'tags': self.tags,
             'min_v_flask_version': self.min_v_flask_version,
             'dependencies': self.dependencies,
+            'has_settings': self.has_settings(),
         }
 
     def __repr__(self) -> str:

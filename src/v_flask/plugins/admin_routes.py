@@ -53,11 +53,51 @@ def get_restart_manager() -> RestartManager:
 @plugins_admin_bp.route('/')
 @permission_required('plugins.manage')
 def list_plugins():
-    """Display list of available plugins with their status."""
+    """Display list of all plugins (installed + marketplace).
+
+    Shows a merged list of locally installed plugins and available
+    plugins from the remote marketplace. Each plugin shows its status:
+    - active: Installed and activated
+    - inactive: Installed but not activated
+    - installable: Only available in marketplace (not installed)
+
+    Query params:
+        category: Filter by category code (e.g., 'essential', 'commerce')
+    """
     manager = get_plugin_manager()
     restart_manager = get_restart_manager()
 
-    plugins = manager.get_plugins_with_status()
+    # Get merged list of installed + marketplace plugins
+    plugins, marketplace_available = manager.get_merged_plugin_list()
+
+    # Fetch categories for filter buttons and marketplace URL for status display
+    categories = []
+    current_category = request.args.get('category')
+    current_category_info = None
+    marketplace_url = None
+
+    client = get_marketplace_client()
+    if client and client.is_configured:
+        marketplace_url = client.base_url
+        try:
+            categories = client.get_plugin_categories()
+            # Find current category info
+            if current_category:
+                current_category_info = next(
+                    (c for c in categories if c.get('code') == current_category),
+                    None
+                )
+        except Exception:
+            pass  # Categories are optional, continue without them
+
+    # Filter plugins by category if specified
+    if current_category:
+        plugins = [
+            p for p in plugins
+            if (p.get('category_info') or {}).get('code') == current_category
+            or p.get('category') == current_category  # Legacy fallback
+        ]
+
     restart_required = manager.is_restart_required()
     scheduled_restart = restart_manager.get_scheduled_restart()
     pending_migrations = manager.get_pending_migrations()
@@ -65,6 +105,11 @@ def list_plugins():
     return render_template(
         'v_flask/admin/plugins/list.html',
         plugins=plugins,
+        marketplace_available=marketplace_available,
+        marketplace_url=marketplace_url,
+        categories=categories,
+        current_category=current_category,
+        current_category_info=current_category_info,
         restart_required=restart_required,
         scheduled_restart=scheduled_restart,
         pending_migrations=pending_migrations,
@@ -74,19 +119,32 @@ def list_plugins():
 @plugins_admin_bp.route('/<name>/activate', methods=['POST'])
 @permission_required('plugins.manage')
 def activate_plugin(name: str):
-    """Activate a plugin."""
+    """Activate a plugin with all its dependencies.
+
+    Automatically resolves and activates all required dependency plugins
+    before activating the target plugin.
+    """
     manager = get_plugin_manager()
 
     try:
         user_id = current_user.id if current_user.is_authenticated else None
-        manager.activate_plugin(name, user_id=user_id)
-        flash(f'Plugin "{name}" wurde aktiviert. Server-Neustart erforderlich.', 'success')
+        # Activate with all dependencies
+        activated = manager.activate_with_dependencies(name, user_id=user_id)
+
+        if len(activated) == 0:
+            flash(f'Plugin "{name}" ist bereits aktiviert.', 'info')
+        elif len(activated) == 1:
+            flash(f'Plugin "{name}" wurde aktiviert. Server-Neustart erforderlich.', 'success')
+        else:
+            flash(
+                f'{len(activated)} Plugins wurden aktiviert: {", ".join(activated)}. '
+                'Server-Neustart erforderlich.',
+                'success'
+            )
     except PluginNotFoundError:
         flash(f'Plugin "{name}" wurde nicht gefunden.', 'error')
     except PluginNotInstalledError as e:
-        flash(f'Plugin "{name}" ist nicht installiert: {e}', 'error')
-    except DependencyNotActivatedError as e:
-        flash(str(e), 'warning')
+        flash(f'Plugin muss erst installiert werden: {e}', 'warning')
     except Exception as e:
         flash(f'Fehler beim Aktivieren: {e}', 'error')
 
@@ -174,8 +232,20 @@ def cancel_restart():
 @plugins_admin_bp.route('/migrations', methods=['POST'])
 @permission_required('plugins.manage')
 def run_migrations():
-    """Run database migrations for pending plugins."""
+    """Run database migrations for pending plugins.
+
+    Requires that no server restart is pending, since plugin models
+    must be loaded before migrations can run successfully.
+    """
     manager = get_plugin_manager()
+
+    # Check if restart is still pending - migrations can only run after restart
+    if manager.is_restart_required():
+        flash(
+            'Server-Neustart erforderlich bevor Migrationen ausgeführt werden können.',
+            'warning'
+        )
+        return redirect(url_for('plugins_admin.list_plugins'))
 
     pending = manager.get_pending_migrations()
     if not pending:
@@ -350,7 +420,11 @@ def uninstall_plugin(name: str):
 @plugins_admin_bp.route('/marketplace/refresh', methods=['POST'])
 @permission_required('plugins.manage')
 def refresh_marketplace():
-    """Refresh marketplace plugin list."""
+    """Refresh marketplace plugin list.
+
+    Clears the marketplace client cache and redirects back to the
+    referring page (either list_plugins or marketplace).
+    """
     client = get_marketplace_client()
 
     if client:
@@ -359,7 +433,11 @@ def refresh_marketplace():
     else:
         flash('Marketplace nicht konfiguriert.', 'warning')
 
-    return redirect(url_for('plugins_admin.marketplace'))
+    # Redirect back to referrer if within admin, otherwise to list
+    referrer = request.referrer
+    if referrer and '/admin/plugins' in referrer:
+        return redirect(referrer)
+    return redirect(url_for('plugins_admin.list_plugins'))
 
 
 def register_plugin_admin_routes(app: Flask) -> None:

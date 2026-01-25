@@ -306,11 +306,47 @@ class PluginSlotManager:
             items.sort(key=lambda x: x.order)
             result[cat_id] = [self._to_dict(item) for item in items]
 
-        # Add core v-flask admin menu items (Plugin Management)
+        # Add core v-flask admin menu items
         # These are framework features, not plugins, so they're added here
+
+        # User Administration (category: users)
+        if self._should_show_users_menu(user, app):
+            users_items = result.get('users', [])
+            users_items.append({
+                'plugin_name': 'v_flask_core',
+                'label': 'Benutzer',
+                'url': 'users_admin.list_users',
+                'icon': 'ti ti-users',
+                'order': 10,
+            })
+            # Add Roles menu item
+            if self._validate_endpoint(app, 'roles_admin.list_roles') if app else True:
+                users_items.append({
+                    'plugin_name': 'v_flask_core',
+                    'label': 'Rollen',
+                    'url': 'roles_admin.list_roles',
+                    'icon': 'ti ti-shield',
+                    'order': 20,
+                })
+            result['users'] = users_items
+
+        # Core Settings (category: system)
+        if self._should_show_settings_menu(user, app):
+            system_items = result.get('system', [])
+            system_items.append({
+                'plugin_name': 'v_flask_core',
+                'label': 'Einstellungen',
+                'url': 'admin_settings.settings',
+                'icon': 'ti ti-settings',
+                'order': 90,
+            })
+            result['system'] = system_items
+
+        # Plugin Management (category: system)
         if self._should_show_plugins_menu(user, app):
             system_items = result.get('system', [])
             system_items.append({
+                'plugin_name': 'v_flask_core',
                 'label': 'Plugins',
                 'url': 'plugins_admin.list_plugins',
                 'icon': 'ti ti-puzzle',
@@ -319,6 +355,30 @@ class PluginSlotManager:
             result['system'] = system_items
 
         return result
+
+    def _should_show_users_menu(self, user: Any, app: Flask | None) -> bool:
+        """Check if the Users menu should be shown.
+
+        Args:
+            user: Current user for permission check
+            app: Flask app for endpoint validation
+
+        Returns:
+            True if the Users menu should be displayed.
+        """
+        # Check if endpoint exists
+        if app and not self._validate_endpoint(app, 'users_admin.list_users'):
+            return False
+
+        # Check user permission (admins always have access)
+        if user:
+            if hasattr(user, 'is_admin') and user.is_admin:
+                return True
+            if hasattr(user, 'has_permission'):
+                return user.has_permission('user.read')
+
+        # If no user check needed, show the menu
+        return True
 
     def _should_show_plugins_menu(self, user: Any, app: Flask | None) -> bool:
         """Check if the Plugins menu should be shown.
@@ -340,6 +400,30 @@ class PluginSlotManager:
                 return True
             if hasattr(user, 'has_permission'):
                 return user.has_permission('plugins.manage')
+
+        # If no user check needed, show the menu
+        return True
+
+    def _should_show_settings_menu(self, user: Any, app: Flask | None) -> bool:
+        """Check if the Settings menu should be shown.
+
+        Args:
+            user: Current user for permission check
+            app: Flask app for endpoint validation
+
+        Returns:
+            True if the Settings menu should be displayed.
+        """
+        # Check if endpoint exists
+        if app and not self._validate_endpoint(app, 'admin_settings.settings'):
+            return False
+
+        # Check user permission (admins always have access)
+        if user:
+            if hasattr(user, 'is_admin') and user.is_admin:
+                return True
+            if hasattr(user, 'has_permission'):
+                return user.has_permission('settings.manage')
 
         # If no user check needed, show the menu
         return True

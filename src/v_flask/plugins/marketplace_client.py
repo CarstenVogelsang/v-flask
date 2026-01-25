@@ -198,7 +198,10 @@ class MarketplaceClient:
     def get_available_plugins(self, force_refresh: bool = False) -> list[dict]:
         """Get list of available plugins from the marketplace.
 
-        This is a public endpoint that doesn't require authentication.
+        This endpoint is public but optionally accepts API key authentication.
+        When authenticated with a superadmin project's API key, alpha/beta
+        plugins are also returned.
+
         Results are cached until force_refresh is True.
 
         Args:
@@ -215,7 +218,12 @@ class MarketplaceClient:
             return []
 
         try:
-            response = self._make_request('GET', '/plugins')
+            # Send API key if available (allows seeing alpha/beta plugins for superadmin projects)
+            params = {}
+            if self.api_key:
+                params['api_key'] = self.api_key
+
+            response = self._make_request('GET', '/plugins', params=params)
             response.raise_for_status()
 
             data = response.json()
@@ -384,6 +392,23 @@ class MarketplaceClient:
         except Exception as e:
             logger.error(f"Failed to fetch project info: {e}")
             return None
+
+    def get_plugin_categories(self) -> list[dict]:
+        """Get list of plugin categories from the marketplace.
+
+        Returns:
+            List of category dictionaries with code, name_de, icon, color_hex.
+        """
+        if not self.is_configured:
+            return []
+
+        try:
+            response = self._make_request('GET', '/plugin-categories')
+            response.raise_for_status()
+            return response.json().get('categories', [])
+        except Exception as e:
+            logger.debug(f"Failed to fetch categories: {e}")
+            return []
 
     def refresh_cache(self) -> None:
         """Clear all cached data."""

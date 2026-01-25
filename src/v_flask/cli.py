@@ -5,6 +5,7 @@ Provides Flask CLI commands for database initialization and seeding.
 Usage:
     flask init-db        # Create all tables
     flask seed           # Seed core data (roles, permissions)
+    flask seed-palettes  # Seed default color palettes
     flask create-admin   # Create an admin user interactively
 """
 
@@ -36,7 +37,7 @@ def register_commands(app: Flask, db: SQLAlchemy) -> None:
         """Seed database with core data.
 
         Creates:
-        - Roles: admin, mitarbeiter, kunde
+        - Roles: superadmin, admin, betreiber, mitarbeiter, kunde
         - Core permissions for user and config management
         - Role-permission assignments
         - Default Betreiber (if none exists)
@@ -49,6 +50,7 @@ def register_commands(app: Flask, db: SQLAlchemy) -> None:
         # 1. Create roles
         click.echo('Creating roles...')
         roles_data = [
+            {'name': 'superadmin', 'beschreibung': 'Super-Administrator (V-Flask Team)'},
             {'name': 'admin', 'beschreibung': 'Administrator mit Vollzugriff'},
             {'name': 'betreiber', 'beschreibung': 'Betreiber mit Plugin-Verwaltung'},
             {'name': 'mitarbeiter', 'beschreibung': 'Mitarbeiter mit eingeschränkten Rechten'},
@@ -73,6 +75,8 @@ def register_commands(app: Flask, db: SQLAlchemy) -> None:
         click.echo('')
         click.echo('Creating permissions...')
         permissions_data = [
+            # Superadmin wildcard (V-Flask team, sees alpha/beta plugins)
+            {'code': 'superadmin.*', 'beschreibung': 'Super-Admin Vollzugriff inkl. Alpha/Beta-Plugins', 'modul': 'core'},
             # Admin wildcard
             {'code': 'admin.*', 'beschreibung': 'Vollzugriff auf alle Funktionen', 'modul': 'core'},
             # User management
@@ -107,6 +111,7 @@ def register_commands(app: Flask, db: SQLAlchemy) -> None:
         click.echo('Assigning permissions to roles...')
 
         role_permissions = {
+            'superadmin': ['superadmin.*', 'admin.*'],  # Inherits all admin rights + superadmin
             'admin': ['admin.*'],
             'betreiber': ['user.read', 'config.read', 'plugins.manage', 'plugins.restart'],
             'mitarbeiter': ['user.read', 'config.read'],
@@ -201,3 +206,189 @@ def register_commands(app: Flask, db: SQLAlchemy) -> None:
 
         click.echo('')
         click.echo(click.style(f"Admin user '{email}' created successfully!", fg='green'))
+
+    @app.cli.command('seed-palettes')
+    def seed_palettes_command():
+        """Seed default color palettes.
+
+        Creates a set of predefined color palettes for theming.
+        Each palette includes 8 semantic colors (DaisyUI convention).
+
+        Categories:
+        - warm: Orange, red, yellow tones
+        - cool: Blue, purple, teal tones
+        - neutral: Gray, black, white tones
+        - vibrant: Bright, saturated colors
+        """
+        from .models import ColorPalette
+
+        click.echo('Seeding color palettes...')
+        click.echo('')
+
+        palettes_data = [
+            # Warm palettes
+            {
+                'name': 'Warm Orange',
+                'slug': 'warm-orange',
+                'category': 'warm',
+                'is_default': True,
+                'primary': '#f97316',
+                'secondary': '#ea580c',
+                'accent': '#fbbf24',
+                'neutral': '#78716c',
+                'info': '#0ea5e9',
+                'success': '#22c55e',
+                'warning': '#f59e0b',
+                'error': '#ef4444',
+            },
+            {
+                'name': 'Terracotta',
+                'slug': 'terracotta',
+                'category': 'warm',
+                'primary': '#c2410c',
+                'secondary': '#9a3412',
+                'accent': '#d97706',
+                'neutral': '#57534e',
+                'info': '#0284c7',
+                'success': '#16a34a',
+                'warning': '#ca8a04',
+                'error': '#dc2626',
+            },
+            # Cool palettes
+            {
+                'name': 'Ocean Blue',
+                'slug': 'ocean-blue',
+                'category': 'cool',
+                'primary': '#0ea5e9',
+                'secondary': '#0284c7',
+                'accent': '#06b6d4',
+                'neutral': '#64748b',
+                'info': '#3b82f6',
+                'success': '#22c55e',
+                'warning': '#f59e0b',
+                'error': '#ef4444',
+            },
+            {
+                'name': 'Royal Purple',
+                'slug': 'royal-purple',
+                'category': 'cool',
+                'primary': '#8b5cf6',
+                'secondary': '#7c3aed',
+                'accent': '#a855f7',
+                'neutral': '#6b7280',
+                'info': '#6366f1',
+                'success': '#10b981',
+                'warning': '#f59e0b',
+                'error': '#ef4444',
+            },
+            # Neutral palettes
+            {
+                'name': 'Slate Gray',
+                'slug': 'slate-gray',
+                'category': 'neutral',
+                'primary': '#475569',
+                'secondary': '#334155',
+                'accent': '#64748b',
+                'neutral': '#1e293b',
+                'info': '#0ea5e9',
+                'success': '#22c55e',
+                'warning': '#f59e0b',
+                'error': '#ef4444',
+            },
+            # Vibrant palettes
+            {
+                'name': 'Neon',
+                'slug': 'neon',
+                'category': 'vibrant',
+                'primary': '#ec4899',
+                'secondary': '#f43f5e',
+                'accent': '#14b8a6',
+                'neutral': '#404040',
+                'info': '#22d3ee',
+                'success': '#4ade80',
+                'warning': '#facc15',
+                'error': '#f87171',
+            },
+        ]
+
+        created = 0
+        skipped = 0
+
+        for palette_data in palettes_data:
+            existing = ColorPalette.query.filter_by(slug=palette_data['slug']).first()
+            if existing:
+                click.echo(f"  Palette '{palette_data['name']}' already exists")
+                skipped += 1
+            else:
+                palette = ColorPalette(**palette_data)
+                db.session.add(palette)
+                click.echo(f"  Created palette: {palette_data['name']} ({palette_data['category']})")
+                created += 1
+
+        db.session.commit()
+
+        click.echo('')
+        click.echo(click.style(
+            f'Seeding complete! Created: {created}, Skipped: {skipped}',
+            fg='green'
+        ))
+
+    @app.cli.command('plugins-migrate')
+    def plugins_migrate_command():
+        """Run database migrations for pending plugins.
+
+        Use after activating plugins and restarting the server.
+        Ideal for CI/CD pipelines and automated deployments.
+
+        Example workflow:
+            1. Activate plugin via Admin UI
+            2. Restart server (flask run)
+            3. Run: flask plugins-migrate
+        """
+        # Import here to avoid circular imports
+        from flask import current_app
+
+        # Get plugin manager from app extensions
+        if 'v_flask' not in current_app.extensions:
+            click.echo(click.style('Error: v_flask extension not initialized.', fg='red'))
+            return
+
+        manager = current_app.extensions['v_flask'].plugin_manager
+
+        # Check if restart is still pending
+        if manager.is_restart_required():
+            click.echo(click.style(
+                'Error: Server restart required before running migrations.',
+                fg='red'
+            ))
+            click.echo('')
+            click.echo('Workflow:')
+            click.echo('  1. Restart server (CTRL+C, then flask run)')
+            click.echo('  2. Run: flask plugins-migrate')
+            return
+
+        pending = manager.get_pending_migrations()
+        if not pending:
+            click.echo('No pending migrations.')
+            return
+
+        click.echo(f'Running migrations for {len(pending)} plugin(s): {", ".join(pending)}')
+        click.echo('')
+
+        try:
+            from flask_migrate import upgrade
+            upgrade()
+            manager.clear_all_pending_migrations()
+            click.echo('')
+            click.echo(click.style('Migrations completed successfully!', fg='green'))
+        except ImportError:
+            # Flask-Migrate not installed, try direct db.create_all()
+            click.echo('Flask-Migrate not installed, using db.create_all() fallback...')
+            try:
+                db.create_all()
+                manager.clear_all_pending_migrations()
+                click.echo(click.style('Database tables created.', fg='yellow'))
+            except Exception as e:
+                click.echo(click.style(f'Error creating tables: {e}', fg='red'))
+        except Exception as e:
+            click.echo(click.style(f'Error running migrations: {e}', fg='red'))
