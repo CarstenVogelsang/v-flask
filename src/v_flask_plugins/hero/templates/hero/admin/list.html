@@ -1,0 +1,133 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Hero Sections{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
+        <li>Hero Sections</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-photo text-primary"></i>
+        <span>Hero Sections</span>
+
+        {# Settings Button #}
+        {% if plugin_has_settings('hero') %}
+        <a href="{{ plugin_settings_url('hero') }}"
+           class="btn btn-ghost btn-sm btn-circle ml-2"
+           title="Einstellungen">
+            <i class="ti ti-adjustments text-lg"></i>
+        </a>
+        {% endif %}
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('hero_admin.list_templates') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-template mr-1"></i> Vorlagen
+        </a>
+        <a href="{{ url_for('hero_admin.list_routes') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-route mr-1"></i> Seiten
+        </a>
+        <a href="{{ url_for('hero_admin.create_section') }}" class="btn btn-primary btn-sm">
+            <i class="ti ti-plus mr-1"></i> Neue Hero Section
+        </a>
+    </div>
+</div>
+
+{# Info Card #}
+<div class="alert alert-info mb-6">
+    <i class="ti ti-info-circle"></i>
+    <div>
+        <h3 class="font-bold">Hero Sections verwalten</h3>
+        <p class="text-sm">Erstelle Hero Sections und weise sie verschiedenen Seiten zu. Jede Seite kann eine Hero Section in verschiedenen Positionen haben.</p>
+    </div>
+</div>
+
+{# Sections List #}
+{% if sections %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for section in sections %}
+    <div class="card bg-base-100 shadow-xl {% if not section.active %}opacity-60{% endif %}">
+        {# Preview Image #}
+        <figure class="relative h-32 bg-base-200">
+            {% if section.image_path %}
+            <img src="{{ section.image_path }}"
+                 alt="{{ section.display_name }}"
+                 class="w-full h-full object-cover">
+            {% else %}
+            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
+                <i class="ti ti-photo text-4xl text-base-content/30"></i>
+            </div>
+            {% endif %}
+
+            {# Status Badge #}
+            <div class="absolute top-2 right-2">
+                {% if section.active %}
+                <span class="badge badge-success">Aktiv</span>
+                {% else %}
+                <span class="badge badge-ghost">Inaktiv</span>
+                {% endif %}
+            </div>
+
+            {# Variant Badge #}
+            <div class="absolute top-2 left-2">
+                <span class="badge badge-neutral">{{ section.variant }}</span>
+            </div>
+        </figure>
+
+        <div class="card-body p-4">
+            <h2 class="card-title text-base">
+                {{ section.display_name }}
+            </h2>
+
+            {# Title Preview #}
+            <p class="text-sm text-base-content/70 truncate">
+                {{ section.title or '(Kein Titel)' }}
+            </p>
+
+            {# Assignments Count #}
+            <div class="flex items-center gap-2 mt-2">
+                <span class="badge badge-outline badge-sm">
+                    <i class="ti ti-link mr-1"></i>
+                    {{ section.assignments|length }} Zuweisung{% if section.assignments|length != 1 %}en{% endif %}
+                </span>
+            </div>
+
+            <div class="card-actions justify-end mt-4">
+                <a href="{{ url_for('hero_admin.edit_section', section_id=section.id) }}"
+                   class="btn btn-primary btn-sm">
+                    <i class="ti ti-edit mr-1"></i> Bearbeiten
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+{# Empty State #}
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body items-center text-center py-12">
+        <i class="ti ti-photo-off text-6xl text-base-content/30 mb-4"></i>
+        <h2 class="card-title text-base-content/60">Keine Hero Sections vorhanden</h2>
+        <p class="text-base-content/50 mb-4">Erstelle deine erste Hero Section, um sie auf deinen Seiten anzuzeigen.</p>
+        <a href="{{ url_for('hero_admin.create_section') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-1"></i> Erste Hero Section erstellen
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{# Legacy Editor Link #}
+<div class="mt-6 text-center">
+    <a href="{{ url_for('hero_admin.editor') }}" class="link link-hover text-sm text-base-content/60">
+        <i class="ti ti-external-link mr-1"></i>Legacy Editor (einzelne aktive Hero)
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Bearbeiten' if source else 'Neue' }} Teilnehmerquelle{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('fragebogen_admin.index') }}">Fragebögen</a></li>
+        <li><a href="{{ url_for('fragebogen_admin.participant_sources') }}">Teilnehmerquellen</a></li>
+        <li>{{ 'Bearbeiten' if source else 'Neu' }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Row #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">
+        <i class="ti ti-database text-primary mr-2"></i>
+        {{ 'Teilnehmerquelle bearbeiten' if source else 'Neue Teilnehmerquelle' }}
+    </h1>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Main Form #}
+    <div class="lg:col-span-2">
+        <form method="post" class="card bg-base-100 shadow">
+            <div class="card-body">
+                {% include "v_flask/includes/_csrf_token.html" %}
+
+                {# Model Path #}
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text">Model-Pfad *</span>
+                    </label>
+                    <input type="text" name="model_path"
+                           value="{{ source.model_path if source else '' }}"
+                           class="input input-bordered font-mono"
+                           placeholder="myapp.models.Kunde"
+                           required>
+                    <label class="label">
+                        <span class="label-text-alt">
+                            Vollständiger Python-Import-Pfad zum SQLAlchemy Model
+                        </span>
+                    </label>
+                </div>
+
+                {# Display Name #}
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text">Anzeigename *</span>
+                    </label>
+                    <input type="text" name="display_name"
+                           value="{{ source.display_name if source else '' }}"
+                           class="input input-bordered"
+                           placeholder="Kunden"
+                           required>
+                    <label class="label">
+                        <span class="label-text-alt">
+                            Name für Anzeige in der Admin-Oberfläche
+                        </span>
+                    </label>
+                </div>
+
+                {# Field Mapping #}
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text">Field-Mapping (JSON) *</span>
+                    </label>
+                    <textarea name="field_mapping" rows="10"
+                              class="textarea textarea-bordered font-mono text-sm"
+                              required>{% if source %}{{ source.field_mapping | tojson(indent=2) }}{% else %}{
+  "email": "email",
+  "name": {
+    "fields": ["vorname", "nachname"],
+    "separator": " "
+  },
+  "anrede": "anrede",
+  "titel": "titel"
+}{% endif %}</textarea>
+                    <label class="label">
+                        <span class="label-text-alt">
+                            Pflicht: <code>email</code>, <code>name</code> &mdash;
+                            Optional: <code>anrede</code>, <code>titel</code>
+                        </span>
+                    </label>
+                </div>
+
+                {# Greeting Template #}
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text">Begrüßungs-Template (optional)</span>
+                    </label>
+                    <input type="text" name="greeting_template"
+                           value="{{ source.greeting_template if source else '' }}"
+                           class="input input-bordered font-mono"
+                           placeholder="{{ '{{ anrede }} {{ titel }} {{ name }}' }}">
+                    <label class="label">
+                        <span class="label-text-alt">
+                            Jinja2-Template. Verfügbar: <code>name</code>, <code>email</code>,
+                            <code>anrede</code>, <code>titel</code>
+                        </span>
+                    </label>
+                </div>
+
+                {# Query Filter #}
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text">Query-Filter (JSON, optional)</span>
+                    </label>
+                    <textarea name="query_filter" rows="3"
+                              class="textarea textarea-bordered font-mono text-sm"
+                              placeholder='{"is_active": true}'>{% if source and source.query_filter %}{{ source.query_filter | tojson(indent=2) }}{% endif %}</textarea>
+                    <label class="label">
+                        <span class="label-text-alt">
+                            Filter beim Laden von Teilnehmern (z.B. nur aktive Kunden)
+                        </span>
+                    </label>
+                </div>
+
+                {# Is Default #}
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-4">
+                        <input type="checkbox" name="is_default"
+                               class="checkbox checkbox-primary"
+                               {% if source and source.is_default %}checked{% endif %}>
+                        <span class="label-text">Als Standard-Quelle verwenden</span>
+                    </label>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            Die Standard-Quelle wird verwendet, wenn kein Typ angegeben ist.
+                        </span>
+                    </label>
+                </div>
+
+                <div class="divider"></div>
+
+                {# Actions #}
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-check mr-2"></i>
+                        Speichern
+                    </button>
+                    <a href="{{ url_for('fragebogen_admin.participant_sources') }}"
+                       class="btn btn-ghost">
+                        Abbrechen
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {# Sidebar Help #}
+    <div class="space-y-6">
+        {# Field Mapping Reference #}
+        <div class="card bg-base-200">
+            <div class="card-body">
+                <h3 class="font-medium mb-3">
+                    <i class="ti ti-info-circle text-info mr-1"></i>
+                    Field-Mapping
+                </h3>
+                <div class="text-sm space-y-3">
+                    <div>
+                        <p class="font-medium">Einfaches Feld:</p>
+                        <pre class="bg-base-300 p-2 rounded text-xs mt-1">"email": "email"</pre>
+                    </div>
+                    <div>
+                        <p class="font-medium">Zusammengesetzt:</p>
+                        <pre class="bg-base-300 p-2 rounded text-xs mt-1">"name": {
+  "fields": ["vorname", "nachname"],
+  "separator": " "
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Greeting Template Reference #}
+        <div class="card bg-base-200">
+            <div class="card-body">
+                <h3 class="font-medium mb-3">
+                    <i class="ti ti-message text-info mr-1"></i>
+                    Begrüßungs-Template
+                </h3>
+                <div class="text-sm space-y-2">
+                    <p>Beispiele:</p>
+                    <pre class="bg-base-300 p-2 rounded text-xs">{{ '{{ anrede }} {{ titel }} {{ name }}' }}</pre>
+                    <p class="text-base-content/60">→ "Herr Dr. Müller"</p>
+                    <pre class="bg-base-300 p-2 rounded text-xs mt-2">Sehr geehrte{{ "{{ 'r' if anrede == 'Herr' else '' }}" }} {{ '{{ anrede }}' }}</pre>
+                    <p class="text-base-content/60">→ "Sehr geehrter Herr" / "Sehr geehrte Frau"</p>
+                </div>
+            </div>
+        </div>
+
+        {# Import Path Examples #}
+        <div class="card bg-base-200">
+            <div class="card-body">
+                <h3 class="font-medium mb-3">
+                    <i class="ti ti-code text-info mr-1"></i>
+                    Model-Pfad Beispiele
+                </h3>
+                <div class="text-sm space-y-1">
+                    <code class="block bg-base-300 p-2 rounded text-xs">app.models.Kunde</code>
+                    <code class="block bg-base-300 p-2 rounded text-xs">myproject.models.user.User</code>
+                    <code class="block bg-base-300 p-2 rounded text-xs">v_flask.models.User</code>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

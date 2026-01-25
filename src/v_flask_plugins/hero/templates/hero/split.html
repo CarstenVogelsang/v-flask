@@ -11,7 +11,7 @@
         {# Left: Image #}
         <div class="lg:w-1/2">
             {% if hero.image_path %}
-            <img src="{{ url_for('static', filename=hero.image_path.lstrip('/')) }}"
+            <img src="{{ hero.image_path }}"
                  alt="{{ title }}"
                  class="rounded-lg shadow-2xl w-full h-64 lg:h-80 object-cover">
             {% else %}

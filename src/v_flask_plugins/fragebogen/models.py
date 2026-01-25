@@ -629,3 +629,159 @@ class FragebogenAntwort(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class ParticipantSourceConfig(db.Model):
+    """Configuration for participant data sources.
+
+    Defines which model provides participant data for questionnaires,
+    including field mappings for email, name, and optional fields like
+    anrede (salutation) and titel (title).
+
+    Field-Mapping Format:
+    {
+        "email": "email",                           # Simple field mapping
+        "name": "firmierung",                       # Single field for name
+        # OR composite name:
+        "name": {"fields": ["vorname", "nachname"], "separator": " "},
+        "anrede": "anrede",                         # Optional: Herr/Frau/Divers
+        "titel": "titel"                            # Optional: Dr., Prof.
+    }
+
+    Greeting Template:
+        Jinja2 template for personalized greetings.
+        Example: "Sehr geehrte{{ 'r' if anrede == 'Herr' else '' }} {{ anrede }} {{ titel }} {{ name }}"
+
+    Attributes:
+        model_path: Full import path to the model (e.g., 'myapp.models.Kunde').
+        display_name: Human-readable name for the source (e.g., 'Kunden').
+        field_mapping: JSON mapping of standard fields to model attributes.
+        greeting_template: Optional Jinja2 template for personalized greeting.
+        query_filter: Optional JSON filter criteria for loading participants.
+        is_default: Whether this is the default participant source.
+        is_active: Whether this source is currently available.
+    """
+    __tablename__ = 'fragebogen_participant_source_config'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Model identification
+    model_path = db.Column(db.String(255), nullable=False, unique=True)
+    display_name = db.Column(db.String(100), nullable=False)
+
+    # Field mapping (JSON)
+    field_mapping = db.Column(db.JSON, nullable=False)
+
+    # Optional: Greeting template with Jinja2 syntax
+    greeting_template = db.Column(db.Text, nullable=True)
+
+    # Optional: Query filter as JSON
+    query_filter = db.Column(db.JSON, nullable=True)
+
+    # Default source (only one can be default)
+    is_default = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False,
+        server_default='0'  # SQLite compatibility
+    )
+
+    # Active flag
+    is_active = db.Column(
+        db.Boolean,
+        default=True,
+        nullable=False,
+        server_default='1'  # SQLite compatibility
+    )
+
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    def __repr__(self) -> str:
+        return f'<ParticipantSourceConfig {self.display_name} ({self.model_path})>'
+
+    # =========================================================================
+    # Query Methods
+    # =========================================================================
+
+    @classmethod
+    def get_default(cls) -> 'ParticipantSourceConfig | None':
+        """Get the default participant source."""
+        return db.session.query(cls).filter_by(
+            is_default=True,
+            is_active=True
+        ).first()
+
+    @classmethod
+    def get_for_type(cls, teilnehmer_typ: str) -> 'ParticipantSourceConfig | None':
+        """Get config for a specific participant type.
+
+        Args:
+            teilnehmer_typ: The type identifier (derived from model name).
+
+        Returns:
+            Matching config or None.
+        """
+        # teilnehmer_typ is typically the model class name lowercase
+        return db.session.query(cls).filter(
+            cls.model_path.ilike(f'%{teilnehmer_typ}'),
+            cls.is_active == True  # noqa: E712
+        ).first()
+
+    @classmethod
+    def get_all_active(cls) -> list['ParticipantSourceConfig']:
+        """Get all active participant sources."""
+        return db.session.query(cls).filter_by(
+            is_active=True
+        ).order_by(cls.display_name).all()
+
+    # =========================================================================
+    # Helper Methods
+    # =========================================================================
+
+    def get_type_identifier(self) -> str:
+        """Extract type identifier from model path.
+
+        Returns:
+            Lowercase model class name (e.g., 'kunde' from 'myapp.models.Kunde').
+        """
+        return self.model_path.split('.')[-1].lower()
+
+    def validate_field_mapping(self) -> list[str]:
+        """Validate that field mapping contains required fields.
+
+        Returns:
+            List of validation errors (empty if valid).
+        """
+        errors = []
+        if not self.field_mapping:
+            errors.append('Field-Mapping ist erforderlich')
+            return errors
+
+        if 'email' not in self.field_mapping:
+            errors.append('Field-Mapping muss "email" enthalten')
+        if 'name' not in self.field_mapping:
+            errors.append('Field-Mapping muss "name" enthalten')
+
+        return errors
+
+    # =========================================================================
+    # Serialization
+    # =========================================================================
+
+    def to_dict(self) -> dict:
+        """Return dictionary representation."""
+        return {
+            'id': self.id,
+            'model_path': self.model_path,
+            'display_name': self.display_name,
+            'field_mapping': self.field_mapping,
+            'greeting_template': self.greeting_template,
+            'query_filter': self.query_filter,
+            'is_default': self.is_default,
+            'is_active': self.is_active,
+            'type_identifier': self.get_type_identifier(),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }

@@ -1,0 +1,80 @@
+{# Partial: Hero Section Assignments List #}
+{# Expects: hero (HeroSection object), assignments, available_routes #}
+
+{# Current Assignments #}
+{% if assignments %}
+<div class="space-y-2 mb-4">
+    {% for assignment in assignments %}
+    <div class="flex items-center justify-between bg-base-200 p-3 rounded-lg">
+        <div class="flex items-center gap-3">
+            <i class="ti ti-file text-primary"></i>
+            <div>
+                <span class="font-medium">{{ assignment.page_route.display_name or assignment.page_route.endpoint }}</span>
+                <span class="text-xs text-base-content/60 ml-2">{{ assignment.page_route.rule }}</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="badge badge-outline badge-sm">{{ assignment.slot_position }}</span>
+            <form hx-post="{{ url_for('hero_admin.remove_assignment', assignment_id=assignment.id) }}"
+                  hx-target="#assignments-container"
+                  hx-swap="innerHTML">
+                {% include 'v_flask/includes/_csrf.html' %}
+                <button type="submit" class="btn btn-ghost btn-xs text-error"
+                        title="Zuweisung entfernen">
+                    <i class="ti ti-x"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning mb-4">
+    <i class="ti ti-alert-triangle"></i>
+    <span>Diese Hero Section ist keiner Seite zugewiesen und wird daher nicht angezeigt.</span>
+</div>
+{% endif %}
+
+{# Add New Assignment #}
+{% if available_routes %}
+<form hx-post="{{ url_for('hero_admin.assign_hero', hero_id=hero.id) }}"
+      hx-target="#assignments-container"
+      hx-swap="innerHTML"
+      class="flex flex-col md:flex-row gap-2 w-full">
+    {% include 'v_flask/includes/_csrf.html' %}
+
+    <select name="route_id" class="select select-bordered flex-1 min-w-0" required>
+        <option value="">-- Seite auswählen --</option>
+        {% for route in available_routes %}
+        <option value="{{ route.id }}">
+            {{ route.display_name or route.endpoint }} ({{ route.rule }})
+        </option>
+        {% endfor %}
+    </select>
+
+    <select name="slot_position" class="select select-bordered w-full md:w-48 shrink-0">
+        <option value="hero_top">hero_top (Standard)</option>
+        <option value="above_content">above_content</option>
+        <option value="below_content">below_content</option>
+    </select>
+
+    <button type="submit" class="btn btn-primary shrink-0">
+        <i class="ti ti-plus mr-1"></i> Zuweisen
+    </button>
+</form>
+{% else %}
+<div class="alert alert-info">
+    <i class="ti ti-info-circle"></i>
+    <div>
+        <span>Alle verfügbaren Seiten sind bereits zugewiesen.</span>
+        <a href="{{ url_for('hero_admin.list_routes') }}" class="link ml-2">Seiten verwalten</a>
+    </div>
+</div>
+{% endif %}
+
+{# Hint about syncing routes #}
+<div class="text-sm text-base-content/60 mt-4">
+    <i class="ti ti-info-circle mr-1"></i>
+    Keine passende Seite gefunden?
+    <a href="{{ url_for('hero_admin.list_routes') }}" class="link">Seiten synchronisieren</a>
+</div>

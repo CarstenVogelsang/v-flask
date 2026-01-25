@@ -134,8 +134,9 @@ Ein vollständiges Fragebogen-System für v-flask Anwendungen.
             Fragebogen,
             FragebogenTeilnahme,
             FragebogenAntwort,
+            ParticipantSourceConfig,
         )
-        return [Fragebogen, FragebogenTeilnahme, FragebogenAntwort]
+        return [Fragebogen, FragebogenTeilnahme, FragebogenAntwort, ParticipantSourceConfig]
 
     def get_blueprints(self):
         """Return admin and public blueprints."""
@@ -155,6 +156,47 @@ Ein vollständiges Fragebogen-System für v-flask Anwendungen.
         if static_folder.exists():
             return static_folder
         return None
+
+    def get_settings_schema(self) -> list[dict]:
+        """Define available settings for the Fragebogen plugin.
+
+        Returns:
+            List of setting definitions for questionnaire options.
+        """
+        return [
+            {
+                'key': 'allow_anonymous',
+                'label': 'Anonyme Teilnahme erlauben',
+                'type': 'bool',
+                'description': 'Ermöglicht Teilnahme ohne Magic-Link oder Login',
+                'default': True,
+            },
+            {
+                'key': 'require_contact',
+                'label': 'Kontaktdaten bei anonymer Teilnahme',
+                'type': 'bool',
+                'description': 'Bei anonymer Teilnahme Name/E-Mail erfragen',
+                'default': False,
+            },
+            {
+                'key': 'auto_save_interval',
+                'label': 'Auto-Save Intervall (Sekunden)',
+                'type': 'int',
+                'description': 'Automatisches Speichern während des Ausfüllens (0 = deaktiviert)',
+                'default': 30,
+                'min': 0,
+                'max': 300,
+            },
+            {
+                'key': 'default_magic_link_days',
+                'label': 'Magic-Link Gültigkeit (Tage)',
+                'type': 'int',
+                'description': 'Standard-Gültigkeitsdauer für Magic-Links',
+                'default': 30,
+                'min': 1,
+                'max': 365,
+            },
+        ]
 
     def on_init(self, app):
         """Initialize plugin."""

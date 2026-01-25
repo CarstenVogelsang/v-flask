@@ -120,6 +120,56 @@ class NullTeilnehmerResolver(TeilnehmerResolver):
         return None
 
 
+class DynamicTeilnehmerResolverAdapter(TeilnehmerResolver):
+    """Adapter that wraps DynamicParticipantResolver to TeilnehmerResolver interface.
+
+    This adapter allows the DynamicParticipantResolver (which uses
+    ParticipantSourceConfig) to be used anywhere a TeilnehmerResolver is expected.
+
+    The adapter provides lazy initialization to avoid circular imports and
+    database access during module load.
+    """
+
+    def __init__(self):
+        """Initialize the adapter with lazy resolver loading."""
+        self._resolver = None
+
+    def _get_resolver(self):
+        """Lazily load the dynamic resolver."""
+        if self._resolver is None:
+            from v_flask_plugins.fragebogen.services.participant_source import (
+                get_dynamic_participant_resolver
+            )
+            self._resolver = get_dynamic_participant_resolver()
+        return self._resolver
+
+    def get_email(self, teilnehmer_id: int, teilnehmer_typ: str) -> str | None:
+        """Get email via dynamic resolver."""
+        return self._get_resolver().get_email(teilnehmer_id, teilnehmer_typ)
+
+    def get_name(self, teilnehmer_id: int, teilnehmer_typ: str) -> str | None:
+        """Get name via dynamic resolver."""
+        return self._get_resolver().get_name(teilnehmer_id, teilnehmer_typ)
+
+    def get_prefill_value(
+        self,
+        teilnehmer_id: int,
+        teilnehmer_typ: str,
+        prefill_key: str
+    ) -> Any | None:
+        """Get prefill value via dynamic resolver."""
+        return self._get_resolver().get_prefill_value(
+            teilnehmer_id, teilnehmer_typ, prefill_key
+        )
+
+    def get_greeting(self, teilnehmer_id: int, teilnehmer_typ: str) -> str | None:
+        """Get personalized greeting via dynamic resolver.
+
+        Note: This method is an extension beyond the base TeilnehmerResolver interface.
+        """
+        return self._get_resolver().get_greeting(teilnehmer_id, teilnehmer_typ)
+
+
 class FragebogenService:
     """Service for managing Fragebögen (questionnaires).
 
@@ -1024,8 +1074,24 @@ _fragebogen_service: FragebogenService | None = None
 
 
 def get_fragebogen_service() -> FragebogenService:
-    """Get the fragebogen service singleton."""
+    """Get the fragebogen service singleton.
+
+    Automatically configures DynamicTeilnehmerResolverAdapter if
+    ParticipantSourceConfig entries exist in the database.
+    """
     global _fragebogen_service
     if _fragebogen_service is None:
         _fragebogen_service = FragebogenService()
+
+        # Try to use dynamic resolver if configs exist
+        try:
+            from v_flask_plugins.fragebogen.models import ParticipantSourceConfig
+            if ParticipantSourceConfig.get_all_active():
+                _fragebogen_service.set_teilnehmer_resolver(
+                    DynamicTeilnehmerResolverAdapter()
+                )
+        except Exception:
+            # Fallback to NullTeilnehmerResolver (default)
+            pass
+
     return _fragebogen_service

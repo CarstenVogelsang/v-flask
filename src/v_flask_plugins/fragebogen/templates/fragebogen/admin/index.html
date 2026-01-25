@@ -15,8 +15,25 @@
 {% block admin_content %}
 {# Title Row #}
 <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">
-        <i class="ti ti-clipboard-list text-primary mr-2"></i>Fragebögen
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-clipboard-list text-primary"></i>
+        <span>Fragebögen</span>
+
+        {# Settings Button #}
+        {% if plugin_has_settings('fragebogen') %}
+        <a href="{{ plugin_settings_url('fragebogen') }}"
+           class="btn btn-ghost btn-sm btn-circle ml-2"
+           title="Einstellungen">
+            <i class="ti ti-adjustments text-lg"></i>
+        </a>
+        {% endif %}
+
+        {# Help Button #}
+        <a href="{{ plugin_help_url('fragebogen') }}"
+           class="btn btn-ghost btn-sm btn-circle"
+           title="Hilfe">
+            <i class="ti ti-info-circle text-lg"></i>
+        </a>
     </h1>
     <div class="flex gap-2">
         <a href="{{ url_for('fragebogen_admin.create') }}" class="btn btn-primary btn-sm">

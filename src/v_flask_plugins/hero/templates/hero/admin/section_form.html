@@ -1,13 +1,14 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Hero Section Editor{% endblock %}
+{% block title %}{% if hero %}Hero Section bearbeiten{% else %}Neue Hero Section{% endif %}{% endblock %}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs text-sm">
     <ul>
         <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
         <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
-        <li>Hero Section</li>
+        <li><a href="{{ url_for('hero_admin.list_sections') }}">Hero Sections</a></li>
+        <li>{% if hero %}{{ hero.display_name }}{% else %}Neu{% endif %}</li>
     </ul>
 </div>
 {% endblock %}
@@ -17,40 +18,90 @@
 <div class="flex justify-between items-center mb-4">
     <h1 class="text-2xl font-bold flex items-center gap-2">
         <i class="ti ti-photo text-primary"></i>
-        <span>Hero Section</span>
-
-        {# Settings Button #}
-        {% if plugin_has_settings('hero') %}
-        <a href="{{ plugin_settings_url('hero') }}"
-           class="btn btn-ghost btn-sm btn-circle ml-2"
-           title="Einstellungen">
-            <i class="ti ti-adjustments text-lg"></i>
-        </a>
-        {% endif %}
-
-        {# Help Button #}
-        <a href="{{ plugin_help_url('hero') }}"
-           class="btn btn-ghost btn-sm btn-circle"
-           title="Hilfe">
-            <i class="ti ti-info-circle text-lg"></i>
-        </a>
+        <span>{% if hero %}{{ hero.display_name }}{% else %}Neue Hero Section{% endif %}</span>
     </h1>
     <div class="flex gap-2">
-        <a href="{{ url_for('hero_admin.list_templates') }}" class="btn btn-ghost btn-sm">
-            <i class="ti ti-template mr-1"></i> Vorlagen
+        {% if hero %}
+        <button type="button"
+                onclick="document.getElementById('delete-modal').showModal()"
+                class="btn btn-ghost btn-sm text-error">
+            <i class="ti ti-trash mr-1"></i> Löschen
+        </button>
+        {% endif %}
+        <a href="{{ url_for('hero_admin.list_sections') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zurück
         </a>
-        <button type="submit" form="hero-form" class="btn btn-primary btn-sm">
+        <button type="submit" form="section-form" class="btn btn-primary btn-sm">
             <i class="ti ti-device-floppy mr-1"></i> Speichern
         </button>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    {# Form Column #}
-    <div>
-        <form method="post" action="{{ url_for('hero_admin.save') }}" id="hero-form"
+{# Collapsible Preview Panel #}
+{% if hero and preview_html %}
+<div class="collapse collapse-arrow bg-base-200 mb-6 max-w-4xl">
+    <input type="checkbox" checked>
+    <div class="collapse-title text-sm font-medium flex items-center gap-2">
+        <i class="ti ti-eye"></i>Vorschau
+    </div>
+    <div class="collapse-content">
+        <div class="rounded-lg overflow-hidden bg-base-100 p-4">
+            <div class="transform scale-75 origin-top-left w-[133%]">
+                {{ preview_html|safe }}
+            </div>
+        </div>
+    </div>
+</div>
+{% elif not hero %}
+<div class="alert alert-info mb-6 max-w-4xl">
+    <i class="ti ti-eye-off"></i>
+    <span>Vorschau wird nach dem ersten Speichern verfügbar.</span>
+</div>
+{% endif %}
+
+<div class="max-w-4xl">
+    <form method="post"
+              action="{% if hero %}{{ url_for('hero_admin.edit_section', section_id=hero.id) }}{% else %}{{ url_for('hero_admin.create_section') }}{% endif %}"
+              id="section-form"
               enctype="multipart/form-data">
             {% include 'v_flask/includes/_csrf.html' %}
+
+            {# Basic Info #}
+            <div class="card bg-base-100 shadow-xl mb-6">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="ti ti-info-circle"></i>
+                        Grundeinstellungen
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Name (intern)</span>
+                            </label>
+                            <input type="text" name="name"
+                                   value="{{ hero.name or '' if hero else '' }}"
+                                   class="input input-bordered"
+                                   placeholder="z.B. Homepage Hero, Winter-Aktion">
+                            <label class="label">
+                                <span class="label-text-alt">Zur Identifizierung im Admin</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label cursor-pointer justify-start gap-2">
+                                <input type="checkbox" name="active" value="1"
+                                       class="checkbox checkbox-primary"
+                                       {% if (hero and hero.active) or not hero %}checked{% endif %}>
+                                <span class="label-text">Aktiv</span>
+                            </label>
+                            <label class="label">
+                                <span class="label-text-alt">Inaktive Sections werden nicht angezeigt</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {# Variant Selection #}
             <div class="card bg-base-100 shadow-xl mb-6">
@@ -60,20 +111,12 @@
                         Layout-Variante
                     </h2>
 
-                    <p class="text-sm text-base-content/70 mb-4">
-                        Wähle ein Layout für die Hero Section.
-                    </p>
-
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {% for variant in variants %}
                         <label class="cursor-pointer">
                             <input type="radio" name="variant" value="{{ variant.value }}"
                                    class="peer hidden"
-                                   {% if hero.variant == variant.value %}checked{% endif %}
-                                   hx-post="{{ url_for('hero_admin.preview') }}"
-                                   hx-trigger="change"
-                                   hx-target="#hero-preview"
-                                   hx-include="#hero-form">
+                                   {% if (hero and hero.variant == variant.value) or (not hero and variant.value == 'centered') %}checked{% endif %}>
                             <div class="card bg-base-200 peer-checked:ring-2 peer-checked:ring-primary transition-all hover:bg-base-300">
                                 <div class="card-body p-3">
                                     <div class="aspect-video bg-base-300 rounded mb-2 relative overflow-hidden">
@@ -113,7 +156,7 @@
                 </div>
             </div>
 
-            {# Background Image via Media Picker #}
+            {# Background Image #}
             <div class="card bg-base-100 shadow-xl mb-6">
                 <div class="card-body">
                     <h2 class="card-title">
@@ -121,16 +164,11 @@
                         Hintergrundbild
                     </h2>
 
-                    {# Hidden input for media_id - triggers preview update on change #}
                     <input type="hidden" name="media_id" id="media_id"
-                           value="{{ hero.media_id or '' }}"
-                           hx-post="{{ url_for('hero_admin.preview') }}"
-                           hx-trigger="change"
-                           hx-target="#hero-preview"
-                           hx-include="#hero-form">
+                           value="{{ hero.media_id or '' if hero else '' }}">
 
                     <div id="image-preview-area" class="mb-4">
-                        {% if hero.media %}
+                        {% if hero and hero.media %}
                         <div class="relative">
                             <img src="{{ hero.media.get_url('medium') }}"
                                  alt="{{ hero.media.alt_text or 'Hero Bild' }}"
@@ -140,27 +178,11 @@
                                     class="btn btn-sm btn-circle btn-error absolute top-2 right-2">
                                 <i class="ti ti-x"></i>
                             </button>
-                            {% if hero.media.requires_attribution %}
-                            <div class="text-xs text-base-content/60 mt-1">
-                                {{ hero.media.attribution_html|safe }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% elif hero._image_path %}
-                        {# Legacy image path support #}
-                        <div class="relative">
-                            <img src="{{ url_for('static', filename=hero._image_path.lstrip('/')) }}"
-                                 alt="Hero Bild (Legacy)"
-                                 class="w-full max-h-48 object-cover rounded-lg">
-                            <div class="alert alert-warning mt-2">
-                                <i class="ti ti-alert-triangle"></i>
-                                <span class="text-sm">Legacy-Bild. Bitte ein neues Bild aus der Media-Bibliothek wahlen.</span>
-                            </div>
                         </div>
                         {% else %}
                         <div class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center">
                             <i class="ti ti-photo text-4xl text-base-content/30 mb-2"></i>
-                            <p class="text-base-content/60 text-sm">Noch kein Bild ausgewahlt</p>
+                            <p class="text-base-content/60 text-sm">Noch kein Bild ausgewählt</p>
                         </div>
                         {% endif %}
                     </div>
@@ -169,18 +191,8 @@
                             onclick="openMediaPicker()"
                             class="btn btn-outline btn-primary w-full">
                         <i class="ti ti-photo-plus mr-1"></i>
-                        {% if hero.media %}Bild ändern{% else %}Bild auswählen{% endif %}
+                        {% if hero and hero.media %}Bild ändern{% else %}Bild auswählen{% endif %}
                     </button>
-                    <a href="{{ url_for('media_admin.library', return_to='hero_admin.editor', field='media_id') }}"
-                       class="link link-hover text-sm text-base-content/60 mt-2 block text-center"
-                       onclick="return confirm('Ungespeicherte Änderungen gehen verloren. Fortfahren?')">
-                        <i class="ti ti-external-link mr-1"></i>In Medienbibliothek öffnen
-                    </a>
-                    <label class="label">
-                        <span class="label-text-alt text-base-content/60">
-                            Schnellauswahl per Modal oder umfangreichere Suche in der Medienbibliothek
-                        </span>
-                    </label>
                 </div>
             </div>
 
@@ -201,66 +213,47 @@
                             <label class="cursor-pointer flex items-center gap-2">
                                 <input type="radio" name="text_source" value="custom"
                                        class="radio radio-primary"
-                                       {% if not hero.template_id %}checked{% endif %}
-                                       onchange="toggleTextSource('custom')"
-                                       hx-post="{{ url_for('hero_admin.preview') }}"
-                                       hx-trigger="change"
-                                       hx-target="#hero-preview"
-                                       hx-include="#hero-form">
+                                       {% if not hero or not hero.template_id %}checked{% endif %}
+                                       onchange="toggleTextSource('custom')">
                                 <span>Eigener Text</span>
                             </label>
                             <label class="cursor-pointer flex items-center gap-2">
                                 <input type="radio" name="text_source" value="template"
                                        class="radio radio-primary"
-                                       {% if hero.template_id %}checked{% endif %}
-                                       onchange="toggleTextSource('template')"
-                                       hx-post="{{ url_for('hero_admin.preview') }}"
-                                       hx-trigger="change"
-                                       hx-target="#hero-preview"
-                                       hx-include="#hero-form">
+                                       {% if hero and hero.template_id %}checked{% endif %}
+                                       onchange="toggleTextSource('template')">
                                 <span>Vorlage</span>
                             </label>
                         </div>
                     </div>
 
                     {# Template Selection #}
-                    <div id="template-selection" class="{% if not hero.template_id %}hidden{% endif %}">
+                    <div id="template-selection" class="{% if not hero or not hero.template_id %}hidden{% endif %}">
                         <div class="form-control mb-4">
                             <label class="label">
                                 <span class="label-text">Vorlage auswählen</span>
                             </label>
-                            <select name="template_id" class="select select-bordered w-full"
-                                    hx-post="{{ url_for('hero_admin.preview') }}"
-                                    hx-trigger="change"
-                                    hx-target="#hero-preview"
-                                    hx-include="#hero-form">
+                            <select name="template_id" class="select select-bordered w-full">
                                 <option value="">-- Vorlage wählen --</option>
                                 {% for tpl in templates %}
-                                <option value="{{ tpl.id }}" {% if hero.template_id == tpl.id %}selected{% endif %}>
+                                <option value="{{ tpl.id }}" {% if hero and hero.template_id == tpl.id %}selected{% endif %}>
                                     {{ tpl.name }}{% if tpl.is_default %} (Standard){% endif %}
                                 </option>
                                 {% endfor %}
                             </select>
-                            <label class="label">
-                                <span class="label-text-alt">Vorlagen unterstützen Platzhalter wie {{ '{{ betreiber.name }}' }}</span>
-                            </label>
                         </div>
                     </div>
 
                     {# Custom Text #}
-                    <div id="custom-text" class="{% if hero.template_id %}hidden{% endif %}">
+                    <div id="custom-text" class="{% if hero and hero.template_id %}hidden{% endif %}">
                         <div class="form-control mb-4">
                             <label class="label">
                                 <span class="label-text">Titel</span>
                             </label>
                             <input type="text" name="custom_title"
-                                   value="{{ hero.custom_title or '' }}"
+                                   value="{{ hero.custom_title or '' if hero else '' }}"
                                    class="input input-bordered"
-                                   placeholder="Willkommen bei..."
-                                   hx-post="{{ url_for('hero_admin.preview') }}"
-                                   hx-trigger="keyup changed delay:500ms"
-                                   hx-target="#hero-preview"
-                                   hx-include="#hero-form">
+                                   placeholder="Willkommen bei...">
                         </div>
 
                         <div class="form-control">
@@ -270,18 +263,14 @@
                             <textarea name="custom_subtitle"
                                       class="textarea textarea-bordered"
                                       rows="2"
-                                      placeholder="Entdecke die besten..."
-                                      hx-post="{{ url_for('hero_admin.preview') }}"
-                                      hx-trigger="keyup changed delay:500ms"
-                                      hx-target="#hero-preview"
-                                      hx-include="#hero-form">{{ hero.custom_subtitle or '' }}</textarea>
+                                      placeholder="Entdecke die besten...">{{ hero.custom_subtitle or '' if hero else '' }}</textarea>
                         </div>
                     </div>
                 </div>
             </div>
 
             {# CTA Button #}
-            <div class="card bg-base-100 shadow-xl">
+            <div class="card bg-base-100 shadow-xl mb-6">
                 <div class="card-body">
                     <h2 class="card-title">
                         <i class="ti ti-click"></i>
@@ -294,13 +283,9 @@
                                 <span class="label-text">Button-Text</span>
                             </label>
                             <input type="text" name="cta_text"
-                                   value="{{ hero.cta_text or '' }}"
+                                   value="{{ hero.cta_text or '' if hero else '' }}"
                                    class="input input-bordered"
-                                   placeholder="Jetzt entdecken"
-                                   hx-post="{{ url_for('hero_admin.preview') }}"
-                                   hx-trigger="keyup changed delay:500ms"
-                                   hx-target="#hero-preview"
-                                   hx-include="#hero-form">
+                                   placeholder="Jetzt entdecken">
                         </div>
 
                         <div class="form-control">
@@ -308,36 +293,35 @@
                                 <span class="label-text">Button-Link</span>
                             </label>
                             <input type="text" name="cta_link"
-                                   value="{{ hero.cta_link or '' }}"
+                                   value="{{ hero.cta_link or '' if hero else '' }}"
                                    class="input input-bordered"
-                                   placeholder="/entdecken"
-                                   hx-post="{{ url_for('hero_admin.preview') }}"
-                                   hx-trigger="keyup changed delay:500ms"
-                                   hx-target="#hero-preview"
-                                   hx-include="#hero-form">
+                                   placeholder="/entdecken">
                         </div>
                     </div>
-                    <label class="label">
-                        <span class="label-text-alt">Beide Felder leer lassen, um keinen Button anzuzeigen</span>
-                    </label>
                 </div>
             </div>
         </form>
-    </div>
 
-    {# Preview Column #}
-    <div>
-        <div class="card bg-base-100 shadow-xl sticky top-4">
+        {# Page Assignments (only for existing sections) #}
+        {% if hero %}
+        <div class="card bg-base-100 shadow-xl mb-6">
             <div class="card-body">
-                <h2 class="card-title mb-4">
-                    <i class="ti ti-eye mr-2"></i>Vorschau
+                <h2 class="card-title">
+                    <i class="ti ti-link"></i>
+                    Seiten-Zuweisungen
                 </h2>
-                <div id="hero-preview" class="rounded-lg overflow-hidden bg-base-200">
-                    {% include 'hero/admin/_preview.html' %}
+
+                <p class="text-sm text-base-content/70 mb-4">
+                    Auf welchen Seiten soll diese Hero Section angezeigt werden?
+                </p>
+
+                <div id="assignments-container">
+                    {% include 'hero/admin/_assignments.html' %}
                 </div>
             </div>
         </div>
-    </div>
+
+        {% endif %}
 </div>
 
 {# Media Picker Modal #}
@@ -349,7 +333,7 @@
             </button>
         </form>
         <h3 class="font-bold text-lg mb-4">
-            <i class="ti ti-photo mr-2"></i>Bild auswahlen
+            <i class="ti ti-photo mr-2"></i>Bild auswählen
         </h3>
         <div id="media-picker-content"
              hx-get="{{ url_for('media_admin.picker', field='media_id', accept='image/*') }}"
@@ -363,6 +347,35 @@
         <button>close</button>
     </form>
 </dialog>
+
+{# Delete Confirmation Modal #}
+{% if hero %}
+<dialog id="delete-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg text-error">
+            <i class="ti ti-alert-triangle mr-2"></i>Hero Section löschen
+        </h3>
+        <p class="py-4">
+            Diese Aktion kann nicht rückgängig gemacht werden.
+            Alle Zuweisungen werden ebenfalls gelöscht.
+        </p>
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-ghost">Abbrechen</button>
+            </form>
+            <form method="post" action="{{ url_for('hero_admin.delete_section', section_id=hero.id) }}">
+                {% include 'v_flask/includes/_csrf.html' %}
+                <button type="submit" class="btn btn-error">
+                    <i class="ti ti-trash mr-1"></i> Endgültig löschen
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+{% endif %}
 
 <script>
 function toggleTextSource(source) {
@@ -380,19 +393,15 @@ function toggleTextSource(source) {
 
 function openMediaPicker() {
     const modal = document.getElementById('media-picker-modal');
-    // Reload picker content
     htmx.trigger('#media-picker-content', 'load');
     modal.showModal();
 }
 
-// Event listener for media selection from picker
 document.addEventListener('media-selected', function(e) {
     const { mediaId, url, altText, fieldName } = e.detail;
 
-    // Update hidden input
     document.getElementById('media_id').value = mediaId;
 
-    // Update preview area
     const previewArea = document.getElementById('image-preview-area');
     previewArea.innerHTML = `
         <div class="relative">
@@ -406,16 +415,11 @@ document.addEventListener('media-selected', function(e) {
         </div>
     `;
 
-    // Trigger preview update via HTMX
-    const mediaInput = document.getElementById('media_id');
-    if (mediaInput) {
-        mediaInput.dispatchEvent(new Event('change', { bubbles: true }));
-    }
+    document.getElementById('media-picker-modal').close();
 });
 
 function clearMediaSelection() {
     document.getElementById('media_id').value = '';
-
     const previewArea = document.getElementById('image-preview-area');
     previewArea.innerHTML = `
         <div class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center">

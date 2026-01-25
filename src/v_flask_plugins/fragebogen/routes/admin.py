@@ -412,14 +412,61 @@ def auswertung(fragebogen_id: int):
 @permission_required('admin.*')
 def export_xlsx(fragebogen_id: int):
     """Export questionnaire answers as XLSX."""
+    from datetime import datetime
+    from flask import Response
+
     fragebogen = db.session.get(Fragebogen, fragebogen_id)
     if not fragebogen:
         flash('Fragebogen nicht gefunden', 'error')
         return redirect(url_for('fragebogen_admin.index'))
 
-    # TODO: Implement XLSX export
-    flash('XLSX-Export noch nicht implementiert', 'info')
-    return redirect(url_for('fragebogen_admin.auswertung', fragebogen_id=fragebogen_id))
+    # Check if export service is available
+    try:
+        from v_flask_plugins.fragebogen.services.export_service import (
+            get_export_service,
+            ExportOptions,
+        )
+    except ImportError:
+        flash(
+            'XLSX-Export nicht verfügbar. Bitte openpyxl installieren: '
+            'pip install v-flask[export]',
+            'error'
+        )
+        return redirect(url_for('fragebogen_admin.auswertung', fragebogen_id=fragebogen_id))
+
+    # Parse options from query params
+    include_incomplete = request.args.get('incomplete', 'false') == 'true'
+    include_timestamps = request.args.get('timestamps', 'true') == 'true'
+
+    options = ExportOptions(
+        include_timestamps=include_timestamps,
+        include_incomplete=include_incomplete,
+    )
+
+    # Generate XLSX
+    try:
+        export_service = get_export_service()
+        xlsx_buffer = export_service.export_to_xlsx(fragebogen, options)
+    except ImportError as e:
+        flash(str(e), 'error')
+        return redirect(url_for('fragebogen_admin.auswertung', fragebogen_id=fragebogen_id))
+
+    # Generate filename (sanitize title for filename)
+    safe_title = ''.join(
+        c for c in fragebogen.titel
+        if c.isalnum() or c in ' -_'
+    )[:30].strip()
+    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M')
+    filename = f'Fragebogen_{safe_title}_{timestamp}.xlsx'
+
+    return Response(
+        xlsx_buffer.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"',
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }
+    )
 
 
 @admin_bp.route('/<int:fragebogen_id>/duplicate', methods=['POST'])
@@ -484,3 +531,206 @@ def create_anonymous_link(fragebogen_id: int):
 
     except ValueError as e:
         return jsonify({'success': False, 'error': str(e)}), 400
+
+
+# =============================================================================
+# Participant Source Config Routes
+# =============================================================================
+
+@admin_bp.route('/participant-sources')
+@login_required
+@permission_required('admin.*')
+def participant_sources():
+    """List all participant source configurations."""
+    from v_flask_plugins.fragebogen.models import ParticipantSourceConfig
+
+    sources = ParticipantSourceConfig.get_all_active()
+    inactive = db.session.query(ParticipantSourceConfig).filter_by(
+        is_active=False
+    ).all()
+
+    return render_template(
+        'fragebogen/admin/participant_sources.html',
+        sources=sources,
+        inactive_sources=inactive
+    )
+
+
+@admin_bp.route('/participant-sources/new', methods=['GET', 'POST'])
+@login_required
+@permission_required('admin.*')
+def participant_source_create():
+    """Create a new participant source configuration."""
+    from v_flask_plugins.fragebogen.models import ParticipantSourceConfig
+
+    if request.method == 'POST':
+        model_path = request.form.get('model_path', '').strip()
+        display_name = request.form.get('display_name', '').strip()
+        field_mapping_str = request.form.get('field_mapping', '{}')
+        greeting_template = request.form.get('greeting_template', '').strip() or None
+        query_filter_str = request.form.get('query_filter', '').strip() or '{}'
+        is_default = request.form.get('is_default') == 'on'
+
+        # Validate required fields
+        if not model_path:
+            flash('Model-Pfad ist erforderlich', 'error')
+            return render_template(
+                'fragebogen/admin/participant_source_form.html',
+                source=None
+            )
+
+        if not display_name:
+            flash('Anzeigename ist erforderlich', 'error')
+            return render_template(
+                'fragebogen/admin/participant_source_form.html',
+                source=None
+            )
+
+        # Parse JSON fields
+        try:
+            field_mapping = json.loads(field_mapping_str)
+        except json.JSONDecodeError as e:
+            flash(f'Ungültiges Field-Mapping JSON: {e}', 'error')
+            return render_template(
+                'fragebogen/admin/participant_source_form.html',
+                source=None
+            )
+
+        try:
+            query_filter = json.loads(query_filter_str) if query_filter_str else None
+        except json.JSONDecodeError:
+            query_filter = None
+
+        # Validate required fields in mapping
+        if 'email' not in field_mapping or 'name' not in field_mapping:
+            flash('Field-Mapping muss "email" und "name" enthalten', 'error')
+            return render_template(
+                'fragebogen/admin/participant_source_form.html',
+                source=None
+            )
+
+        # Test model import
+        try:
+            from v_flask_plugins.fragebogen.services.participant_source import load_model_class
+            load_model_class(model_path)
+        except Exception as e:
+            flash(f'Model kann nicht geladen werden: {e}', 'error')
+            return render_template(
+                'fragebogen/admin/participant_source_form.html',
+                source=None
+            )
+
+        # Handle is_default (only one can be default)
+        if is_default:
+            db.session.query(ParticipantSourceConfig).update({'is_default': False})
+
+        source = ParticipantSourceConfig(
+            model_path=model_path,
+            display_name=display_name,
+            field_mapping=field_mapping,
+            greeting_template=greeting_template,
+            query_filter=query_filter,
+            is_default=is_default
+        )
+        db.session.add(source)
+        db.session.commit()
+
+        # Clear resolver cache
+        from v_flask_plugins.fragebogen.services.participant_source import (
+            reset_dynamic_participant_resolver
+        )
+        reset_dynamic_participant_resolver()
+
+        flash(f'Teilnehmerquelle "{display_name}" erstellt', 'success')
+        return redirect(url_for('fragebogen_admin.participant_sources'))
+
+    return render_template(
+        'fragebogen/admin/participant_source_form.html',
+        source=None
+    )
+
+
+@admin_bp.route('/participant-sources/<int:source_id>/edit', methods=['GET', 'POST'])
+@login_required
+@permission_required('admin.*')
+def participant_source_edit(source_id: int):
+    """Edit a participant source configuration."""
+    from v_flask_plugins.fragebogen.models import ParticipantSourceConfig
+
+    source = db.session.get(ParticipantSourceConfig, source_id)
+    if not source:
+        flash('Teilnehmerquelle nicht gefunden', 'error')
+        return redirect(url_for('fragebogen_admin.participant_sources'))
+
+    if request.method == 'POST':
+        source.model_path = request.form.get('model_path', '').strip()
+        source.display_name = request.form.get('display_name', '').strip()
+        source.greeting_template = request.form.get('greeting_template', '').strip() or None
+        is_default = request.form.get('is_default') == 'on'
+
+        # Parse JSON fields
+        try:
+            source.field_mapping = json.loads(request.form.get('field_mapping', '{}'))
+        except json.JSONDecodeError as e:
+            flash(f'Ungültiges Field-Mapping JSON: {e}', 'error')
+            return render_template(
+                'fragebogen/admin/participant_source_form.html',
+                source=source
+            )
+
+        query_filter_str = request.form.get('query_filter', '').strip()
+        try:
+            source.query_filter = json.loads(query_filter_str) if query_filter_str else None
+        except json.JSONDecodeError:
+            source.query_filter = None
+
+        # Handle is_default
+        if is_default and not source.is_default:
+            db.session.query(ParticipantSourceConfig).filter(
+                ParticipantSourceConfig.id != source.id
+            ).update({'is_default': False})
+            source.is_default = True
+        elif not is_default:
+            source.is_default = False
+
+        db.session.commit()
+
+        # Clear resolver cache
+        from v_flask_plugins.fragebogen.services.participant_source import (
+            reset_dynamic_participant_resolver
+        )
+        reset_dynamic_participant_resolver()
+
+        flash('Änderungen gespeichert', 'success')
+        return redirect(url_for('fragebogen_admin.participant_sources'))
+
+    return render_template(
+        'fragebogen/admin/participant_source_form.html',
+        source=source
+    )
+
+
+@admin_bp.route('/participant-sources/<int:source_id>/toggle', methods=['POST'])
+@login_required
+@permission_required('admin.*')
+def participant_source_toggle(source_id: int):
+    """Toggle active status of a participant source."""
+    from v_flask_plugins.fragebogen.models import ParticipantSourceConfig
+
+    source = db.session.get(ParticipantSourceConfig, source_id)
+    if not source:
+        return jsonify({'success': False, 'error': 'Nicht gefunden'}), 404
+
+    source.is_active = not source.is_active
+    db.session.commit()
+
+    # Clear resolver cache
+    from v_flask_plugins.fragebogen.services.participant_source import (
+        reset_dynamic_participant_resolver
+    )
+    reset_dynamic_participant_resolver()
+
+    return jsonify({
+        'success': True,
+        'is_active': source.is_active
+    })

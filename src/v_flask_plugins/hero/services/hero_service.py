@@ -74,6 +74,22 @@ class HeroService:
             # Also provide 'plattform' for compatibility with existing templates
             context['plattform'] = context['betreiber']
 
+        # Provide fallback for 'location' if not in extra_context
+        # This prevents template errors when {{ location.bezeichnung }} is used
+        # on pages without a location context (e.g., homepage, contact page)
+        if not extra_context or 'location' not in extra_context:
+            # Get location_bezeichnung from Betreiber settings (configured in admin)
+            location_bezeichnung = 'Lokal'  # Default fallback
+            if self.betreiber:
+                location_bezeichnung = self.betreiber.get_setting(
+                    'location_bezeichnung', 'Lokal'
+                )
+
+            context['location'] = {
+                'bezeichnung': location_bezeichnung,
+                'name': '',
+            }
+
         if extra_context:
             context.update(extra_context)
 
@@ -348,6 +364,189 @@ class HeroService:
             )
         except Exception:
             return self._render_fallback(mock_hero, rendered_title, rendered_subtitle)
+
+    # ==============================================
+    # Route-Based Hero Methods (NEW)
+    # ==============================================
+
+    def get_all_hero_sections(self) -> list[HeroSection]:
+        """Get all hero sections (not just active).
+
+        Returns:
+            List of all HeroSection instances.
+        """
+        from v_flask_plugins.hero.models import HeroSection
+        return HeroSection.query.order_by(
+            HeroSection.active.desc(),
+            HeroSection.name,
+            HeroSection.id
+        ).all()
+
+    def get_hero_section(self, section_id: int) -> HeroSection | None:
+        """Get a specific hero section by ID.
+
+        Args:
+            section_id: Hero section ID.
+
+        Returns:
+            HeroSection or None if not found.
+        """
+        from v_flask_plugins.hero.models import HeroSection
+        return db.session.get(HeroSection, section_id)
+
+    def get_hero_for_route(
+        self,
+        endpoint: str,
+        slot: str = 'hero_top'
+    ) -> HeroSection | None:
+        """Find hero section assigned to a route and slot.
+
+        Looks up the HeroAssignment table to find which hero section
+        should be displayed for the given Flask endpoint and slot position.
+
+        Args:
+            endpoint: Flask endpoint name (e.g., 'public.index').
+            slot: Slot position ('hero_top', 'above_content', 'below_content').
+
+        Returns:
+            HeroSection instance or None if no assignment found.
+        """
+        from v_flask_plugins.hero.models import (
+            HeroAssignment,
+            HeroSection,
+            PageRoute,
+        )
+
+        # Find assignment for this endpoint and slot
+        assignment = (
+            db.session.query(HeroAssignment)
+            .join(PageRoute)
+            .join(HeroSection)
+            .filter(
+                PageRoute.endpoint == endpoint,
+                HeroAssignment.slot_position == slot,
+                HeroAssignment.active == True,  # noqa: E712
+                HeroSection.active == True,  # noqa: E712
+            )
+            .order_by(HeroAssignment.priority.desc())
+            .first()
+        )
+
+        if assignment:
+            return assignment.hero_section
+
+        return None
+
+    def render_hero_slot(
+        self,
+        endpoint: str,
+        slot: str = 'hero_top'
+    ) -> str:
+        """Render hero section for a specific endpoint and slot.
+
+        Main method for frontend template integration. Call this from
+        templates to render the assigned hero section.
+
+        Args:
+            endpoint: Flask endpoint name (e.g., 'public.index').
+            slot: Slot position ('hero_top', 'above_content', 'below_content').
+
+        Returns:
+            Rendered HTML string, or empty string if no hero assigned.
+        """
+        hero = self.get_hero_for_route(endpoint, slot)
+
+        if not hero:
+            return ''
+
+        return self.render_hero(hero)
+
+    def get_assignments_for_hero(self, hero_id: int) -> list:
+        """Get all page assignments for a hero section.
+
+        Args:
+            hero_id: Hero section ID.
+
+        Returns:
+            List of HeroAssignment instances.
+        """
+        from v_flask_plugins.hero.models import HeroAssignment
+        return HeroAssignment.query.filter_by(
+            hero_section_id=hero_id
+        ).order_by(HeroAssignment.slot_position).all()
+
+    def assign_hero_to_route(
+        self,
+        hero_id: int,
+        route_id: int,
+        slot: str = 'hero_top',
+        priority: int = 100
+    ) -> HeroAssignment | None:
+        """Assign a hero section to a page route.
+
+        Args:
+            hero_id: Hero section ID.
+            route_id: PageRoute ID.
+            slot: Slot position.
+            priority: Priority (higher wins conflicts).
+
+        Returns:
+            Created HeroAssignment or None on error.
+        """
+        from v_flask_plugins.hero.models import (
+            HeroAssignment,
+            HeroSection,
+            PageRoute,
+        )
+
+        # Verify hero and route exist
+        hero = db.session.get(HeroSection, hero_id)
+        route = db.session.get(PageRoute, route_id)
+
+        if not hero or not route:
+            return None
+
+        # Check if assignment already exists (unique constraint)
+        existing = HeroAssignment.query.filter_by(
+            page_route_id=route_id,
+            slot_position=slot
+        ).first()
+
+        if existing:
+            # Update existing assignment
+            existing.hero_section_id = hero_id
+            existing.priority = priority
+            existing.active = True
+        else:
+            # Create new assignment
+            existing = HeroAssignment(
+                hero_section_id=hero_id,
+                page_route_id=route_id,
+                slot_position=slot,
+                priority=priority,
+            )
+            db.session.add(existing)
+
+        db.session.commit()
+        return existing
+
+    def remove_assignment(self, assignment_id: int) -> bool:
+        """Remove a hero assignment.
+
+        Args:
+            assignment_id: HeroAssignment ID.
+
+        Returns:
+            True if removed, False if not found.
+        """
+        from v_flask_plugins.hero.models import HeroAssignment
+
+        assignment = db.session.get(HeroAssignment, assignment_id)
+        if assignment:
+            db.session.delete(assignment)
+            db.session.commit()
+            return True
+        return False
 
 
 # Singleton instance for convenience

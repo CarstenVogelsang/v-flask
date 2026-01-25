@@ -1,0 +1,33 @@
+{# Partial: Routes Table Body #}
+{# Expects: routes, blueprint_names (optional) #}
+
+{% for route in routes %}
+<tr class="{% if not route.hero_assignable %}opacity-50{% endif %}">
+    <td class="font-medium">{{ route.display_name or route.endpoint }}</td>
+    <td class="font-mono text-sm">{{ route.endpoint }}</td>
+    <td>
+        <span class="badge badge-outline badge-sm">
+            {{ blueprint_names.get(route.blueprint, route.blueprint|title) if blueprint_names else route.blueprint }}
+        </span>
+    </td>
+    <td class="font-mono text-xs text-base-content/60">{{ route.rule }}</td>
+    <td>
+        <span class="badge badge-{{ 'success' if route.hero_assignable else 'ghost' }}">
+            {{ 'Ja' if route.hero_assignable else 'Nein' }}
+        </span>
+    </td>
+    <td>
+        <a href="{{ url_for('hero_admin.edit_route', route_id=route.id) }}"
+           class="btn btn-ghost btn-xs">
+            <i class="ti ti-edit"></i>
+        </a>
+    </td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="6" class="text-center text-base-content/60 py-8">
+        <i class="ti ti-route-off text-4xl mb-2"></i>
+        <p>Keine Seiten gefunden. Klicke "Seiten synchronisieren" um Routen zu erkennen.</p>
+    </td>
+</tr>
+{% endfor %}

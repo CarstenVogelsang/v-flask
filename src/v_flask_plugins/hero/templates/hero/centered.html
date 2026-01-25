@@ -7,7 +7,7 @@
 #}
 
 <div class="hero min-h-[400px] rounded-box mb-8 relative overflow-hidden"
-     style="{% if hero.image_path %}background-image: url('{{ url_for('static', filename=hero.image_path.lstrip('/')) }}'); background-size: cover; background-position: center;{% else %}background: linear-gradient(135deg, oklch(var(--p)), oklch(var(--a)));{% endif %}">
+     style="{% if hero.image_path %}background-image: url('{{ hero.image_path }}'); background-size: cover; background-position: center;{% else %}background: linear-gradient(135deg, oklch(var(--p)), oklch(var(--a)));{% endif %}">
 
     {# Background overlay for better text readability #}
     <div class="hero-overlay bg-base-content/40 rounded-box"></div>

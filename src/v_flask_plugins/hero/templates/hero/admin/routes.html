@@ -1,0 +1,140 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Seiten-Routen{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
+        <li><a href="{{ url_for('hero_admin.list_sections') }}">Hero Sections</a></li>
+        <li>Seiten</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-route text-primary"></i>
+        <span>Seiten-Routen</span>
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('hero_admin.list_sections') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zurück
+        </a>
+        <form hx-post="{{ url_for('hero_admin.sync_routes') }}"
+              hx-target="#routes-table"
+              hx-swap="innerHTML">
+            {% include 'v_flask/includes/_csrf.html' %}
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="ti ti-refresh mr-1"></i> Seiten synchronisieren
+            </button>
+        </form>
+    </div>
+</div>
+
+{# Info Card #}
+<div class="alert alert-info mb-6">
+    <i class="ti ti-info-circle"></i>
+    <div>
+        <h3 class="font-bold">Seiten-Erkennung</h3>
+        <p class="text-sm">
+            Das System erkennt automatisch alle öffentlichen Seiten deiner Website.
+            Klicke "Seiten synchronisieren" um neue Seiten zu erkennen oder gelöschte zu entfernen.
+        </p>
+    </div>
+</div>
+
+{# Filter Bar #}
+<div class="card bg-base-100 shadow-sm mb-6">
+    <div class="card-body py-4">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+
+            {# Filter 1: Hero zuweisbar #}
+            <div class="form-control">
+                <label class="label py-1">
+                    <span class="label-text text-sm">Hero zuweisbar</span>
+                </label>
+                <select name="hero_assignable" class="select select-bordered select-sm w-32"
+                        hx-get="{{ url_for('hero_admin.list_routes') }}"
+                        hx-target="#route-table"
+                        hx-include="[name='blueprint']"
+                        hx-trigger="change"
+                        hx-select="#route-table"
+                        hx-push-url="true">
+                    <option value="yes" {% if filters.hero_assignable == 'yes' %}selected{% endif %}>Ja</option>
+                    <option value="no" {% if filters.hero_assignable == 'no' %}selected{% endif %}>Nein</option>
+                    <option value="all" {% if filters.hero_assignable == 'all' %}selected{% endif %}>Alle</option>
+                </select>
+            </div>
+
+            {# Filter 2: Plugin/Blueprint #}
+            <div class="form-control">
+                <label class="label py-1">
+                    <span class="label-text text-sm">Plugin/Herkunft</span>
+                </label>
+                <select name="blueprint" class="select select-bordered select-sm w-48"
+                        hx-get="{{ url_for('hero_admin.list_routes') }}"
+                        hx-target="#route-table"
+                        hx-include="[name='hero_assignable']"
+                        hx-trigger="change"
+                        hx-select="#route-table"
+                        hx-push-url="true">
+                    <option value="">Alle Plugins</option>
+                    {% for bp in available_blueprints %}
+                    <option value="{{ bp }}" {% if filters.blueprint == bp %}selected{% endif %}>
+                        {{ blueprint_names.get(bp, bp|title) }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Reset #}
+            <a href="{{ url_for('hero_admin.list_routes') }}" class="btn btn-sm btn-ghost">
+                <i class="ti ti-x"></i> Zurücksetzen
+            </a>
+
+            {# Result count #}
+            <span class="text-sm text-base-content/60 ml-auto">
+                {{ routes|length }} Route(n)
+            </span>
+        </form>
+    </div>
+</div>
+
+{# Routes Table #}
+<div id="route-table">
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Anzeigename</th>
+                            <th>Endpoint</th>
+                            <th>Plugin</th>
+                            <th>URL-Pattern</th>
+                            <th>Hero zuweisbar</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="routes-table">
+                        {% include 'hero/admin/_route_list.html' %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Legend #}
+<div class="mt-6 text-sm text-base-content/60">
+    <h3 class="font-medium mb-2">Legende:</h3>
+    <ul class="space-y-1">
+        <li><span class="badge badge-success badge-xs mr-2"></span> Hero zuweisbar: Diese Seite kann eine Hero Section haben</li>
+        <li><span class="badge badge-ghost badge-xs mr-2"></span> Nicht zuweisbar: Admin- oder API-Seiten ohne Hero-Unterstützung</li>
+    </ul>
+</div>
+{% endblock %}
