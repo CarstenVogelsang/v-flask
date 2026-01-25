@@ -46,6 +46,10 @@ htmlcov/
 # macOS
 .DS_Store
 
+# Environment variables (credentials!)
+.env
+marketplace/.env
+
 # Database
 *.db
 *.sqlite
