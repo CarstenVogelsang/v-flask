@@ -15,6 +15,15 @@ V-Flask ist eine modulare Flask-Extension mit Core-Funktionalitäten:
 
 **Wir duzen uns!** Bitte verwende in allen Antworten die Du-Form.
 
+## Spracherkennung
+
+Der Benutzer verwendet Spracheingabe. Folgende Wörter werden häufig falsch transkribiert:
+
+| Falsch erkannt | Gemeint |
+|----------------|---------|
+| cloth, cloud   | Claude  |
+| Tasse, Tassen  | Tasks   |
+
 ## Befehle
 
 ```bash
@@ -44,12 +53,23 @@ uv run pytest -v     # Verbose Tests
 
 Wird zum Testen von v-flask Plugins und Features verwendet.
 
+## Marketplace
+
+**Pfad:** `/Users/cvogelsang/projektz/v-flask/marketplace/`
+
+### Admin-Credentials
+
+Die Standard-Credentials für lokale Entwicklung findest du in `marketplace/README.md`.
+
+> ⚠️ **WICHTIG:** Niemals den Admin-User überschreiben oder neu erstellen, es sei denn, der Benutzer fordert dich explizit dazu auf!
+
 ## Technische Dokumentation
 
 Detaillierte Spezifikationen findest du in:
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Package-Struktur, Models
 - **[docs/AUTH-SYSTEM.md](docs/AUTH-SYSTEM.md)** - Permission-System, Decorators
+- **[docs/COMPONENTS.md](docs/COMPONENTS.md)** - Wiederverwendbare UI-Komponenten (Icon Picker, Markdown Editor, etc.)
 - **[docs/IMPLEMENTATION-CHECKLIST.md](docs/IMPLEMENTATION-CHECKLIST.md)** - Implementierungs-Status
 
 ## Admin Template Guidelines

@@ -799,7 +799,227 @@ class KontaktPlugin(PluginManifest):
 
 ---
 
-## Marketplace-Eintrag
+## Plugin-Settings-System
+
+Jedes Plugin kann konfigurierbare Einstellungen definieren, die über die Admin-UI (`/admin/plugins/<name>/settings`) verwaltet werden. Einstellungen werden in der Datenbank gespeichert und können jederzeit geändert werden - ohne Server-Neustart.
+
+### Settings-Schema definieren
+
+In deiner Plugin-Klasse implementierst du `get_settings_schema()`:
+
+```python
+class MeinPlugin(PluginManifest):
+    # ... bestehende Attribute ...
+
+    def get_settings_schema(self) -> list[dict]:
+        """Definiert die konfigurierbaren Einstellungen.
+
+        Returns:
+            Liste von Setting-Definitionen mit key, label, type, etc.
+        """
+        return [
+            {
+                'key': 'api_key',
+                'label': 'API Key',
+                'type': 'password',  # Verfügbare Typen: siehe Tabelle unten
+                'description': 'Dein API Key von example.com',
+                'required': False,
+                'default': '',
+            },
+            {
+                'key': 'max_items',
+                'label': 'Max. Einträge',
+                'type': 'int',
+                'description': 'Maximale Anzahl anzuzeigender Einträge',
+                'default': 10,
+                'min': 1,
+                'max': 100,
+            },
+            {
+                'key': 'enable_feature',
+                'label': 'Feature aktivieren',
+                'type': 'bool',
+                'description': 'Aktiviert die erweiterte Funktionalität',
+                'default': True,
+            },
+            {
+                'key': 'theme',
+                'label': 'Theme',
+                'type': 'select',
+                'options': [
+                    {'value': 'light', 'label': 'Hell'},
+                    {'value': 'dark', 'label': 'Dunkel'},
+                    {'value': 'auto', 'label': 'Automatisch'},
+                ],
+                'default': 'light',
+            },
+        ]
+
+    def on_settings_saved(self, settings: dict) -> None:
+        """Hook: Wird nach Speichern der Einstellungen aufgerufen.
+
+        Nutze diesen Hook für:
+        - Cache leeren
+        - API-Clients neu initialisieren
+        - Validierung durchführen
+        """
+        # Beispiel: Cached API-Client zurücksetzen
+        try:
+            from .services import my_service
+            my_service._client = None
+        except (ImportError, AttributeError):
+            pass
+```
+
+### Verfügbare Feld-Typen
+
+| Type | Beschreibung | Zusätzliche Parameter |
+|------|--------------|----------------------|
+| `string` | Einzeiliger Text | `placeholder` |
+| `password` | Passwort/API-Key (versteckt) | - |
+| `int` | Ganzzahl | `min`, `max`, `default` |
+| `float` | Dezimalzahl | `min`, `max`, `default` |
+| `bool` | Checkbox (An/Aus) | `default` |
+| `textarea` | Mehrzeiliger Text | `placeholder`, `rows` |
+| `select` | Dropdown-Auswahl | `options` (Liste von `{value, label}`) |
+
+### Settings in Services abrufen (Fallback-Pattern)
+
+Das empfohlene Pattern für den Zugriff auf Settings verwendet eine Fallback-Kette:
+
+```python
+def get_api_key() -> str | None:
+    """API Key mit Fallback-Kette abrufen.
+
+    Priorität:
+    1. Datenbank (PluginConfig) - via Admin-UI gesetzt
+    2. Flask Config (.env) - Fallback für Entwicklung
+    3. None - nicht konfiguriert
+
+    Returns:
+        API Key string oder None
+    """
+    # 1. Datenbank (PluginConfig) - höchste Priorität
+    try:
+        from v_flask.models import PluginConfig
+        db_key = PluginConfig.get_value('mein_plugin', 'api_key')
+        if db_key:
+            return db_key
+    except Exception:
+        # PluginConfig existiert möglicherweise nicht (während Migrations)
+        pass
+
+    # 2. Flask Config (.env) - Fallback für Entwicklung
+    from flask import current_app
+    return current_app.config.get('MEIN_PLUGIN_API_KEY')
+
+
+def is_configured() -> bool:
+    """Prüft ob das Plugin konfiguriert ist."""
+    return bool(get_api_key())
+```
+
+### Settings/Help-Buttons in Admin-Templates
+
+Jedes Plugin-Admin-Template sollte Settings- und Help-Buttons neben dem Titel anzeigen:
+
+```html
+{% block content %}
+{# Titelzeile mit Settings/Help-Buttons #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-puzzle text-primary"></i>
+        <span>Mein Plugin</span>
+
+        {# Settings Button (⚙️) - nur wenn Plugin Settings hat #}
+        {% if plugin_has_settings('mein_plugin') %}
+        <a href="{{ plugin_settings_url('mein_plugin') }}"
+           class="btn btn-ghost btn-sm btn-circle ml-2"
+           title="Einstellungen">
+            <i class="ti ti-adjustments text-lg"></i>
+        </a>
+        {% endif %}
+
+        {# Help Button (ℹ️) - immer anzeigen #}
+        <a href="{{ plugin_help_url('mein_plugin') }}"
+           class="btn btn-ghost btn-sm btn-circle"
+           title="Hilfe">
+            <i class="ti ti-info-circle text-lg"></i>
+        </a>
+    </h1>
+
+    <div class="flex gap-2">
+        {# Weitere Action-Buttons... #}
+    </div>
+</div>
+{% endblock %}
+```
+
+### Verfügbare Template-Funktionen
+
+Diese Funktionen stehen in allen Templates automatisch zur Verfügung:
+
+| Funktion | Beschreibung | Rückgabe |
+|----------|--------------|----------|
+| `plugin_has_settings('name')` | Prüft ob Plugin Settings-Schema hat | `bool` |
+| `plugin_settings_url('name')` | URL zur Settings-Seite | `str` |
+| `plugin_help_url('name')` | URL zur Hilfe-Seite | `str` |
+
+### Komplettes Beispiel: Media Plugin
+
+```python
+class MediaPlugin(PluginManifest):
+    name = 'media'
+    version = '1.0.0'
+    description = 'Zentrale Media-Library mit Stock-Photo Integration'
+
+    def get_settings_schema(self) -> list[dict]:
+        return [
+            {
+                'key': 'pexels_api_key',
+                'label': 'Pexels API Key',
+                'type': 'password',
+                'description': 'API Key von pexels.com/api - Ermöglicht Stock-Foto-Suche',
+                'required': False,
+            },
+            {
+                'key': 'unsplash_access_key',
+                'label': 'Unsplash Access Key',
+                'type': 'password',
+                'description': 'Access Key von unsplash.com/developers',
+                'required': False,
+            },
+            {
+                'key': 'max_upload_size_mb',
+                'label': 'Max. Upload-Größe (MB)',
+                'type': 'int',
+                'description': 'Maximale Dateigröße für Uploads in Megabyte',
+                'default': 10,
+                'min': 1,
+                'max': 50,
+            },
+            {
+                'key': 'auto_resize',
+                'label': 'Automatisches Resizing',
+                'type': 'bool',
+                'description': 'Bilder automatisch in verschiedene Größen konvertieren',
+                'default': True,
+            },
+        ]
+
+    def on_settings_saved(self, settings: dict) -> None:
+        # Clear cached API clients so they're recreated with new keys
+        try:
+            from .services import pexels_service, unsplash_service
+            pexels_service._client = None
+            unsplash_service._client = None
+        except (ImportError, AttributeError):
+            pass
+```
+
+---
+
+## Marketplace-Eintrag (Lokal)
 
 Nach der Plugin-Entwicklung muss das Plugin in `src/v_flask/data/plugins_marketplace.json` eingetragen werden:
 
@@ -815,6 +1035,99 @@ Nach der Plugin-Entwicklung muss das Plugin in `src/v_flask/data/plugins_marketp
   "categories": ["forms", "admin"],
   "tags": ["beispiel", "demo"]
 }
+```
+
+---
+
+## Marketplace-Registrierung (Produktion)
+
+Plugins müssen an **zwei Stellen** registriert werden:
+
+### 1. Lokale JSON (Entwicklung)
+
+**Datei:** `src/v_flask/data/plugins_marketplace.json`
+
+- Für lokale Entwicklung und Tests
+- Wird beim Package-Build mitgeliefert
+- Eintrag mit `name`, `version`, `description`, `package`, `class`
+
+### 2. Marketplace-Datenbank (Produktion)
+
+**Tabelle:** `marketplace_plugin_meta`
+
+- Für Kundenprojekte (Satelliten)
+- Enthält Preise, Lizenzen, Phase, Sichtbarkeit
+- Nur Plugins in dieser Tabelle sind für Kunden sichtbar
+
+### Phasen und Sichtbarkeit
+
+Jedes Plugin hat eine **Entwicklungsphase**, die seine Sichtbarkeit bestimmt:
+
+| Phase | DB-Wert | Anzeige | Sichtbar für |
+|-------|---------|---------|--------------|
+| POC | `alpha` | "Alpha (POC)" | Nur Superadmin-Projekte |
+| MVP | `beta` | "Beta (MVP)" | Nur Superadmin-Projekte |
+| V1 | `v1` | "V1" | Alle Kunden |
+| V2+ | `v2`, `v3`... | "V2", "V3"... | Alle Kunden |
+
+**Wichtig:** Normale Kundenprojekte sehen nur stabile Releases (`v1`, `v2`, ...). Alpha/Beta-Plugins sind nur für interne V-Flask-Projekte sichtbar.
+
+### Wann registrieren?
+
+| Phase | Local JSON | Marketplace DB | Aktion |
+|-------|-----------|----------------|--------|
+| **POC starten** | ✅ Eintragen | ⚪ Optional | `phase: 'alpha'` |
+| **MVP erreicht** | ✅ Aktuell halten | ✅ Eintragen | `phase: 'beta'`, Preis festlegen |
+| **V1 Release** | ✅ Aktuell halten | ✅ `phase: 'v1'` setzen | Für alle Kunden sichtbar |
+
+### Checkliste beim Phasen-Wechsel
+
+**POC → MVP:**
+
+- [ ] Plugin in Marketplace-DB eintragen (`phase: 'beta'`)
+- [ ] Preis festlegen (`price_cents`)
+- [ ] `is_published: true` setzen
+- [ ] Optional: Screenshot hochladen
+
+**MVP → V1:**
+
+- [ ] `phase: 'v1'` in Marketplace-DB setzen
+- [ ] Changelog in Plugin-Beschreibung aktualisieren
+- [ ] Version in `__init__.py` auf `1.0.0` setzen
+- [ ] Plugin ist jetzt für alle Kunden sichtbar
+
+### Superadmin-Projekte
+
+Interne V-Flask-Projekte (z.B. vz-frühstücken-click) können Alpha/Beta-Plugins sehen und testen:
+
+```sql
+-- Projekt als Superadmin markieren
+UPDATE marketplace_project
+SET is_superadmin = 1
+WHERE slug = 'mein-test-projekt';
+```
+
+### Neues Plugin in Marketplace-DB eintragen
+
+```sql
+INSERT INTO marketplace_plugin_meta (
+    name, display_name, description, version,
+    price_cents, category, phase, is_published, has_trial,
+    created_at, updated_at
+)
+VALUES (
+    'mein_plugin',           -- Technischer Name
+    'Mein Plugin',           -- Anzeigename
+    'Kurze Beschreibung',    -- Beschreibung
+    '0.1.0',                 -- Version
+    0,                       -- Preis in Cent (0 = kostenlos)
+    'core',                  -- Kategorie
+    'alpha',                 -- Phase (alpha, beta, v1, v2, ...)
+    1,                       -- Veröffentlicht (1 = ja)
+    1,                       -- Trial möglich (1 = ja)
+    datetime('now'),
+    datetime('now')
+);
 ```
 
 ---

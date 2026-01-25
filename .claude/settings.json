@@ -5,7 +5,8 @@
       "Write",
       "Bash(git:*)",
       "Bash(gh:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(ls:*)"
     ]
   }
 }

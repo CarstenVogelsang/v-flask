@@ -384,3 +384,40 @@ src/v_flask/
 ```
 
 Siehe [TEMPLATES.md](TEMPLATES.md) für die vollständige Dokumentation.
+
+---
+
+## Content-Slots System
+
+v-flask bietet ein Content-Slots System für die dynamische Zuweisung von Inhalten zu Seiten-Positionen:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     content_slots Module                     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  ContentSlotRegistry - Zentrale Registry            │   │
+│  │  ContentSlotProvider - Abstract Base Class          │   │
+│  │  PageRoute - Flask-Routen als DB-Entities           │   │
+│  │  render_content_slot() - Template Context Processor │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Verfügbare Slots:**
+
+- `top` - Hauptbereich oben (Hero-Sections)
+- `before_content` - Vor dem Inhalt (Announcements)
+- `after_content` - Nach dem Inhalt (CTA-Boxen)
+- `sidebar` - Seitenleiste (Widgets)
+- `floating` - Fixed-Position (CTAs)
+- `footer` - Footer-Bereich
+
+**Unterschied zu UI-Slots:**
+
+| UI-Slots | Content-Slots |
+| -------- | ------------- |
+| Statische UI-Elemente | Dynamische Seiteninhalte |
+| Admin-Menü, Footer | Hero, CTA, Banner |
+| Via `ui_slots` Attribut | Via ContentSlotProvider |
+
+Siehe [CONTENT-SLOTS.md](CONTENT-SLOTS.md) für die vollständige Dokumentation.

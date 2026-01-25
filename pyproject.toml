@@ -15,6 +15,7 @@ dependencies = [
     "flask-migrate>=4.0",
     "werkzeug>=3.0",
     "requests>=2.32.5",
+    "python-slugify>=8.0.4",
 ]
 
 [project.optional-dependencies]
@@ -30,10 +31,24 @@ media = [
     "pillow>=10.0",
     "requests>=2.31",
 ]
+auth = [
+    "pyotp>=2.9.0",
+    "qrcode[pil]>=7.4.2",
+]
+export = [
+    "openpyxl>=3.1.0",
+]
+api = [
+    "pyjwt>=2.8.0",
+]
 all = [
     "markdown>=3.5",
     "pillow>=10.0",
     "requests>=2.31",
+    "pyotp>=2.9.0",
+    "qrcode[pil]>=7.4.2",
+    "openpyxl>=3.1.0",
+    "pyjwt>=2.8.0",
 ]
 
 [build-system]

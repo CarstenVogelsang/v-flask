@@ -1,5 +1,13 @@
 # Plugin-System
 
+> **Für KI-Agenten:** Diese Dokumentation ist Teil einer Dokumentationsserie.
+>
+> | Dokument | Wann lesen? |
+> |----------|-------------|
+> | [PLUGIN-DEVELOPMENT.md](PLUGIN-DEVELOPMENT.md) | Vor Plugin-Entwicklung (Tutorial, Checkliste) |
+> | [PLUGIN-PROMPT-NEU.md](PLUGIN-PROMPT-NEU.md) | Beim Start eines neuen Plugins (Prompt-Template) |
+> | [AUTH-SYSTEM.md](AUTH-SYSTEM.md) | Für Permission-Decorators und Rollen |
+
 Das v-flask Plugin-System ermöglicht die modulare Erweiterung von Flask-Anwendungen mit wiederverwendbaren Komponenten.
 
 ## Übersicht
@@ -325,6 +333,28 @@ class PluginRegistry:
 v_flask = VFlask()
 v_flask.register_plugin(plugin)  # Vor init_app()
 v_flask.plugin_registry          # Zugriff auf Registry
+```
+
+## Content-Slots
+
+Plugins können sich als Content-Provider für Seiten-Slots registrieren (z.B. Hero-Sections, CTA-Banner). Details siehe [CONTENT-SLOTS.md](CONTENT-SLOTS.md).
+
+```python
+from v_flask.content_slots import ContentSlotProvider
+
+class MeinSlotProvider(ContentSlotProvider):
+    name = 'mein_provider'
+    priority = 75
+    slots = ['after_content']
+
+    def render(self, endpoint, slot, context):
+        # Inhalt für Slot rendern
+        return '<div>Mein Content</div>'
+
+# In on_init():
+def on_init(self, app):
+    from v_flask import content_slot_registry
+    content_slot_registry.register(MeinSlotProvider())
 ```
 
 ## Zukünftige Features
