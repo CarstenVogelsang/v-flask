@@ -167,3 +167,129 @@ def _register_cli(app: Flask) -> None:
             click.echo(f'Project created: {project.name}')
             click.echo(f'API Key: {api_key}')
             click.echo('Store this key securely - it cannot be retrieved later!')
+
+    @app.cli.command('seed-categories')
+    def seed_categories():
+        """Seed plugin categories with predefined data."""
+        from app.models import PluginCategory
+
+        categories = [
+            {
+                'code': 'essential',
+                'name_de': 'Basis',
+                'description_de': 'Essenzielle Plugins für rechtliche Anforderungen wie Impressum, Datenschutz und Kontakt.',
+                'icon': 'ti ti-shield-check',
+                'color_hex': '#22c55e',
+                'sort_order': 1,
+            },
+            {
+                'code': 'content',
+                'name_de': 'Content',
+                'description_de': 'Plugins für Inhalts-Erstellung und -Verwaltung wie Hero-Sections, CTAs und CMS.',
+                'icon': 'ti ti-file-text',
+                'color_hex': '#3b82f6',
+                'sort_order': 2,
+            },
+            {
+                'code': 'commerce',
+                'name_de': 'Commerce',
+                'description_de': 'E-Commerce Plugins für Shop, Produktverwaltung (PIM) und Preisgestaltung.',
+                'icon': 'ti ti-shopping-cart',
+                'color_hex': '#f59e0b',
+                'sort_order': 3,
+            },
+            {
+                'code': 'forms',
+                'name_de': 'Formulare',
+                'description_de': 'Plugins für Formulare, Umfragen und strukturierte Datenerfassung.',
+                'icon': 'ti ti-forms',
+                'color_hex': '#8b5cf6',
+                'sort_order': 4,
+            },
+            {
+                'code': 'tools',
+                'name_de': 'Tools',
+                'description_de': 'Werkzeuge und Hilfsfunktionen wie Medienverwaltung und Projektverwaltung.',
+                'icon': 'ti ti-tool',
+                'color_hex': '#64748b',
+                'sort_order': 5,
+            },
+            {
+                'code': 'integration',
+                'name_de': 'Integration',
+                'description_de': 'Plugins zur Anbindung externer Systeme und APIs.',
+                'icon': 'ti ti-plug',
+                'color_hex': '#ec4899',
+                'sort_order': 6,
+            },
+        ]
+
+        with app.app_context():
+            added = 0
+            for cat_data in categories:
+                existing = db.session.query(PluginCategory).filter_by(
+                    code=cat_data['code']
+                ).first()
+
+                if not existing:
+                    cat = PluginCategory(**cat_data)
+                    db.session.add(cat)
+                    click.echo(f'  Added: {cat.code} ({cat.name_de})')
+                    added += 1
+                else:
+                    click.echo(f'  Exists: {existing.code}')
+
+            db.session.commit()
+            click.echo(f'Done! {added} categories added.')
+
+    @app.cli.command('assign-plugin-categories')
+    def assign_plugin_categories():
+        """Assign categories and icons to existing plugins."""
+        from app.models import PluginMeta, PluginCategory
+
+        # Plugin assignments: name -> (category_code, icon)
+        assignments = {
+            # Essential (legal requirements)
+            'impressum': ('essential', 'ti ti-scale'),
+            'datenschutz': ('essential', 'ti ti-shield-lock'),
+            'kontakt': ('essential', 'ti ti-mail'),
+            # Content
+            'hero': ('content', 'ti ti-photo'),
+            'cta': ('content', 'ti ti-click'),
+            'katalog': ('content', 'ti ti-book'),
+            # Commerce
+            'shop': ('commerce', 'ti ti-shopping-cart'),
+            'pim': ('commerce', 'ti ti-package'),
+            'pricing': ('commerce', 'ti ti-currency-euro'),
+            'crm': ('commerce', 'ti ti-users'),
+            # Forms
+            'fragebogen': ('forms', 'ti ti-clipboard-list'),
+            # Tools
+            'media': ('tools', 'ti ti-photo-video'),
+            'projektverwaltung': ('tools', 'ti ti-folder'),
+            # Integration
+            'api_market': ('integration', 'ti ti-api'),
+            'crm_udo': ('integration', 'ti ti-database-import'),
+        }
+
+        with app.app_context():
+            # Get all categories by code
+            categories = {c.code: c.id for c in PluginCategory.query.all()}
+
+            updated = 0
+            for name, (cat_code, icon) in assignments.items():
+                plugin = db.session.query(PluginMeta).filter_by(name=name).first()
+                if plugin:
+                    cat_id = categories.get(cat_code)
+                    if cat_id:
+                        plugin.category_id = cat_id
+                        plugin.icon = icon
+                        updated += 1
+                        click.echo(f'  {name}: {cat_code} ({icon})')
+                    else:
+                        click.echo(f'  {name}: Category {cat_code} not found!')
+                else:
+                    click.echo(f'  {name}: Plugin not found')
+
+            db.session.commit()
+            click.echo(f'Done! {updated} plugins updated.')
