@@ -1,0 +1,134 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Seitenzuweisung - {{ block.name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('content_admin.list_blocks') }}">Inhaltsbausteine</a></li>
+        <li>Seitenzuweisung</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-link text-primary"></i>
+        <span>Seitenzuweisung: {{ block.name }}</span>
+    </h1>
+    <a href="{{ url_for('content_admin.list_blocks') }}" class="btn btn-ghost btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Zurück
+    </a>
+</div>
+
+{# Assignment Form #}
+<form action="{{ url_for('content_admin.save_assignments', block_id=block.id) }}" method="post">
+    {% include 'v_flask/includes/_csrf.html' %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {# Page Selection #}
+        <div class="lg:col-span-2">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">
+                        <i class="ti ti-file-text mr-2"></i>
+                        Seiten auswählen
+                    </h2>
+
+                    <p class="text-gray-500 mb-4">
+                        Wähle die Seiten, auf denen dieser Baustein angezeigt werden soll.
+                    </p>
+
+                    {% if page_routes %}
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        {% for route in page_routes %}
+                        <label class="flex items-center gap-3 p-3 bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 transition-colors">
+                            <input type="checkbox" name="pages" value="{{ route.id }}"
+                                   class="checkbox checkbox-primary"
+                                   {% if route.id in assignments %}checked{% endif %}>
+                            <div class="flex-1">
+                                <div class="font-semibold">{{ route.display_name or route.endpoint }}</div>
+                                <div class="text-sm text-gray-500">{{ route.rule }}</div>
+                            </div>
+                            {% if route.id in assignments %}
+                            <span class="badge badge-success badge-sm">Zugewiesen</span>
+                            {% endif %}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="ti ti-alert-circle"></i>
+                        <span>Keine zuweisbaren Seiten gefunden. Stelle sicher, dass Seiten in der Route-Verwaltung registriert sind.</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Options Sidebar #}
+        <div class="lg:col-span-1">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h3 class="card-title text-lg mb-4">
+                        <i class="ti ti-adjustments mr-2"></i>
+                        Optionen
+                    </h3>
+
+                    {# Slot Position #}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Slot-Position</span>
+                        </label>
+                        <select name="slot_position" class="select select-bordered">
+                            <option value="before_content">Vor dem Hauptinhalt</option>
+                            <option value="after_content" selected>Nach dem Hauptinhalt</option>
+                            <option value="sidebar">Sidebar</option>
+                        </select>
+                        <label class="label">
+                            <span class="label-text-alt text-gray-500">
+                                Wo soll der Baustein auf der Seite erscheinen?
+                            </span>
+                        </label>
+                    </div>
+
+                    {# Block Info #}
+                    <div class="divider"></div>
+
+                    <h4 class="font-semibold mb-2">Baustein-Info</h4>
+                    <dl class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <dt class="text-gray-500">Intention:</dt>
+                            <dd><span class="badge badge-outline">{{ block.intention }}</span></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-gray-500">Layout:</dt>
+                            <dd><span class="badge badge-ghost">{{ block.layout }}</span></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-gray-500">Status:</dt>
+                            <dd>
+                                {% if block.active %}
+                                <span class="badge badge-success badge-sm">Aktiv</span>
+                                {% else %}
+                                <span class="badge badge-error badge-sm">Inaktiv</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+
+                    <div class="divider"></div>
+
+                    {# Submit #}
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="ti ti-check mr-1"></i> Zuweisungen speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Inhaltsbausteine{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><i class="ti ti-file-text mr-1"></i>Inhalte</li>
+        <li>Inhaltsbausteine</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Bar with Actions #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-layout-grid text-primary"></i>
+        <span>Inhaltsbausteine</span>
+
+        {# Settings Button #}
+        {% if plugin_has_settings('content') %}
+        <a href="{{ plugin_settings_url('content') }}"
+           class="btn btn-ghost btn-sm btn-circle ml-2"
+           title="Einstellungen">
+            <i class="ti ti-adjustments text-lg"></i>
+        </a>
+        {% endif %}
+
+        {# Help Button #}
+        <a href="{{ plugin_help_url('content') }}"
+           class="btn btn-ghost btn-sm btn-circle"
+           title="Hilfe">
+            <i class="ti ti-info-circle text-lg"></i>
+        </a>
+    </h1>
+
+    <div class="flex gap-2">
+        <a href="{{ url_for('content_admin.list_snippets') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-text-wrap mr-1"></i> Textbausteine
+        </a>
+        <a href="{{ url_for('content_admin.create_step1') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-1"></i> Neuer Baustein
+        </a>
+    </div>
+</div>
+
+{# Info Card #}
+<div class="alert alert-info mb-6">
+    <i class="ti ti-info-circle"></i>
+    <div>
+        <span class="font-semibold">Inhaltsbausteine</span> sind wiederverwendbare Textblöcke mit verschiedenen Layouts.
+        Du kannst sie Seiten zuweisen, um den Inhalt an verschiedenen Stellen anzuzeigen.
+    </div>
+</div>
+
+{# Content Blocks Table #}
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        {% if blocks %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Intention</th>
+                        <th>Layout</th>
+                        <th>Seiten</th>
+                        <th>Status</th>
+                        <th class="text-right">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for block in blocks %}
+                    <tr>
+                        <td>
+                            <div class="font-semibold">{{ block.name }}</div>
+                            {% if block.titel %}
+                            <div class="text-sm text-gray-500">{{ block.titel[:50] }}{% if block.titel|length > 50 %}...{% endif %}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-outline">{{ block.intention }}</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-ghost">{{ block.layout }}</span>
+                        </td>
+                        <td>
+                            {% set assignment_count = block.assignments|selectattr('active')|list|length %}
+                            {% if assignment_count > 0 %}
+                            <span class="badge badge-success">{{ assignment_count }} Seite{% if assignment_count != 1 %}n{% endif %}</span>
+                            {% else %}
+                            <span class="badge badge-warning">Nicht zugewiesen</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if block.active %}
+                            <span class="badge badge-success">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-error">Inaktiv</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex justify-end gap-1">
+                                <a href="{{ url_for('content_admin.edit_block', block_id=block.id) }}"
+                                   class="btn btn-ghost btn-sm" title="Bearbeiten">
+                                    <i class="ti ti-edit"></i>
+                                </a>
+                                <a href="{{ url_for('content_admin.assign_block', block_id=block.id) }}"
+                                   class="btn btn-ghost btn-sm" title="Seiten zuweisen">
+                                    <i class="ti ti-link"></i>
+                                </a>
+                                <form action="{{ url_for('content_admin.toggle_block', block_id=block.id) }}"
+                                      method="post" class="inline">
+                                    {% include 'v_flask/includes/_csrf.html' %}
+                                    <button type="submit" class="btn btn-ghost btn-sm"
+                                            title="{{ 'Deaktivieren' if block.active else 'Aktivieren' }}">
+                                        <i class="ti ti-{% if block.active %}eye-off{% else %}eye{% endif %}"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('content_admin.delete_block', block_id=block.id) }}"
+                                      method="post" class="inline"
+                                      onsubmit="return confirm('Baustein wirklich löschen?')">
+                                    {% include 'v_flask/includes/_csrf.html' %}
+                                    <button type="submit" class="btn btn-ghost btn-sm text-error" title="Löschen">
+                                        <i class="ti ti-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="ti ti-layout-grid text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-semibold mb-2">Noch keine Inhaltsbausteine</h3>
+            <p class="text-gray-500 mb-4">Erstelle deinen ersten Inhaltsbaustein, um Texte und Bilder auf deinen Seiten anzuzeigen.</p>
+            <a href="{{ url_for('content_admin.create_step1') }}" class="btn btn-primary">
+                <i class="ti ti-plus mr-1"></i> Ersten Baustein erstellen
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

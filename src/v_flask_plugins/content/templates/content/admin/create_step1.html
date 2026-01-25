@@ -1,0 +1,62 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Neuer Inhaltsbaustein - Schritt 1{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('content_admin.list_blocks') }}">Inhaltsbausteine</a></li>
+        <li>Neu erstellen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-layout-grid text-primary"></i>
+        <span>Neuer Inhaltsbaustein</span>
+    </h1>
+    <a href="{{ url_for('content_admin.list_blocks') }}" class="btn btn-ghost btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Abbrechen
+    </a>
+</div>
+
+{# Progress Steps #}
+<ul class="steps w-full mb-8">
+    <li class="step step-primary">Intention wählen</li>
+    <li class="step">Layout wählen</li>
+    <li class="step">Inhalte einfügen</li>
+</ul>
+
+{# Step 1: Choose Intention #}
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <h2 class="card-title mb-4">
+            <i class="ti ti-target mr-2"></i>
+            Was möchtest du darstellen?
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for intention in intentions %}
+            <a href="{{ url_for('content_admin.create_step2', intention=intention.id) }}"
+               class="card bg-base-200 hover:bg-base-300 transition-colors cursor-pointer">
+                <div class="card-body">
+                    <div class="flex items-center gap-4">
+                        <div class="text-4xl text-primary">
+                            <i class="ti {{ intention.icon or 'ti-file-text' }}"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">{{ intention.name }}</h3>
+                            <p class="text-gray-500">{{ intention.beschreibung }}</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

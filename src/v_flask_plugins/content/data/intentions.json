@@ -1,0 +1,30 @@
+[
+  {
+    "id": "ueber_uns",
+    "name": "Über uns",
+    "beschreibung": "Stellen Sie Ihr Unternehmen vor",
+    "icon": "ti-users",
+    "layouts": ["banner_text", "bild_links", "bild_rechts", "nur_text"]
+  },
+  {
+    "id": "leistungen",
+    "name": "Leistungen",
+    "beschreibung": "Beschreiben Sie Ihre Dienstleistungen",
+    "icon": "ti-briefcase",
+    "layouts": ["bild_links", "bild_rechts", "nur_text"]
+  },
+  {
+    "id": "team",
+    "name": "Team vorstellen",
+    "beschreibung": "Zeigen Sie Ihr Team",
+    "icon": "ti-user-circle",
+    "layouts": ["bild_links", "bild_rechts", "nur_text"]
+  },
+  {
+    "id": "frei",
+    "name": "Freier Inhalt",
+    "beschreibung": "Beliebiger Inhalt ohne Vorgaben",
+    "icon": "ti-article",
+    "layouts": ["banner_text", "bild_links", "bild_rechts", "nur_text"]
+  }
+]

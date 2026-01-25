@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Über uns Standard",
+    "kategorie": "ueber_uns",
+    "titel": "Über uns",
+    "text": "Lernen Sie uns kennen! Unser Unternehmen wurde mit der Vision gegründet, unseren Kunden den bestmöglichen Service zu bieten. Mit Engagement und Fachwissen arbeiten wir täglich daran, diese Vision zu verwirklichen."
+  },
+  {
+    "name": "Unsere Geschichte",
+    "kategorie": "ueber_uns",
+    "titel": "Unsere Geschichte",
+    "text": "Was als kleine Idee begann, ist heute ein etabliertes Unternehmen. Über die Jahre haben wir uns kontinuierlich weiterentwickelt, ohne dabei unsere Wurzeln und Werte zu vergessen."
+  },
+  {
+    "name": "Unsere Werte",
+    "kategorie": "ueber_uns",
+    "titel": "Unsere Werte",
+    "text": "Zuverlässigkeit, Qualität und Kundennähe – das sind die Säulen unseres Handelns. Wir glauben daran, dass langfristiger Erfolg nur durch ehrliche Arbeit und zufriedene Kunden möglich ist."
+  },
+  {
+    "name": "Unser Versprechen",
+    "kategorie": "ueber_uns",
+    "titel": "Unser Versprechen an Sie",
+    "text": "Wir versprechen Ihnen kompetente Beratung, faire Preise und einen Service, der keine Wünsche offen lässt. Ihre Zufriedenheit ist unser Antrieb."
+  },
+  {
+    "name": "Familienunternehmen",
+    "kategorie": "ueber_uns",
+    "titel": "Familienunternehmen mit Tradition",
+    "text": "Als Familienunternehmen verbinden wir Tradition mit Innovation. Werte wie Vertrauen und Beständigkeit werden bei uns von Generation zu Generation weitergegeben."
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Leistungsübersicht Standard",
+    "kategorie": "leistungen",
+    "titel": "Unsere Leistungen",
+    "text": "Wir bieten Ihnen ein umfassendes Leistungsspektrum, das genau auf Ihre Bedürfnisse zugeschnitten ist. Von der ersten Beratung bis zur Umsetzung begleiten wir Sie professionell."
+  },
+  {
+    "name": "Rundum-Service",
+    "kategorie": "leistungen",
+    "titel": "Alles aus einer Hand",
+    "text": "Bei uns erhalten Sie sämtliche Leistungen aus einer Hand. Das spart Ihnen Zeit, Aufwand und garantiert durchgängige Qualität."
+  },
+  {
+    "name": "Individuelle Lösungen",
+    "kategorie": "leistungen",
+    "titel": "Individuelle Lösungen für Sie",
+    "text": "Jeder Kunde ist einzigartig – und so behandeln wir Sie auch. Wir analysieren Ihre Anforderungen und entwickeln maßgeschneiderte Lösungen, die perfekt zu Ihnen passen."
+  },
+  {
+    "name": "Beratung & Service",
+    "kategorie": "leistungen",
+    "titel": "Beratung & Service",
+    "text": "Kompetente Beratung ist der erste Schritt zu einem erfolgreichen Projekt. Unser Team steht Ihnen mit Rat und Tat zur Seite – vor, während und nach der Umsetzung."
+  }
+]

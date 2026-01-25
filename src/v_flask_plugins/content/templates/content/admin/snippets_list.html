@@ -1,0 +1,124 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Textbausteine{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('content_admin.list_blocks') }}">Inhaltsbausteine</a></li>
+        <li>Textbausteine</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-text-wrap text-primary"></i>
+        <span>Textbausteine</span>
+    </h1>
+    <div class="flex gap-2">
+        <a href="{{ url_for('content_admin.list_blocks') }}" class="btn btn-ghost btn-sm">
+            <i class="ti ti-arrow-left mr-1"></i> Zurück
+        </a>
+        <a href="{{ url_for('content_admin.create_snippet') }}" class="btn btn-primary">
+            <i class="ti ti-plus mr-1"></i> Neuer Textbaustein
+        </a>
+    </div>
+</div>
+
+{# Info Card #}
+<div class="alert alert-info mb-6">
+    <i class="ti ti-info-circle"></i>
+    <div>
+        <span class="font-semibold">Textbausteine</span> sind vordefinierte Texte, die du beim Erstellen von Inhaltsbausteinen verwenden kannst.
+        System-Bausteine werden mitgeliefert, du kannst aber auch eigene erstellen.
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {# User-Created Snippets #}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title mb-4">
+                <i class="ti ti-user mr-2"></i>
+                Eigene Textbausteine
+            </h2>
+
+            {% if db_snippets %}
+            <div class="space-y-3">
+                {% for snippet in db_snippets %}
+                <div class="card bg-base-200">
+                    <div class="card-body p-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-semibold">{{ snippet.name }}</h3>
+                                <span class="badge badge-outline badge-sm">{{ snippet.kategorie }}</span>
+                            </div>
+                        </div>
+                        {% if snippet.titel %}
+                        <p class="font-medium mt-2">{{ snippet.titel }}</p>
+                        {% endif %}
+                        {% if snippet.text %}
+                        <p class="text-sm text-gray-500 mt-1">{{ snippet.text[:150] }}{% if snippet.text|length > 150 %}...{% endif %}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i class="ti ti-file-text text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">Noch keine eigenen Textbausteine erstellt.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# System Snippets #}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title mb-4">
+                <i class="ti ti-template mr-2"></i>
+                System-Textbausteine
+            </h2>
+
+            {% if system_snippets %}
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+                {% for snippet in system_snippets %}
+                <div class="card bg-base-200">
+                    <div class="card-body p-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-semibold">{{ snippet.name }}</h3>
+                                <div class="flex gap-1 mt-1">
+                                    <span class="badge badge-outline badge-sm">{{ snippet.kategorie }}</span>
+                                    {% if snippet.branche %}
+                                    <span class="badge badge-ghost badge-sm">{{ snippet.branche }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span class="badge badge-info badge-sm">System</span>
+                        </div>
+                        {% if snippet.titel %}
+                        <p class="font-medium mt-2">{{ snippet.titel }}</p>
+                        {% endif %}
+                        {% if snippet.text %}
+                        <p class="text-sm text-gray-500 mt-1">{{ snippet.text[:100] }}{% if snippet.text|length > 100 %}...{% endif %}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i class="ti ti-file-text text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">Keine System-Textbausteine gefunden.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

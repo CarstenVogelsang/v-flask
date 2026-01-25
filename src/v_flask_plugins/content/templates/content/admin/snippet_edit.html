@@ -1,0 +1,102 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}{% if snippet %}Textbaustein bearbeiten{% else %}Neuer Textbaustein{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('content_admin.list_blocks') }}">Inhaltsbausteine</a></li>
+        <li><a href="{{ url_for('content_admin.list_snippets') }}">Textbausteine</a></li>
+        <li>{% if snippet %}Bearbeiten{% else %}Neu{% endif %}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-text-wrap text-primary"></i>
+        <span>{% if snippet %}Textbaustein bearbeiten{% else %}Neuer Textbaustein{% endif %}</span>
+    </h1>
+    <a href="{{ url_for('content_admin.list_snippets') }}" class="btn btn-ghost btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Zurück
+    </a>
+</div>
+
+{# Edit Form #}
+<div class="card bg-base-100 shadow-xl max-w-2xl">
+    <div class="card-body">
+        <form method="post">
+            {% include 'v_flask/includes/_csrf.html' %}
+
+            {# Name #}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text font-semibold">Name *</span>
+                </label>
+                <input type="text" name="name" required
+                       value="{{ snippet.name if snippet else '' }}"
+                       placeholder="z.B. 'Willkommenstext Gastronomie'"
+                       class="input input-bordered">
+                <label class="label">
+                    <span class="label-text-alt text-gray-500">Interner Name zur Identifizierung</span>
+                </label>
+            </div>
+
+            {# Category #}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text font-semibold">Kategorie *</span>
+                </label>
+                <select name="kategorie" required class="select select-bordered">
+                    <option value="">Bitte wählen...</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}"
+                            {% if snippet and snippet.kategorie == cat.id %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Title #}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text font-semibold">Titel</span>
+                </label>
+                <input type="text" name="titel"
+                       value="{{ snippet.titel if snippet else '' }}"
+                       placeholder="Überschrift des Textbausteins"
+                       class="input input-bordered">
+            </div>
+
+            {# Text #}
+            <div class="form-control mb-6">
+                <label class="label">
+                    <span class="label-text font-semibold">Text</span>
+                </label>
+                <textarea name="text" rows="8"
+                          placeholder="Der eigentliche Textinhalt..."
+                          class="textarea textarea-bordered">{{ snippet.text if snippet else '' }}</textarea>
+                <label class="label">
+                    <span class="label-text-alt text-gray-500">
+                        Tipp: Du kannst {{firmenname}} als Platzhalter verwenden.
+                    </span>
+                </label>
+            </div>
+
+            {# Submit #}
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-check mr-1"></i> Speichern
+                </button>
+                <a href="{{ url_for('content_admin.list_snippets') }}" class="btn btn-ghost">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

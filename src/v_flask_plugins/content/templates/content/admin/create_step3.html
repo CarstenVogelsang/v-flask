@@ -1,0 +1,228 @@
+{% extends "v_flask/admin/base.html" %}
+
+{% block title %}Neuer Inhaltsbaustein - Schritt 3{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"><i class="ti ti-home"></i> Admin</a></li>
+        <li><a href="{{ url_for('content_admin.list_blocks') }}">Inhaltsbausteine</a></li>
+        <li>Neu erstellen</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{# Title Bar #}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i class="ti ti-layout-grid text-primary"></i>
+        <span>Neuer Inhaltsbaustein</span>
+    </h1>
+    <a href="{{ url_for('content_admin.create_step2', intention=intention.id) }}" class="btn btn-ghost btn-sm">
+        <i class="ti ti-arrow-left mr-1"></i> Zurück
+    </a>
+</div>
+
+{# Progress Steps #}
+<ul class="steps w-full mb-8">
+    <li class="step step-primary">Intention wählen</li>
+    <li class="step step-primary">Layout wählen</li>
+    <li class="step step-primary">Inhalte einfügen</li>
+</ul>
+
+{# Step 3: Fill Content #}
+<form action="{{ url_for('content_admin.save_block') }}" method="post">
+    {% include 'v_flask/includes/_csrf.html' %}
+    <input type="hidden" name="intention" value="{{ intention.id }}">
+    <input type="hidden" name="layout" value="{{ layout.id }}">
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {# Main Content Form #}
+        <div class="lg:col-span-2">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">
+                        <i class="ti {{ layout.icon or 'ti-layout' }} mr-2"></i>
+                        {{ layout.name }}: Inhalte einfügen
+                    </h2>
+
+                    {# Block Name #}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Name des Bausteins *</span>
+                        </label>
+                        <input type="text" name="name" required
+                               placeholder="z.B. 'Über uns - Startseite'"
+                               class="input input-bordered">
+                        <label class="label">
+                            <span class="label-text-alt text-gray-500">Nur für die interne Verwaltung sichtbar</span>
+                        </label>
+                    </div>
+
+                    {# Image Field (if required by layout) #}
+                    {% if 'bild' in layout.felder %}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Bild</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="hidden" name="bild_id" id="bild_id">
+                            <div id="bild_preview" class="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
+                                <i class="ti ti-photo text-3xl"></i>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <button type="button" class="btn btn-outline btn-sm"
+                                        onclick="openMediaPicker()">
+                                    <i class="ti ti-photo mr-1"></i> Bild wählen
+                                </button>
+                                <button type="button" class="btn btn-ghost btn-sm"
+                                        onclick="clearImage()">
+                                    <i class="ti ti-x mr-1"></i> Entfernen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# Title Field #}
+                    {% if 'titel' in layout.felder %}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Titel</span>
+                        </label>
+                        <input type="text" name="titel" id="titel_input"
+                               placeholder="Überschrift für diesen Bereich"
+                               class="input input-bordered">
+                    </div>
+                    {% endif %}
+
+                    {# Text Field #}
+                    {% if 'text' in layout.felder %}
+                    <div class="form-control mb-4">
+                        <label class="label">
+                            <span class="label-text font-semibold">Text</span>
+                        </label>
+                        <textarea name="text" id="text_input" rows="6"
+                                  placeholder="Dein Text hier..."
+                                  class="textarea textarea-bordered"></textarea>
+                    </div>
+                    {% endif %}
+
+                    {# Submit #}
+                    <div class="flex gap-2 mt-6">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-check mr-1"></i> Baustein speichern
+                        </button>
+                        <a href="{{ url_for('content_admin.list_blocks') }}" class="btn btn-ghost">
+                            Abbrechen
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Sidebar: Snippets #}
+        <div class="lg:col-span-1">
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h3 class="card-title text-lg mb-4">
+                        <i class="ti ti-text-wrap mr-2"></i>
+                        Textbausteine
+                    </h3>
+
+                    {% if snippets %}
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        {% for snippet in snippets %}
+                        <div class="card bg-base-200 cursor-pointer hover:bg-base-300 transition-colors"
+                             onclick="applySnippet('{{ snippet.titel|e }}', '{{ snippet.text|e|replace('\n', '\\n') }}')">
+                            <div class="card-body p-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-medium text-sm">{{ snippet.name }}</span>
+                                    {% if snippet.source == 'system' %}
+                                    <span class="badge badge-xs badge-outline">System</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-xs text-gray-500 truncate">{{ snippet.titel }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-sm">
+                        Keine Textbausteine für diese Kategorie verfügbar.
+                    </p>
+                    {% endif %}
+
+                    <div class="divider"></div>
+
+                    <a href="{{ url_for('content_admin.create_snippet') }}" class="btn btn-ghost btn-sm btn-block">
+                        <i class="ti ti-plus mr-1"></i> Neuen Textbaustein erstellen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{# Media Picker Modal #}
+<dialog id="media-picker-modal" class="modal">
+    <div class="modal-box w-11/12 max-w-4xl">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                <i class="ti ti-x"></i>
+            </button>
+        </form>
+        <h3 class="font-bold text-lg mb-4">
+            <i class="ti ti-photo mr-2"></i>Bild auswählen
+        </h3>
+        <div id="media-picker-content"
+             hx-get="{{ url_for('media_admin.picker', field='bild_id', accept='image/*') }}"
+             hx-trigger="load">
+            <div class="flex justify-center py-8">
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<script>
+function applySnippet(titel, text) {
+    const titelInput = document.getElementById('titel_input');
+    const textInput = document.getElementById('text_input');
+
+    if (titelInput) titelInput.value = titel;
+    if (textInput) textInput.value = text.replace(/\\n/g, '\n');
+}
+
+function openMediaPicker() {
+    const modal = document.getElementById('media-picker-modal');
+    // Reload picker content to show latest media
+    htmx.trigger('#media-picker-content', 'load');
+    modal.showModal();
+}
+
+function clearImage() {
+    document.getElementById('bild_id').value = '';
+    document.getElementById('bild_preview').innerHTML = '<i class="ti ti-photo text-3xl"></i>';
+}
+
+// Event listener for media selection from picker
+document.addEventListener('media-selected', function(e) {
+    const { mediaId, url, altText, fieldName } = e.detail;
+
+    // Update hidden input
+    document.getElementById('bild_id').value = mediaId;
+
+    // Update preview with selected image
+    document.getElementById('bild_preview').innerHTML =
+        `<img src="${url}" alt="${altText || 'Bild'}" class="w-full h-full object-cover rounded-lg">`;
+
+    // Close the modal
+    document.getElementById('media-picker-modal').close();
+});
+</script>
+{% endblock %}

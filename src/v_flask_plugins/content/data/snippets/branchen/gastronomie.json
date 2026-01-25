@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Gastronomie Willkommen",
+    "kategorie": "startseite",
+    "titel": "Herzlich willkommen in unserem Restaurant",
+    "text": "Genießen Sie kulinarische Highlights in gemütlicher Atmosphäre. Ob Geschäftsessen, Familienfeier oder romantisches Dinner – bei uns sind Sie richtig."
+  },
+  {
+    "name": "Gastronomie Philosophie",
+    "kategorie": "ueber_uns",
+    "titel": "Unsere Küchen-Philosophie",
+    "text": "Frische Zutaten aus der Region, kreative Rezepte und Liebe zum Detail – das ist unser Rezept für unvergessliche Geschmackserlebnisse. Wir kochen mit Leidenschaft."
+  },
+  {
+    "name": "Gastronomie Qualität",
+    "kategorie": "ueber_uns",
+    "titel": "Qualität, die man schmeckt",
+    "text": "Wir arbeiten ausschließlich mit ausgewählten Lieferanten zusammen und achten auf höchste Qualität bei allen Zutaten. Frisch, regional und saisonal – so schmeckt Genuss."
+  },
+  {
+    "name": "Gastronomie Team",
+    "kategorie": "team",
+    "titel": "Unser Küchen- & Service-Team",
+    "text": "Von der Küche bis zum Service – unser Team sorgt dafür, dass Sie sich bei uns rundum wohlfühlen. Freundlich, kompetent und immer mit einem Lächeln."
+  },
+  {
+    "name": "Gastronomie Leistungen",
+    "kategorie": "leistungen",
+    "titel": "Mehr als nur ein Restaurant",
+    "text": "Neben unserem regulären Restaurantbetrieb bieten wir auch Catering, private Veranstaltungen und Kochkurse an. Sprechen Sie uns an – wir machen Ihren Anlass unvergesslich."
+  },
+  {
+    "name": "Gastronomie Veranstaltungen",
+    "kategorie": "leistungen",
+    "titel": "Feiern & Events",
+    "text": "Ob Geburtstag, Jubiläum oder Firmenfeier – in unseren Räumlichkeiten richten wir Ihre Veranstaltung ganz nach Ihren Wünschen aus. Lassen Sie sich beraten!"
+  }
+]

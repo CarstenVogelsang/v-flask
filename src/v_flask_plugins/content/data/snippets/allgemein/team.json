@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Team Standard",
+    "kategorie": "team",
+    "titel": "Unser Team",
+    "text": "Hinter jedem erfolgreichen Unternehmen steht ein großartiges Team. Lernen Sie die Menschen kennen, die täglich ihr Bestes für Sie geben."
+  },
+  {
+    "name": "Expertise & Erfahrung",
+    "kategorie": "team",
+    "titel": "Expertise & Erfahrung",
+    "text": "Unser Team vereint langjährige Erfahrung mit frischen Ideen. Diese Mischung macht uns stark und ermöglicht innovative Lösungen für unsere Kunden."
+  },
+  {
+    "name": "Mit Leidenschaft",
+    "kategorie": "team",
+    "titel": "Mit Leidenschaft bei der Sache",
+    "text": "Was uns auszeichnet? Wir lieben, was wir tun. Diese Leidenschaft spüren Sie in jedem Projekt, in jeder Beratung und in jedem Ergebnis."
+  }
+]

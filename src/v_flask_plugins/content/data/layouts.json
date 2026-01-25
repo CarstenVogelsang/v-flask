@@ -1,0 +1,38 @@
+[
+  {
+    "id": "banner_text",
+    "name": "Banner + Text",
+    "beschreibung": "Großes Bild oben, Text darunter",
+    "icon": "ti-layout-navbar",
+    "felder": ["bild", "titel", "text"],
+    "template": "layouts/banner_text.html",
+    "preview": "preview_banner_text.png"
+  },
+  {
+    "id": "bild_links",
+    "name": "Bild links, Text rechts",
+    "beschreibung": "Bild auf der linken Seite, Text rechts daneben",
+    "icon": "ti-layout-sidebar-left-collapse",
+    "felder": ["bild", "titel", "text"],
+    "template": "layouts/bild_links.html",
+    "preview": "preview_bild_links.png"
+  },
+  {
+    "id": "bild_rechts",
+    "name": "Bild rechts, Text links",
+    "beschreibung": "Text auf der linken Seite, Bild rechts daneben",
+    "icon": "ti-layout-sidebar-right-collapse",
+    "felder": ["bild", "titel", "text"],
+    "template": "layouts/bild_rechts.html",
+    "preview": "preview_bild_rechts.png"
+  },
+  {
+    "id": "nur_text",
+    "name": "Nur Text",
+    "beschreibung": "Reiner Text-Block ohne Bild",
+    "icon": "ti-align-left",
+    "felder": ["titel", "text"],
+    "template": "layouts/nur_text.html",
+    "preview": "preview_nur_text.png"
+  }
+]

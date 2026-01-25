@@ -1,0 +1,24 @@
+{# Layout: Banner + Text
+   Full-width banner image with title and text below
+#}
+<section class="content-block content-block--banner-text py-12">
+    {% if bild %}
+    <div class="w-full h-64 md:h-96 mb-8 overflow-hidden">
+        <img src="{{ bild.get_url('large') }}"
+             alt="{{ bild.alt_text or titel or 'Banner' }}"
+             class="w-full h-full object-cover">
+    </div>
+    {% endif %}
+
+    <div class="container mx-auto px-4">
+        {% if titel %}
+        <h2 class="text-3xl md:text-4xl font-bold mb-6 text-center">{{ titel }}</h2>
+        {% endif %}
+
+        {% if text %}
+        <div class="prose prose-lg max-w-3xl mx-auto text-center">
+            {{ text|safe }}
+        </div>
+        {% endif %}
+    </div>
+</section>

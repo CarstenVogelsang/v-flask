@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Willkommen Standard",
+    "kategorie": "startseite",
+    "titel": "Willkommen bei {{firmenname}}",
+    "text": "Wir freuen uns, Sie auf unserer Website begrüßen zu dürfen. Entdecken Sie unser Angebot und erfahren Sie mehr über unsere Leistungen."
+  },
+  {
+    "name": "Qualitätsversprechen",
+    "kategorie": "startseite",
+    "titel": "Qualität, der Sie vertrauen können",
+    "text": "Seit Jahren stehen wir für höchste Qualität und Kundenzufriedenheit. Unser erfahrenes Team arbeitet mit Leidenschaft daran, Ihre Erwartungen zu übertreffen."
+  },
+  {
+    "name": "Persönliche Betreuung",
+    "kategorie": "startseite",
+    "titel": "Persönlich für Sie da",
+    "text": "Bei uns sind Sie keine Nummer. Wir nehmen uns Zeit für Ihre Anliegen und finden gemeinsam die beste Lösung für Sie."
+  },
+  {
+    "name": "Regional verwurzelt",
+    "kategorie": "startseite",
+    "titel": "Regional verwurzelt, modern aufgestellt",
+    "text": "Als lokales Unternehmen kennen wir die Bedürfnisse unserer Kunden. Gleichzeitig setzen wir auf moderne Methoden und aktuelle Standards."
+  }
+]

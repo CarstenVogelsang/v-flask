@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Einzelhandel Willkommen",
+    "kategorie": "startseite",
+    "titel": "Willkommen in unserem Geschäft",
+    "text": "Entdecken Sie unser sorgfältig ausgewähltes Sortiment. Bei uns finden Sie Qualitätsprodukte und persönliche Beratung – alles unter einem Dach."
+  },
+  {
+    "name": "Einzelhandel Sortiment",
+    "kategorie": "startseite",
+    "titel": "Unser Sortiment",
+    "text": "Von Klassikern bis zu Neuheiten – unser Sortiment bietet für jeden Geschmack das Richtige. Regelmäßig erweitern wir unser Angebot um spannende neue Produkte."
+  },
+  {
+    "name": "Einzelhandel Beratung",
+    "kategorie": "leistungen",
+    "titel": "Persönliche Beratung",
+    "text": "Bei uns werden Sie nicht allein gelassen. Unser geschultes Team berät Sie gerne und hilft Ihnen, genau das zu finden, was Sie suchen."
+  },
+  {
+    "name": "Einzelhandel Service",
+    "kategorie": "leistungen",
+    "titel": "Service wird großgeschrieben",
+    "text": "Umtausch, Reparatur, Lieferung – wir bieten Ihnen umfassenden Service rund um unsere Produkte. Ihre Zufriedenheit ist unser oberstes Ziel."
+  },
+  {
+    "name": "Einzelhandel Über uns",
+    "kategorie": "ueber_uns",
+    "titel": "Ihr lokaler Fachhändler",
+    "text": "Als inhabergeführtes Fachgeschäft verbinden wir persönlichen Service mit Expertenwissen. Wir kennen unsere Produkte und beraten Sie ehrlich und kompetent."
+  },
+  {
+    "name": "Einzelhandel Regional",
+    "kategorie": "ueber_uns",
+    "titel": "Regional einkaufen",
+    "text": "Mit Ihrem Einkauf bei uns unterstützen Sie den lokalen Einzelhandel. Wir sind Teil Ihrer Nachbarschaft und freuen uns auf Ihren Besuch."
+  }
+]
